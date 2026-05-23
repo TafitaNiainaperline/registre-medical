@@ -26,24 +26,24 @@ Application desktop de gestion médicale développée avec **React**, **Electron
 ![Page de Connexion](./screenshots/login.png)
 
 ### 📊 Tableau de Bord
-![Tableau de Bord](./screenshots/dashboard.png)
+![Tableau de Bord](./screenshots/Dashboard.png)
 
 ### 🩺 Registre des Consultations
-![Formulaire de Consultation](./screenshots/registre-1.png)
-![Liste des Consultations](./screenshots/registre-2.png)
+![Formulaire de Consultation](./screenshots/Registre-1.png)
+![Liste des Consultations](./screenshots/Registre-2.png)
 
 ### 💊 Gestion des Médicaments
-![Gestion des Médicaments](./screenshots/medicaments.png)
+![Gestion des Médicaments](./screenshots/Medicaments.png)
 
 ### 👥 Gestion des Utilisateurs
-![Gestion des Utilisateurs](./screenshots/gestion_user.png)
+![Gestion des Utilisateurs](./screenshots/Gestion_User.png)
 
 ### 📦 Archives & Export Excel
-![Archives](./screenshots/archive_exporter_excel.png)
-![Export Excel](./screenshots/fichier_excel_exporter.png)
+![Archives](./screenshots/Archive_Exporter_Excel.png)
+![Export Excel](./screenshots/Fichier_Excel_Exporter.png)
 
 ### ❓ Guide d'Utilisation
-![Guide d'Utilisation](./screenshots/aide.png)
+![Guide d'Utilisation](./screenshots/Aide.png)
 
 ---
 
