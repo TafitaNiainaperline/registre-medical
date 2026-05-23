@@ -1,28 +1,22 @@
 # 🏥 Registre Médical Desktop
 
-Application desktop de gestion médicale développée avec :
-
-- **React** + **Vite**
-- **Node.js** + **Electron**
-- **SQLite** / **PostgreSQL**
-- **CSS moderne** (Dark/Light Mode)
+Application desktop de gestion médicale développée avec **React**, **Electron** et **Node.js**.
 
 ---
 
 ## ✨ Fonctionnalités
 
-- ✅ Gestion complète des consultations
-- ✅ Consultation Pré-Natale
-- ✅ Planification Familiale
-- ✅ Analyses
-- ✅ Soins
-- ✅ Gestion des médicaments et du stock
-- ✅ Gestion des utilisateurs (rôles & statuts)
-- ✅ Authentification sécurisée
-- ✅ Archives mensuelles + Export Excel
-- ✅ Tableau de bord statistique
-- ✅ Recherche avancée de patients
-- ✅ Mode sombre / clair
+- Gestion complète des consultations
+- Consultation Pré-Natale
+- Planification Familiale
+- Analyses et Soins
+- Gestion des médicaments + Stock
+- Gestion des utilisateurs (Admin / Utilisateur)
+- Authentification sécurisée
+- Archives mensuelles avec **Export Excel**
+- Tableau de bord statistique
+- Recherche avancée
+- Mode sombre / clair
 
 ---
 
@@ -35,8 +29,8 @@ Application desktop de gestion médicale développée avec :
 ![Tableau de Bord](./screenshots/dashboard.png)
 
 ### 🩺 Registre des Consultations
-![Registre Consultations - Formulaire](./screenshots/registre-1.png)
-![Registre Consultations - Liste](./screenshots/registre-2.png)
+![Formulaire de Consultation](./screenshots/registre-1.png)
+![Liste des Consultations](./screenshots/registre-2.png)
 
 ### 💊 Gestion des Médicaments
 ![Gestion des Médicaments](./screenshots/medicaments.png)
@@ -46,7 +40,7 @@ Application desktop de gestion médicale développée avec :
 
 ### 📦 Archives & Export Excel
 ![Archives](./screenshots/archive_exporter_excel.png)
-![Fichier Excel Exporté](./screenshots/fichier_excel_exporter.png)
+![Export Excel](./screenshots/fichier_excel_exporter.png)
 
 ### ❓ Guide d'Utilisation
 ![Guide d'Utilisation](./screenshots/aide.png)
@@ -56,7 +50,7 @@ Application desktop de gestion médicale développée avec :
 ## 🚀 Installation
 
 ```bash
-git clone https://gitlab.com/ajeanangelin/registre-medical.git
+git clone https://gitlab.com/aajeanangelin/registre-medical.git
 cd registre-medical
 npm install
 npm run dev
