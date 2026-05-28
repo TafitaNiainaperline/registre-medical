@@ -58,6 +58,11 @@ function ageBadgeClass(stored) {
   return 'ans';
 }
 
+function displayRegistryNumber(value) {
+  const match = String(value || '').match(/(\d+)$/);
+  return match ? match[1] : (value || '-');
+}
+
 function normalizeMedicationName(value) {
   return String(value || '')
     .normalize('NFD')
@@ -502,6 +507,7 @@ export default function RecordsPage({ category }) {
               <th>Domicile</th>
               <th>Diagnostic</th>
               <th>Traitement</th>
+              <th>Observation</th>
               <th>Coût</th>
               <th>Date</th>
               <th>Actions</th>
@@ -510,14 +516,14 @@ export default function RecordsPage({ category }) {
           <tbody>
             {filteredRecords.length === 0 && (
               <tr>
-                <td colSpan="9" style={{ textAlign: 'center', color: '#5f7b84', padding: '24px' }}>
+                <td colSpan="10" style={{ textAlign: 'center', color: '#5f7b84', padding: '24px' }}>
                   Aucune donnée enregistrée.
                 </td>
               </tr>
             )}
             {filteredRecords.map((row) => (
               <tr key={row.id}>
-                <td style={{ color: '#5f7b84', fontWeight: 700 }}>{row.registry_number || '-'}</td>
+                <td style={{ color: '#5f7b84', fontWeight: 700 }}>{displayRegistryNumber(row.registry_number)}</td>
                 <td><strong>{row.patient_nom}</strong> {row.patient_prenom}</td>
                 <td>
                   <span className={`age-badge ${ageBadgeClass(row.age)}`}>
@@ -531,6 +537,7 @@ export default function RecordsPage({ category }) {
                     ? row.treatments.map((t) => `${t.name} x${t.quantity}${t.unit ? ` ${t.unit}` : ''}`).join(', ')
                     : row.traitement}
                 </td>
+                <td>{row.observation || '-'}</td>
                 <td>{row.cost} Ar</td>
                 <td style={{ fontSize: '0.85rem', color: '#5f7b84' }}>
                   {row.created_at ? row.created_at.slice(0, 10) : '-'}

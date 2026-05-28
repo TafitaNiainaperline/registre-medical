@@ -30,6 +30,11 @@ function categoryLabel(category) {
   return labels[category] || category || '-';
 }
 
+function displayRegistryNumber(value) {
+  const match = String(value || '').match(/(\d+)$/);
+  return match ? match[1] : (value || '-');
+}
+
 function formatMoney(value) {
   return `${Number(value || 0).toLocaleString('fr-FR')} Ar`;
 }
@@ -93,7 +98,7 @@ function buildReceiptHtml(record) {
           </div>
           <div>
             <h2>N° registre</h2>
-            <div class="badge">${escapeHtml(record.registry_number || `#${record.id}`)}</div>
+            <div class="badge">${escapeHtml(displayRegistryNumber(record.registry_number || record.id))}</div>
           </div>
         </div>
 
