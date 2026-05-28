@@ -1,92 +1,116 @@
-﻿export default function HelpPage() {
+const guideSections = [
+  {
+    title: 'Connexion et comptes',
+    items: [
+      'Connectez-vous avec votre pseudo et votre mot de passe.',
+      'Un nouveau compte reste inactif jusqu’à validation par l’administrateur.',
+      'L’administrateur peut activer, désactiver, réinitialiser le mot de passe et supprimer un utilisateur.',
+    ],
+  },
+  {
+    title: 'Ajouter un dossier patient',
+    items: [
+      'Choisissez le registre concerné : Consultations, CPN, PF, Analyses ou Soins.',
+      'Remplissez les informations du patient, l’âge, le domicile, le diagnostic et l’observation si nécessaire.',
+      'À l’ajout, l’application génère automatiquement un numéro de registre mensuel.',
+    ],
+  },
+  {
+    title: 'Numéro de registre',
+    items: [
+      'Le tableau affiche le numéro de registre à la place de l’ID technique.',
+      'Même patient, même diagnostic, même registre et même mois : le même numéro est réutilisé.',
+      'Si le patient revient pour une autre maladie, un nouveau numéro est généré.',
+      'La numérotation recommence naturellement avec le nouveau mois archivé.',
+    ],
+  },
+  {
+    title: 'Traitements et stock',
+    items: [
+      'La méthode la plus sûre est de sélectionner les médicaments dans la liste du champ traitement.',
+      'Le stock diminue automatiquement seulement si le médicament est disponible.',
+      'Si le stock est insuffisant ou en rupture, l’enregistrement est bloqué avec un message.',
+      'Supprimer un dossier patient ne remet plus les médicaments dans le stock, car ils sont déjà sortis.',
+    ],
+  },
+  {
+    title: 'Traitement écrit à la main',
+    items: [
+      'Vous pouvez écrire un traitement si le nom existe déjà dans la page Médicaments.',
+      'Format conseillé : Cerum x2 sachet, Paracetamol x1 boîte.',
+      'L’unité écrite doit correspondre à l’unité enregistrée du médicament.',
+      'Le total se calcule automatiquement avec le prix et la quantité.',
+    ],
+  },
+  {
+    title: 'Médicaments',
+    items: [
+      'Seul l’administrateur peut ajouter, modifier ou supprimer les médicaments.',
+      'Chaque médicament possède un nom, un prix, une unité, un stock et une description facultative.',
+      'Les unités possibles servent à clarifier la vente : comprimé, plaquette, boîte, ampoule, flacon, sachet.',
+      'Un stock vide peut être suivi comme rupture, stock faible, stock OK ou non suivi.',
+    ],
+  },
+  {
+    title: 'Reçu patient',
+    items: [
+      'Dans le tableau du registre, cliquez sur l’icône reçu près de Modifier et Supprimer.',
+      'Le reçu PDF contient le numéro de registre, les informations du patient, le diagnostic, les soins ou médicaments, les quantités et le total payé.',
+      'Choisissez l’emplacement du fichier PDF au moment du téléchargement.',
+    ],
+  },
+  {
+    title: 'Recherche, archives et export',
+    items: [
+      'Filtrez les dossiers par nom, âge ou date dans chaque registre.',
+      'Les archives regroupent les dossiers par mois et permettent de retrouver les anciens enregistrements.',
+      'L’export Excel reprend les patients, traitements, quantités, prix et totaux de l’archive sélectionnée.',
+    ],
+  },
+];
+
+export default function HelpPage() {
   return (
     <section>
       <div className="page-header">
         <div>
-          <h1>Guide d'utilisation</h1>
-          <p>Apprenez rapidement à utiliser l'application de registre médical.</p>
+          <h1>Guide d’utilisation</h1>
+          <p>Repères essentiels pour utiliser le registre médical, le stock, les reçus et les archives.</p>
         </div>
         <div className="dashboard-badge">📘 Assistance</div>
       </div>
 
+      <div className="cards-grid" style={{ marginBottom: '18px' }}>
+        <article className="stat-card" style={{ borderTop: '5px solid #1c96a4' }}>
+          <h3>Numéro mensuel</h3>
+          <strong style={{ fontSize: '1.35rem' }}>CONS-2605-001</strong>
+          <span className="stat-subtitle">Identifiant patient lisible dans les registres.</span>
+        </article>
+
+        <article className="stat-card" style={{ borderTop: '5px solid #d34a65' }}>
+          <h3>Stock protégé</h3>
+          <strong style={{ fontSize: '1.35rem' }}>Blocage rupture</strong>
+          <span className="stat-subtitle">Aucun dossier n’est ajouté si le médicament manque.</span>
+        </article>
+
+        <article className="stat-card" style={{ borderTop: '5px solid #8f60d0' }}>
+          <h3>Reçu PDF</h3>
+          <strong style={{ fontSize: '1.35rem' }}>Téléchargement</strong>
+          <span className="stat-subtitle">Facture détaillée pour chaque patient payé.</span>
+        </article>
+      </div>
+
       <div className="help-grid">
-
-        <article className="help-card">
-          <h3>1. Connexion</h3>
-          <p>
-            Connectez-vous avec votre <strong>pseudo</strong> et votre mot de passe.
-            Cliquez sur l'icône 👁️ pour afficher ou masquer le mot de passe.
-            Si vous n'avez pas encore de compte, cliquez sur <em>Créer un compte</em>.
-          </p>
-        </article>
-
-        <article className="help-card">
-          <h3>2. Créer un compte</h3>
-          <p>
-            Entrez votre nom complet, un pseudo unique et un mot de passe.
-            Votre compte sera <strong>inactif</strong> jusqu'à ce que l'administrateur l'active.
-            Contactez l'administrateur pour qu'il active votre accès.
-          </p>
-        </article>
-
-        <article className="help-card">
-          <h3>3. Ajouter un dossier patient</h3>
-          <p>
-            Choisissez un registre dans le menu (Consultations, CPN, PF, Analyses, Soins),
-            remplissez le formulaire. Pour l'âge, sélectionnez l'unité :
-            <strong> Ans</strong>, <strong>Mois</strong>, <strong>Mois + Jours</strong> (ex: 4 mois 5 jours)
-            ou <strong>Jours seulement</strong> pour les nouveau-nés.
-            Cliquez sur <em>Ajouter</em>.
-          </p>
-        </article>
-
-        <article className="help-card">
-          <h3>4. Rechercher un patient</h3>
-          <p>
-            En haut de chaque registre, utilisez la barre de recherche pour filtrer
-            par <strong>nom ou prénom</strong>, par <strong>âge</strong> (ex: "3 mois"),
-            ou par <strong>date d'ajout</strong>. Le nombre de résultats s'affiche à droite.
-            Cliquez sur <em>✕ Effacer</em> pour réinitialiser.
-          </p>
-        </article>
-
-        <article className="help-card">
-          <h3>5. Modifier ou supprimer</h3>
-          <p>
-            Dans le tableau, cliquez sur <strong>Editer</strong> pour charger les données
-            dans le formulaire, modifiez puis cliquez sur <em>Modifier</em>.
-            Cliquez sur <strong>Annuler</strong> pour abandonner.
-            Le bouton <strong>Supprimer</strong> retire le dossier définitivement.
-          </p>
-        </article>
-
-        <article className="help-card">
-          <h3>6. Tableau de bord</h3>
-          <p>
-            Le tableau de bord affiche le total des dossiers par registre
-            pour suivre l'activité en temps réel.
-            Les chiffres se mettent à jour automatiquement après chaque ajout ou suppression.
-          </p>
-        </article>
-
-        <article className="help-card">
-          <h3>7. Gestion des utilisateurs</h3>
-          <p>
-            Visible uniquement pour l'<strong>administrateur</strong> dans le menu latéral.
-            Permet d'<strong>activer ou désactiver</strong> les comptes,
-            de <strong>réinitialiser les mots de passe</strong> oubliés
-            et de supprimer des utilisateurs.
-          </p>
-        </article>
-
-        <article className="help-card">
-          <h3>8. Mode sombre / clair</h3>
-          <p>
-            Cliquez sur le bouton <strong>🌙 Mode sombre</strong> ou <strong>☀️ Mode clair</strong>
-            en bas du menu pour changer l'apparence de l'application selon vos préférences.
-          </p>
-        </article>
-
+        {guideSections.map((section, index) => (
+          <article className="help-card" key={section.title}>
+            <h3>{index + 1}. {section.title}</h3>
+            <ul style={{ margin: 0, paddingLeft: '18px', color: '#5f7b84', lineHeight: 1.65 }}>
+              {section.items.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </article>
+        ))}
       </div>
     </section>
   );

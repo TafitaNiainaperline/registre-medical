@@ -9,7 +9,7 @@ function formatArchiveKey(a) {
 function renderTreatments(row) {
   const t = Array.isArray(row.treatments) ? row.treatments : null;
   if (!t || t.length === 0) return row.traitement || '-';
-  return t.map((x) => `${x.name} x${x.quantity} (${x.unit_price} Ar)`).join(' • ');
+  return t.map((x) => `${x.name} x${x.quantity}${x.unit ? ` ${x.unit}` : ''} (${x.unit_price} Ar)`).join(' • ');
 }
 
 export default function ArchivesPage() {

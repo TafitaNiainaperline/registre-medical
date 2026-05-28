@@ -58,6 +58,136 @@ function ageBadgeClass(stored) {
   return 'ans';
 }
 
+function normalizeMedicationName(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function findMedicationByText(text, medications) {
+  const wanted = normalizeMedicationName(text);
+  const candidates = (Array.isArray(medications) ? medications : [])
+    .map((med) => ({ med, normalized: normalizeMedicationName(med.name) }))
+    .filter(({ normalized }) => normalized);
+
+  const exact = candidates.find(({ normalized }) => normalized === wanted);
+  if (exact) return exact.med;
+
+  const prefixMatches = candidates
+    .filter(({ normalized }) => wanted.startsWith(`${normalized} `))
+    .sort((a, b) => b.normalized.length - a.normalized.length);
+
+  return prefixMatches[0]?.med || null;
+}
+
+function parseTreatmentPart(part, medications) {
+  const text = String(part || '').trim();
+  const med = findMedicationByText(text, medications);
+  if (!text || !med) return { med: null, quantity: 1, unitOk: true };
+
+  const normalizedText = normalizeMedicationName(text);
+  const normalizedName = normalizeMedicationName(med.name);
+  let rest = normalizedText.slice(normalizedName.length).trim();
+  let quantity = 1;
+
+  if (rest) {
+    const qtyMatch = rest.match(/^(?:x\s*)?(\d+)\s*(.*)$/i);
+    if (qtyMatch) {
+      quantity = Number(qtyMatch[1]) || 1;
+      rest = String(qtyMatch[2] || '').trim();
+    } else if (rest.startsWith('x')) {
+      const afterX = rest.slice(1).trim();
+      const xMatch = afterX.match(/^(\d+)\s*(.*)$/);
+      if (xMatch) {
+        quantity = Number(xMatch[1]) || 1;
+        rest = String(xMatch[2] || '').trim();
+      }
+    }
+  }
+
+  const expectedUnit = normalizeMedicationName(med.unit || '');
+  const writtenUnit = normalizeMedicationName(rest).replace(/s$/, '');
+  const expectedUnitSingular = expectedUnit.replace(/s$/, '');
+  const unitOk = !writtenUnit || !expectedUnit || writtenUnit === expectedUnitSingular;
+
+  return { med, quantity, unitOk, writtenUnit: rest };
+}
+
+function buildTreatmentsFromText(text, medications) {
+  const parts = String(text || '')
+    .split(/[,;\n]+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (!parts.length) return [];
+
+  const byMedicationId = new Map();
+  const unknown = [];
+  const wrongUnits = [];
+
+  parts.forEach((part) => {
+    const parsed = parseTreatmentPart(part, medications);
+    const med = parsed.med;
+    if (!med) {
+      unknown.push(part);
+      return;
+    }
+    if (!parsed.unitOk) {
+      wrongUnits.push(`${med.name} (${med.unit || 'unité'})`);
+      return;
+    }
+
+    const id = String(med.id);
+    const current = byMedicationId.get(id);
+    const quantity = Math.max(1, Number(parsed.quantity) || 1);
+    if (current) {
+      current.quantity += quantity;
+    } else {
+      byMedicationId.set(id, {
+        medication_id: med.id,
+        name: med.name,
+        unit: med.unit || 'unité',
+        unit_price: Number(med.price) || 0,
+        quantity,
+      });
+    }
+  });
+
+  if (unknown.length) {
+    throw new Error(`Médicament non disponible dans le stock : ${unknown.join(', ')}. Écrivez le nom enregistré, par exemple : Cerum x2 sachet.`);
+  }
+
+  if (wrongUnits.length) {
+    throw new Error(`Unité incorrecte. Utilisez l'unité enregistrée : ${wrongUnits.join(', ')}.`);
+  }
+
+  const treatments = Array.from(byMedicationId.values());
+  const stockError = treatments.find((t) => {
+    const med = (medications || []).find((m) => String(m.id) === String(t.medication_id));
+    return med && med.stock !== null && med.stock !== undefined && Number(t.quantity) > Number(med.stock);
+  });
+
+  if (stockError) {
+    const med = (medications || []).find((m) => String(m.id) === String(stockError.medication_id));
+    throw new Error(`Stock insuffisant pour "${stockError.name}". Disponible : ${med?.stock ?? 0}. Demandé : ${stockError.quantity}.`);
+  }
+
+  return treatments;
+}
+
+function previewTreatmentsTotal(text, selectedTreatments, medications) {
+  const selected = Array.isArray(selectedTreatments) ? selectedTreatments : [];
+  try {
+    const treatments = selected.length ? selected : buildTreatmentsFromText(text, medications);
+    return treatments.reduce((sum, t) => sum + (Number(t.unit_price) * Number(t.quantity)), 0);
+  } catch {
+    return 0;
+  }
+}
+
 export default function RecordsPage({ category }) {
   const [records, setRecords]     = useState([]);
   const [form, setForm]           = useState(emptyForm);
@@ -127,7 +257,15 @@ export default function RecordsPage({ category }) {
     setActionError('');
     setActionOk('');
     const storedAge = formatAge(form.age, form.age_type, form.age_mois, form.age_jours);
-    const treatments = Array.isArray(form.treatments) ? form.treatments : [];
+    let treatments = Array.isArray(form.treatments) ? form.treatments : [];
+    try {
+      if (!treatments.length && String(form.traitement || '').trim()) {
+        treatments = buildTreatmentsFromText(form.traitement, medications);
+      }
+    } catch (err) {
+      setActionError(err?.message || 'Traitement invalide.');
+      return;
+    }
     const computedCost = treatments.reduce((sum, t) => sum + (Number(t.unit_price) * Number(t.quantity)), 0);
     const payload = {
       patient_nom:    form.patient_nom,
@@ -140,7 +278,7 @@ export default function RecordsPage({ category }) {
       traitement:     form.traitement,
       treatments,
       observation:    form.observation,
-      cost:           treatments.length ? computedCost : form.cost,
+      cost:           computedCost,
     };
     try {
       if (editingId) {
@@ -186,6 +324,19 @@ export default function RecordsPage({ category }) {
     });
   };
 
+  const downloadReceipt = async (row) => {
+    setActionError('');
+    setActionOk('');
+    try {
+      const result = await window.api.exportReceiptPdf(row.id);
+      if (result?.canceled) return;
+      setActionOk(`Reçu téléchargé : ${result.filePath}`);
+    } catch (err) {
+      console.error('exportReceiptPdf failed:', err);
+      setActionError(err?.message || 'Impossible de générer le reçu.');
+    }
+  };
+
   const filteredRecords = records.filter((row) => {
     const fullName    = `${row.patient_nom || ''} ${row.patient_prenom || ''}`.toLowerCase();
     const matchesSearch = fullName.includes(search.toLowerCase());
@@ -196,6 +347,7 @@ export default function RecordsPage({ category }) {
 
   const liveTotal = (Array.isArray(form.treatments) ? form.treatments : [])
     .reduce((sum, t) => sum + (Number(t.unit_price) * Number(t.quantity)), 0);
+  const treatmentTotal = liveTotal || previewTreatmentsTotal(form.traitement, form.treatments, medications);
 
   return (
     <section>
@@ -314,7 +466,7 @@ export default function RecordsPage({ category }) {
           {(!Array.isArray(form.treatments) || form.treatments.length === 0) && (
             <input
               name="traitement"
-              placeholder="Traitement (texte libre)"
+              placeholder="Traitement : ex. Cerum x2 sachet, Paracetamol x1 boîte"
               value={form.traitement}
               onChange={onChange}
               required
@@ -322,15 +474,9 @@ export default function RecordsPage({ category }) {
           )}
         </div>
 
-        <input
-          name="cost"
-          type="number"
-          placeholder="Coût"
-          value={(Array.isArray(form.treatments) && form.treatments.length) ? liveTotal : form.cost}
-          onChange={onChange}
-          required={!Array.isArray(form.treatments) || form.treatments.length === 0}
-          disabled={Array.isArray(form.treatments) && form.treatments.length > 0}
-        />
+        <div className="dashboard-badge" style={{ justifySelf: 'start' }}>
+          Total : {treatmentTotal} Ar
+        </div>
 
         <textarea name="observation" placeholder="Observation" value={form.observation} onChange={onChange} />
 
@@ -350,7 +496,7 @@ export default function RecordsPage({ category }) {
         <table>
           <thead>
             <tr>
-              <th>#</th>
+              <th>N° registre</th>
               <th>Patient</th>
               <th>Âge</th>
               <th>Domicile</th>
@@ -371,7 +517,7 @@ export default function RecordsPage({ category }) {
             )}
             {filteredRecords.map((row) => (
               <tr key={row.id}>
-                <td style={{ color: '#5f7b84', fontWeight: 700 }}>{row.id}</td>
+                <td style={{ color: '#5f7b84', fontWeight: 700 }}>{row.registry_number || '-'}</td>
                 <td><strong>{row.patient_nom}</strong> {row.patient_prenom}</td>
                 <td>
                   <span className={`age-badge ${ageBadgeClass(row.age)}`}>
@@ -382,7 +528,7 @@ export default function RecordsPage({ category }) {
                 <td>{row.diagnostic}</td>
                 <td>
                   {Array.isArray(row.treatments) && row.treatments.length > 0
-                    ? row.treatments.map((t) => `${t.name} x${t.quantity}`).join(', ')
+                    ? row.treatments.map((t) => `${t.name} x${t.quantity}${t.unit ? ` ${t.unit}` : ''}`).join(', ')
                     : row.traitement}
                 </td>
                 <td>{row.cost} Ar</td>
@@ -393,6 +539,10 @@ export default function RecordsPage({ category }) {
                   {/* Editer : visible pour tous */}
                   <button className="icon-btn" title="Modifier" aria-label="Modifier" onClick={() => edit(row)}>
                     ✏️
+                  </button>
+                  {' '}
+                  <button className="icon-btn" title="Télécharger le reçu" aria-label="Télécharger le reçu" onClick={() => downloadReceipt(row)}>
+                    🧾
                   </button>
 
                   {/* Supprimer : visible uniquement pour l'admin */}

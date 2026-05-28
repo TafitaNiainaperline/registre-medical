@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 
-const emptyForm = { name: '', price: '', description: '', stock: '' };
+const emptyForm = { 
+  name: '', 
+  price: '', 
+  description: '', 
+  stock: '', 
+  unit: 'comprimé' 
+};
 
 export default function MedicamentsPage() {
   const currentUser = useMemo(() => JSON.parse(localStorage.getItem('user') || '{}'), []);
@@ -35,10 +41,13 @@ export default function MedicamentsPage() {
         price: Number(form.price) || 0,
         description: form.description || '',
         stock: form.stock === '' ? null : Number(form.stock),
+        unit: form.unit || 'comprimé',
       };
       if (!payload.name) { notify('Nom du médicament requis.', 'err'); return; }
+      
       if (editingId) await window.api.updateMedication(editingId, payload);
       else await window.api.createMedication(payload);
+      
       setForm(emptyForm);
       setEditingId(null);
       notify(editingId ? 'Médicament mis à jour.' : 'Médicament ajouté.');
@@ -55,6 +64,7 @@ export default function MedicamentsPage() {
       price: String(row.price ?? ''),
       description: row.description || '',
       stock: row.stock === null || row.stock === undefined ? '' : String(row.stock),
+      unit: row.unit || 'comprimé',
     });
   };
 
@@ -99,61 +109,80 @@ export default function MedicamentsPage() {
 
       <form className="record-form" onSubmit={submit}>
         <input name="name" placeholder="Nom médicament" value={form.name} onChange={onChange} required />
+        
         <input name="price" type="number" min="0" placeholder="Prix (Ar)" value={form.price} onChange={onChange} required />
+        
+        <select name="unit" value={form.unit} onChange={onChange} className="select" required>
+          <option value="comprimé">Comprimé</option>
+          <option value="plaquette">Plaquette</option>
+          <option value="boîte">Boîte</option>
+          <option value="ampoule">Ampoule</option>
+          <option value="flacon">Flacon</option>
+          <option value="sachet">Sachet</option>
+        </select>
+
         <input name="stock" type="number" min="0" placeholder="Stock (optionnel)" value={form.stock} onChange={onChange} />
+        
         <input name="description" placeholder="Description (optionnel)" value={form.description} onChange={onChange} />
+
         <div className="actions-row">
           <button type="submit">{editingId ? 'Modifier' : 'Ajouter'}</button>
           {editingId && (
-            <button
-              type="button"
-              className="btn-light"
-              onClick={() => { setEditingId(null); setForm(emptyForm); }}
-            >
+            <button type="button" className="btn-light"
+              onClick={() => { setEditingId(null); setForm(emptyForm); }}>
               Annuler
             </button>
           )}
         </div>
       </form>
 
-      <div className="search-bar" style={{ marginTop: '16px' }}>
-        <input placeholder="Rechercher un médicament..." value={search} onChange={(e) => setSearch(e.target.value)} />
+      {/* Barre de recherche */}
+      <div className="search-bar" style={{ margin: '20px 0' }}>
+        <input
+          type="text"
+          placeholder="🔍 Rechercher un médicament..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
 
+      {/* Tableau des médicaments */}
       <div className="table-wrap">
         <table>
           <thead>
             <tr>
               <th>Nom</th>
-              <th>Prix</th>
-              <th>Description</th>
+              <th>Prix (Ar)</th>
+              <th>Unité</th>
               <th>Stock</th>
+              <th>Description</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 && (
               <tr>
-                <td colSpan="5" style={{ textAlign: 'center', color: '#5f7b84', padding: '24px' }}>
-                  Aucun médicament.
+                <td colSpan="6" style={{ textAlign: 'center', padding: '20px', color: '#5f7b84' }}>
+                  Aucun médicament trouvé.
                 </td>
               </tr>
             )}
             {filtered.map((r) => (
               <tr key={r.id}>
                 <td><strong>{r.name}</strong></td>
-                <td>{r.price} Ar</td>
-                <td style={{ color: '#5f7b84' }}>{r.description || '-'}</td>
-                <td>{r.stock === null || r.stock === undefined ? '-' : r.stock}</td>
+                <td>{Number(r.price).toLocaleString()} Ar</td>
                 <td>
-                  <button
-                    className="icon-btn" title="Modifier" aria-label="Modifier" onClick={() => edit(r)}>
-                    ✏️
-                  </button>
-
-                  <button className="icon-btn danger" title="Supprimer" aria-label="Supprimer" onClick={() => remove(r.id)}>
-                    🗑️
-                  </button>
+                  <span className="unit-badge">{r.unit || 'comprimé'}</span>
+                </td>
+                <td>
+                  {r.stock !== null && r.stock !== undefined 
+                    ? <strong>{r.stock}</strong> 
+                    : <span style={{color: '#888'}}>Non suivi</span>}
+                </td>
+                <td>{r.description || '-'}</td>
+                <td>
+                  <button className="icon-btn" onClick={() => edit(r)} title="Modifier">✏️</button>
+                  <button className="icon-btn danger" onClick={() => remove(r.id)} title="Supprimer">🗑️</button>
                 </td>
               </tr>
             ))}

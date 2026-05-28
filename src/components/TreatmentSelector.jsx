@@ -6,7 +6,7 @@ function toNumber(v, fallback = 0) {
 }
 
 export default function TreatmentSelector({ medications, value, onChange }) {
-  const meds = Array.isArray(medications) ? medications : [];
+  const meds = useMemo(() => (Array.isArray(medications) ? medications : []), [medications]);
   const treatments = Array.isArray(value) ? value : [];
 
   const [selectedId, setSelectedId] = useState('');
@@ -22,11 +22,30 @@ export default function TreatmentSelector({ medications, value, onChange }) {
     const med = byId.get(String(selectedId));
     if (!med) return;
 
+    // === VÉRIFICATION DU STOCK ===
+    if (med.stock !== null && med.stock !== undefined) {
+      const currentQty = treatments
+        .filter(t => String(t.medication_id) === String(med.id))
+        .reduce((sum, t) => sum + toNumber(t.quantity), 0);
+
+      const totalRequested = currentQty + toNumber(qty, 1);
+
+      if (totalRequested > Number(med.stock)) {
+        alert(`Stock insuffisant pour "${med.name}" !\nDisponible : ${med.stock} ${med.unit || 'unité(s)'}\nDemandé : ${totalRequested}`);
+        return;
+      }
+    }
+
     const exists = treatments.find((t) => String(t.medication_id) === String(med.id));
+
     const next = exists
       ? treatments.map((t) =>
           String(t.medication_id) === String(med.id)
-            ? { ...t, quantity: toNumber(t.quantity, 0) + toNumber(qty, 1) }
+            ? { 
+                ...t, 
+                quantity: toNumber(t.quantity, 0) + toNumber(qty, 1),
+                unit: med.unit || t.unit || 'comprimé'
+              }
             : t
         )
       : [
@@ -34,6 +53,7 @@ export default function TreatmentSelector({ medications, value, onChange }) {
           {
             medication_id: med.id,
             name: med.name,
+            unit: med.unit || 'comprimé',
             unit_price: toNumber(med.price, 0),
             quantity: Math.max(1, toNumber(qty, 1)),
           }
@@ -46,8 +66,26 @@ export default function TreatmentSelector({ medications, value, onChange }) {
 
   const updateQty = (medicationId, nextQty) => {
     const q = Math.max(1, toNumber(nextQty, 1));
+    
+    // Vérification stock lors de la modification
+    const med = byId.get(String(medicationId));
+    if (med && med.stock !== null && med.stock !== undefined) {
+      const newTotal = treatments.reduce((sum, t) => {
+        return String(t.medication_id) === String(medicationId) 
+          ? sum + q 
+          : sum + toNumber(t.quantity);
+      }, 0);
+
+      if (newTotal > Number(med.stock)) {
+        alert(`Stock insuffisant pour "${med.name}" ! Disponible : ${med.stock}`);
+        return;
+      }
+    }
+
     onChange?.(treatments.map((t) => (
-      String(t.medication_id) === String(medicationId) ? { ...t, quantity: q } : t
+      String(t.medication_id) === String(medicationId) 
+        ? { ...t, quantity: q } 
+        : t
     )));
   };
 
@@ -60,11 +98,16 @@ export default function TreatmentSelector({ medications, value, onChange }) {
   return (
     <div className="treatments">
       <div className="treatments-top">
-        <select className="select" value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
+        <select 
+          className="select" 
+          value={selectedId} 
+          onChange={(e) => setSelectedId(e.target.value)}
+        >
           <option value="">Sélectionner un médicament...</option>
           {meds.map((m) => (
             <option key={m.id} value={String(m.id)}>
-              {m.name} — {m.price} Ar
+              {m.name} — {m.price} Ar / {m.unit || 'comprimé'}
+              {m.stock !== null && m.stock !== undefined && ` (Stock: ${m.stock})`}
             </option>
           ))}
         </select>
@@ -78,7 +121,12 @@ export default function TreatmentSelector({ medications, value, onChange }) {
           placeholder="Qté"
         />
 
-        <button type="button" className="btn-light" onClick={add} disabled={!selectedId}>
+        <button 
+          type="button" 
+          className="btn-light" 
+          onClick={add} 
+          disabled={!selectedId}
+        >
           + Ajouter médicament
         </button>
 
@@ -89,32 +137,39 @@ export default function TreatmentSelector({ medications, value, onChange }) {
 
       {treatments.length > 0 && (
         <div className="treatments-list">
-          {treatments.map((t) => (
-            <div className="treatment-row" key={String(t.medication_id)}>
-              <div className="treatment-name">
-                <strong>{t.name}</strong>
-                <span style={{ color: '#5f7b84', marginLeft: 8 }}>
-                  {toNumber(t.unit_price)} Ar / unité
-                </span>
-              </div>
+          {treatments.map((t) => {
+            const med = byId.get(String(t.medication_id));
+            return (
+              <div className="treatment-row" key={String(t.medication_id)}>
+                <div className="treatment-name">
+                  <strong>{t.name}</strong>
+                  <span style={{ color: '#5f7b84', marginLeft: 8 }}>
+                    {toNumber(t.unit_price)} Ar / {t.unit || med?.unit || 'unité'}
+                  </span>
+                </div>
 
-              <div className="treatment-controls">
-                <input
-                  className="qty-input"
-                  type="number"
-                  min="1"
-                  value={t.quantity}
-                  onChange={(e) => updateQty(t.medication_id, e.target.value)}
-                />
-                <span style={{ minWidth: 92, textAlign: 'right' }}>
-                  <strong>{toNumber(t.unit_price) * toNumber(t.quantity)} Ar</strong>
-                </span>
-                <button type="button" className="btn-danger" onClick={() => remove(t.medication_id)}>
-                  Supprimer
-                </button>
+                <div className="treatment-controls">
+                  <input
+                    className="qty-input"
+                    type="number"
+                    min="1"
+                    value={t.quantity}
+                    onChange={(e) => updateQty(t.medication_id, e.target.value)}
+                  />
+                  <span style={{ minWidth: 92, textAlign: 'right' }}>
+                    <strong>{toNumber(t.unit_price) * toNumber(t.quantity)} Ar</strong>
+                  </span>
+                  <button 
+                    type="button" 
+                    className="btn-danger" 
+                    onClick={() => remove(t.medication_id)}
+                  >
+                    Supprimer
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

@@ -53,7 +53,7 @@ async function writeArchiveExcel({ filePath, year, month, records }) {
   (records || []).forEach((r) => {
     const meds = Array.isArray(r.treatments) ? r.treatments : [];
     const medsNames = meds.map(m => m.name).join('\n');
-    const medsQty = meds.map(m => `${m.quantity}`).join('\n');
+    const medsQty = meds.map(m => `${m.quantity}${m.unit ? ` ${m.unit}` : ''}`).join('\n');
     const medsUnit = meds.map(m => `${m.unit_price}`).join('\n');
     const medsLineTotal = meds.map(m => `${(Number(m.total) || (Number(m.unit_price) * Number(m.quantity)))}`).join('\n');
     const computedFromMeds = meds.reduce((s, m) => s + (Number(m.total) || (Number(m.unit_price) * Number(m.quantity))), 0);

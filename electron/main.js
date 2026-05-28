@@ -1,6 +1,8 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const db = require('./database');
+const { buildReceiptHtml } = require('./receiptPdf');
 let exportExcel = null;
 try {
   exportExcel = require('./excelExport');
@@ -111,6 +113,42 @@ ipcMain.handle('records:update', (_, id, data) => {
 
 ipcMain.handle('records:delete', (_, id) => {
   return db.deleteRecord(id);
+});
+
+ipcMain.handle('receipt:pdf', async (_, id) => {
+  const record = await db.fetchRecordById(id);
+  if (!record) throw new Error('Dossier introuvable.');
+
+  const win = BrowserWindow.getFocusedWindow();
+  const safeNumber = String(record.registry_number || record.id).replace(/[^\w.-]+/g, '_');
+  const defaultName = `recu_${safeNumber}.pdf`;
+  const result = await dialog.showSaveDialog(win, {
+    title: 'Telecharger le recu',
+    defaultPath: defaultName,
+    filters: [{ name: 'PDF', extensions: ['pdf'] }]
+  });
+  if (result.canceled || !result.filePath) return { canceled: true };
+
+  const receiptWindow = new BrowserWindow({
+    show: false,
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+    }
+  });
+
+  try {
+    const html = buildReceiptHtml(record);
+    await receiptWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+    const pdf = await receiptWindow.webContents.printToPDF({
+      printBackground: true,
+      pageSize: 'A4',
+    });
+    fs.writeFileSync(result.filePath, pdf);
+    return { canceled: false, filePath: result.filePath };
+  } finally {
+    receiptWindow.destroy();
+  }
 });
 
 // ─────────────────────────────────────────────────────

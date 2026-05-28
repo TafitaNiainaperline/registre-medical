@@ -46,6 +46,9 @@ contextBridge.exposeInMainWorld('api', {
   deleteRecord: (id) =>
     ipcRenderer.invoke('records:delete', id),
 
+  exportReceiptPdf: (id) =>
+    ipcRenderer.invoke('receipt:pdf', id),
+
   // ARCHIVES
   listArchives: () =>
     ipcRenderer.invoke('archives:list'),
