@@ -113,6 +113,7 @@ export default function MedicamentsPage() {
         <input name="price" type="number" min="0" placeholder="Prix (Ar)" value={form.price} onChange={onChange} required />
         
         <select name="unit" value={form.unit} onChange={onChange} className="select" required>
+          <option value="unité">Unité</option>
           <option value="comprimé">Comprimé</option>
           <option value="plaquette">Plaquette</option>
           <option value="boîte">Boîte</option>

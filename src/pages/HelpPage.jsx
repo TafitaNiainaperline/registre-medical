@@ -47,7 +47,7 @@ const guideSections = [
     items: [
       'Seul l’administrateur peut ajouter, modifier ou supprimer les médicaments.',
       'Chaque médicament possède un nom, un prix, une unité, un stock et une description facultative.',
-      'Les unités possibles servent à clarifier la vente : comprimé, plaquette, boîte, ampoule, flacon, sachet.',
+      'Les unités possibles servent à clarifier la vente : unité, comprimé, plaquette, boîte, ampoule, flacon, sachet.',
       'Un stock vide peut être suivi comme rupture, stock faible, stock OK ou non suivi.',
     ],
   },
@@ -83,7 +83,7 @@ export default function HelpPage() {
       <div className="cards-grid" style={{ marginBottom: '18px' }}>
         <article className="stat-card" style={{ borderTop: '5px solid #1c96a4' }}>
           <h3>Numéro mensuel</h3>
-          <strong style={{ fontSize: '1.35rem' }}>001</strong>
+          <strong style={{ fontSize: '1.35rem' }}>01</strong>
           <span className="stat-subtitle">Identifiant patient lisible dans les registres.</span>
         </article>
 

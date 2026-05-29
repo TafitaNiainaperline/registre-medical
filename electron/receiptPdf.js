@@ -32,7 +32,9 @@ function categoryLabel(category) {
 
 function displayRegistryNumber(value) {
   const match = String(value || '').match(/(\d+)$/);
-  return match ? match[1] : (value || '-');
+  if (!match) return value || '-';
+  const number = Number(match[1]) || 0;
+  return String(number).padStart(2, '0');
 }
 
 function formatMoney(value) {
