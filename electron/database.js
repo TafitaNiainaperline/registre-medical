@@ -108,6 +108,14 @@ function initTables() {
       total INTEGER NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS medication_movements (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      medication_id INTEGER NOT NULL,
+      movement_type TEXT NOT NULL,
+      quantity INTEGER NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE INDEX IF NOT EXISTS idx_medical_records_archive ON medical_records(archive_year, archive_month);
     CREATE INDEX IF NOT EXISTS idx_medical_records_category_archive ON medical_records(category, archive_year, archive_month);
     CREATE INDEX IF NOT EXISTS idx_record_medications_record_id ON record_medications(record_id);
@@ -194,6 +202,13 @@ function registryPeriod(year, month) {
   return `${String(year).slice(-2)}${String(month).padStart(2, '0')}`;
 }
 
+function displayRegistryNumber(value) {
+  const match = String(value || '').match(/(\d+)$/);
+  if (!match) return value || '-';
+  const number = Number(match[1]) || 0;
+  return String(number).padStart(2, '0');
+}
+
 function patientIllnessKey(row) {
   return [
     normalizeMedicationName(row.patient_nom),
@@ -240,6 +255,18 @@ function getRegistryNumberForRecord(d, data, year, month, existingId = null) {
   }
 
   return nextRegistryNumber(d, category, year, month);
+}
+
+function findExistingMonthlyCase(d, data, year, month, existingId = null) {
+  const key = patientIllnessKey(data);
+  const rows = toObjects(d.exec(
+    `SELECT id, registry_number, patient_nom, patient_prenom, diagnostic
+     FROM medical_records
+     WHERE category = ? AND archive_year = ? AND archive_month = ?
+     ORDER BY id ASC`,
+    [data.category, year, month]
+  ));
+  return rows.find((row) => Number(row.id) !== Number(existingId) && patientIllnessKey(row) === key) || null;
 }
 
 function backfillRegistryNumbers(d) {
@@ -429,6 +456,21 @@ function applyMedicationStockDeltas(d, deltaByMedicationId) {
        WHERE id = ?`,
       [change, id]
     );
+
+    if (change < 0) {
+      d.run(
+        `
+        INSERT INTO medication_movements
+        (
+          medication_id,
+          movement_type,
+          quantity
+        )
+        VALUES (?, ?, ?)
+        `,
+        [id, 'exit', Math.abs(change)]
+      );
+    }
   });
 }
 
@@ -663,6 +705,11 @@ async function createRecord(data) {
   const { year, month } = data.archive_year && data.archive_month
     ? { year: Number(data.archive_year), month: Number(data.archive_month) }
     : getArchiveFromDate(now);
+
+  const existingCase = findExistingMonthlyCase(d, data, year, month);
+  if (existingCase) {
+    throw new Error(`Ce patient est déjà enregistré ce mois pour cette même maladie sous le N° ${displayRegistryNumber(existingCase.registry_number)}. Recherchez ce numéro et modifiez le dossier existant pour continuer le traitement.`);
+  }
 
   let treatments = normalizeTreatments(data.treatments);
   if (!treatments.length && String(data.traitement || '').trim()) {
@@ -941,10 +988,114 @@ async function deleteMedication(id) {
   saveDB();
 }
 
+async function addMedicationStock(id, quantity) {
+  const d = await getDB();
+
+  const qty = Number(quantity);
+
+  if (!qty || qty <= 0) {
+    throw new Error('Quantité invalide');
+  }
+
+  d.run(
+    `
+    UPDATE medications
+    SET stock = COALESCE(stock,0) + ?,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+    `,
+    [qty, id]
+  );
+
+  d.run(
+    `
+    INSERT INTO medication_movements
+    (
+      medication_id,
+      movement_type,
+      quantity
+    )
+    VALUES (?, ?, ?)
+    `,
+    [id, 'entry', qty]
+  );
+
+  saveDB();
+}
+
+async function getMedicationMovements() {
+  const d = await getDB();
+
+  const res = d.exec(`
+    SELECT
+      mm.*,
+      m.name as medication_name
+    FROM medication_movements mm
+    JOIN medications m
+      ON m.id = mm.medication_id
+    ORDER BY mm.created_at DESC
+  `);
+
+  return toObjects(res);
+}
+
+async function getTopSellingMedications() {
+  const d = await getDB();
+
+  const res = d.exec(`
+    SELECT
+      medication_name,
+      SUM(quantity) as total_sold
+    FROM record_medications
+    GROUP BY medication_name
+    ORDER BY total_sold DESC
+    LIMIT 10
+  `);
+
+  return toObjects(res);
+}
+
+async function getLowStockMedications(limit = 10) {
+  const d = await getDB();
+
+  const res = d.exec(`
+    SELECT *
+    FROM medications
+    WHERE stock IS NOT NULL
+      AND stock < ?
+    ORDER BY stock ASC
+  `, [limit]);
+
+  return toObjects(res);
+}
+
+async function getStockReport() {
+  const d = await getDB();
+
+  const res = d.exec(`
+    SELECT
+      id,
+      name,
+      price,
+      unit,
+      stock,
+      description
+    FROM medications
+    ORDER BY name ASC
+  `);
+
+  return toObjects(res);
+}
+
 module.exports = {
   loginUser, registerUser,
   getAllUsers, toggleUserActive, resetUserPassword, deleteUser,
   fetchRecords, fetchRecordsByArchive, fetchRecordById, fetchStats, fetchStatsByArchive, createRecord, updateRecord, deleteRecord,
   listArchives, getCurrentArchive,
-  listMedications, createMedication, updateMedication, deleteMedication
+  listMedications, createMedication, updateMedication, deleteMedication,
+  addMedicationStock,
+  getMedicationMovements,
+  getTopSellingMedications,
+  getLowStockMedications,
+  getStockReport
 };

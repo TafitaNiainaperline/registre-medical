@@ -108,4 +108,34 @@ async function writeArchiveExcel({ filePath, year, month, records }) {
   await wb.xlsx.writeFile(filePath);
 }
 
-module.exports = { writeArchiveExcel };
+async function writeStockExcel({
+  filePath,
+  medications
+}) {
+
+  const wb = new ExcelJS.Workbook();
+
+  const ws = wb.addWorksheet('Stock');
+
+  ws.columns = [
+    { header: 'Nom', key: 'name', width: 30 },
+    { header: 'Prix', key: 'price', width: 15 },
+    { header: 'Unité', key: 'unit', width: 15 },
+    { header: 'Stock', key: 'stock', width: 15 },
+    { header: 'Description', key: 'description', width: 40 },
+  ];
+
+  medications.forEach((m) => {
+    ws.addRow({
+      name: m.name,
+      price: m.price,
+      unit: m.unit,
+      stock: m.stock,
+      description: m.description || ''
+    });
+  });
+
+  await wb.xlsx.writeFile(filePath);
+}
+
+module.exports = { writeArchiveExcel, writeStockExcel };

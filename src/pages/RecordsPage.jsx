@@ -65,6 +65,14 @@ function displayRegistryNumber(value) {
   return String(number).padStart(2, '0');
 }
 
+function patientIllnessKey(row) {
+  return [
+    normalizeMedicationName(row.patient_nom),
+    normalizeMedicationName(row.patient_prenom),
+    normalizeMedicationName(row.diagnostic),
+  ].join('|');
+}
+
 function normalizeMedicationName(value) {
   return String(value || '')
     .normalize('NFD')
@@ -259,10 +267,32 @@ export default function RecordsPage({ category }) {
 
   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
+  const findCurrentMonthDuplicate = () => {
+    const formKey = patientIllnessKey(form);
+    return records.find((row) => (
+      Number(row.id) !== Number(editingId)
+      && patientIllnessKey(row) === formKey
+      && (!activeArchive?.year || Number(row.archive_year) === Number(activeArchive.year))
+      && (!activeArchive?.month || Number(row.archive_month) === Number(activeArchive.month))
+    ));
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     setActionError('');
     setActionOk('');
+
+    if (!editingId) {
+      const duplicate = findCurrentMonthDuplicate();
+      if (duplicate) {
+        const number = displayRegistryNumber(duplicate.registry_number);
+        edit(duplicate);
+        setSearch(number);
+        setActionError(`Ce patient est déjà enregistré ce mois pour cette même maladie sous le N° ${number}. Le dossier existant est chargé : continuez le traitement puis cliquez sur Modifier.`);
+        return;
+      }
+    }
+
     const storedAge = formatAge(form.age, form.age_type, form.age_mois, form.age_jours);
     let treatments = Array.isArray(form.treatments) ? form.treatments : [];
     try {
@@ -345,8 +375,12 @@ export default function RecordsPage({ category }) {
   };
 
   const filteredRecords = records.filter((row) => {
+    const q = search.toLowerCase().trim();
+    const registry = displayRegistryNumber(row.registry_number).toLowerCase();
+    const fullRegistry = String(row.registry_number || '').toLowerCase();
     const fullName    = `${row.patient_nom || ''} ${row.patient_prenom || ''}`.toLowerCase();
-    const matchesSearch = fullName.includes(search.toLowerCase());
+    const diagnostic = String(row.diagnostic || '').toLowerCase();
+    const matchesSearch = !q || fullName.includes(q) || diagnostic.includes(q) || registry.includes(q) || fullRegistry.includes(q);
     const matchesAge    = !ageFilter || displayAge(row.age).toLowerCase().includes(ageFilter.toLowerCase());
     const matchesDate   = !dateFilter || (row.created_at && row.created_at.slice(0, 10) === dateFilter);
     return matchesSearch && matchesAge && matchesDate;
@@ -389,7 +423,7 @@ export default function RecordsPage({ category }) {
       <div className="search-bar">
         <input
           type="text"
-          placeholder="🔍 Recherche par nom..."
+          placeholder="🔍 Recherche par nom, diagnostic ou N° registre..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />

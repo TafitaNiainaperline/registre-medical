@@ -1,3 +1,6 @@
+const fs = require('fs');
+const path = require('path');
+
 function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -41,8 +44,27 @@ function formatMoney(value) {
   return `${Number(value || 0).toLocaleString('fr-FR')} Ar`;
 }
 
+function getLogoDataUri() {
+  const candidates = [
+    path.join(__dirname, '../public/Logo.png'),
+    path.join(__dirname, '../dist/Logo.png'),
+  ];
+
+  const logoPath = candidates.find((candidate) => fs.existsSync(candidate));
+  if (!logoPath) return '';
+
+  const bytes = fs.readFileSync(logoPath);
+  const isJpeg = bytes[0] === 0xff && bytes[1] === 0xd8;
+  const mime = isJpeg ? 'image/jpeg' : 'image/png';
+  return `data:${mime};base64,${bytes.toString('base64')}`;
+}
+
 function buildReceiptHtml(record) {
   const treatments = Array.isArray(record.treatments) ? record.treatments : [];
+  const logoDataUri = getLogoDataUri();
+  const logoHtml = logoDataUri
+    ? `<img class="receipt-logo" src="${logoDataUri}" alt="Logo du centre médical" />`
+    : '';
   const rows = treatments.length
     ? treatments.map((t) => {
         const total = Number(t.total) || Number(t.unit_price || 0) * Number(t.quantity || 0);
@@ -75,6 +97,8 @@ function buildReceiptHtml(record) {
         body { font-family: Arial, sans-serif; color: #16323d; margin: 0; padding: 32px; }
         .receipt { border: 1px solid #c8d9df; border-radius: 12px; padding: 28px; }
         .top { display: flex; justify-content: space-between; gap: 24px; border-bottom: 3px solid #1c96a4; padding-bottom: 18px; margin-bottom: 22px; }
+        .identity { display: flex; align-items: center; gap: 16px; }
+        .receipt-logo { width: 150px; max-height: 88px; object-fit: contain; }
         h1 { margin: 0; font-size: 28px; color: #0d7280; }
         h2 { margin: 0 0 8px; font-size: 16px; color: #5f7b84; text-transform: uppercase; letter-spacing: .04em; }
         .badge { font-weight: 700; font-size: 18px; color: #16323d; }
@@ -94,9 +118,12 @@ function buildReceiptHtml(record) {
     <body>
       <main class="receipt">
         <div class="top">
-          <div>
-            <h1>Recu de paiement</h1>
-            <div>${escapeHtml(categoryLabel(record.category))}</div>
+          <div class="identity">
+            ${logoHtml}
+            <div>
+              <h1>Recu de paiement</h1>
+              <div>${escapeHtml(categoryLabel(record.category))}</div>
+            </div>
           </div>
           <div>
             <h2>N° registre</h2>
@@ -110,7 +137,6 @@ function buildReceiptHtml(record) {
           <div class="field"><div class="label">Sexe</div><div class="value">${escapeHtml(record.sexe || '-')}</div></div>
           <div class="field"><div class="label">Age</div><div class="value">${escapeHtml(displayAge(record.age))}</div></div>
           <div class="field"><div class="label">Domicile</div><div class="value">${escapeHtml(record.domicile || '-')}</div></div>
-          <div class="field"><div class="label">Diagnostic / Soin</div><div class="value">${escapeHtml(record.diagnostic || '-')}</div></div>
         </section>
 
         <h2>Details du traitement</h2>

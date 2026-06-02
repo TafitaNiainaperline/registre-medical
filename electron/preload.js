@@ -56,7 +56,7 @@ contextBridge.exposeInMainWorld('api', {
   getCurrentArchive: () =>
     ipcRenderer.invoke('archives:current'),
 
-  // MEDICATIONS
+    // MEDICATIONS
   listMedications: () =>
     ipcRenderer.invoke('meds:list'),
 
@@ -69,7 +69,28 @@ contextBridge.exposeInMainWorld('api', {
   deleteMedication: (id) =>
     ipcRenderer.invoke('meds:delete', id),
 
+  addMedicationStock: (id, quantity) =>
+    ipcRenderer.invoke('meds:addStock', id, quantity),
+
+  getMedicationMovements: () =>
+    ipcRenderer.invoke('meds:movements'),
+
   // EXPORT
   exportExcelByArchive: (filters) =>
     ipcRenderer.invoke('export:excelByArchive', filters),
+
+  getTopSellingMedications: () =>
+  ipcRenderer.invoke('meds:topSelling'),
+
+  getLowStockMedications: () =>
+    ipcRenderer.invoke('meds:lowStock'),
+
+  getStockReport: () =>
+    ipcRenderer.invoke('meds:stockReport'),
+
+  exportStockExcel: () =>
+    ipcRenderer.invoke('stock:excel'),
+
+  exportStockPdf: () =>
+    ipcRenderer.invoke('stock:pdf'),
 });

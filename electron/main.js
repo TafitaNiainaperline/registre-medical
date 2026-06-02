@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const db = require('./database');
 const { buildReceiptHtml } = require('./receiptPdf');
+const PDFDocument = require('pdfkit');
 let exportExcel = null;
 try {
   exportExcel = require('./excelExport');
@@ -179,6 +180,26 @@ ipcMain.handle('meds:delete', (_, id) => {
   return db.deleteMedication(id);
 });
 
+ipcMain.handle('meds:addStock', (_, id, quantity) => {
+  return db.addMedicationStock(id, quantity);
+});
+
+ipcMain.handle('meds:movements', () => {
+  return db.getMedicationMovements();
+});
+
+ipcMain.handle('meds:topSelling', () => {
+  return db.getTopSellingMedications();
+});
+
+ipcMain.handle('meds:lowStock', () => {
+  return db.getLowStockMedications(10);
+});
+
+ipcMain.handle('meds:stockReport', () => {
+  return db.getStockReport();
+});
+
 // ─────────────────────────────────────────────────────
 // EXPORT EXCEL
 ipcMain.handle('export:excelByArchive', async (_, filters) => {
@@ -205,4 +226,79 @@ ipcMain.handle('export:excelByArchive', async (_, filters) => {
     records: rows || [],
   });
   return { canceled: false, filePath: result.filePath };
+});
+
+ipcMain.handle('stock:excel', async () => {
+
+  const win = BrowserWindow.getFocusedWindow();
+
+  const result = await dialog.showSaveDialog(win, {
+    title: 'Exporter Stock',
+    defaultPath: 'stock.xlsx',
+    filters: [
+      {
+        name: 'Excel',
+        extensions: ['xlsx']
+      }
+    ]
+  });
+
+  if (result.canceled) {
+    return;
+  }
+
+  const meds = await db.getStockReport();
+
+  await exportExcel.writeStockExcel({
+    filePath: result.filePath,
+    medications: meds
+  });
+
+  return {
+    success: true
+  };
+});
+
+ipcMain.handle('stock:pdf', async () => {
+
+  const win = BrowserWindow.getFocusedWindow();
+
+  const result = await dialog.showSaveDialog(win, {
+    title: 'Exporter PDF',
+    defaultPath: 'stock.pdf',
+    filters: [
+      {
+        name: 'PDF',
+        extensions: ['pdf']
+      }
+    ]
+  });
+
+  if (result.canceled) {
+    return;
+  }
+
+  const meds = await db.getStockReport();
+
+  const doc = new PDFDocument();
+
+  doc.pipe(fs.createWriteStream(result.filePath));
+
+  doc.fontSize(18).text('Rapport du stock');
+
+  doc.moveDown();
+
+  meds.forEach((m) => {
+
+    doc.text(
+      `${m.name} | Stock : ${m.stock ?? '-'} | Prix : ${m.price} Ar`
+    );
+
+  });
+
+  doc.end();
+
+  return {
+    success: true
+  };
 });
