@@ -37,7 +37,7 @@ function displayRegistryNumber(value) {
   const match = String(value || '').match(/(\d+)$/);
   if (!match) return value || '-';
   const number = Number(match[1]) || 0;
-  return String(number).padStart(2, '0');
+  return String(number).padStart(3, '0');
 }
 
 function formatMoney(value) {

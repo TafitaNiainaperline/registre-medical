@@ -46,6 +46,19 @@ contextBridge.exposeInMainWorld('api', {
   deleteRecord: (id) =>
     ipcRenderer.invoke('records:delete', id),
 
+  continueRecord: (id, data) =>
+    ipcRenderer.invoke('records:continue', id, data),
+
+  backfillRegistryNumbers: () =>
+    ipcRenderer.invoke('records:backfillRegistry'),
+
+  fetchRecordsByDossier: (dossierId) =>
+    ipcRenderer.invoke('records:fetchByDossier', dossierId),
+  listDossiers: (search) =>
+    ipcRenderer.invoke('dossiers:list', search),
+  getDossier: (id) =>
+    ipcRenderer.invoke('dossiers:get', id),
+
   exportReceiptPdf: (id) =>
     ipcRenderer.invoke('receipt:pdf', id),
 

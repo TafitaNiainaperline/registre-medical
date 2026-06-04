@@ -68,6 +68,7 @@ function initTables() {
     CREATE TABLE IF NOT EXISTS medical_records (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       category TEXT NOT NULL,
+      dossier_id INTEGER,
       patient_nom TEXT NOT NULL,
       patient_prenom TEXT NOT NULL,
       sexe TEXT,
@@ -83,6 +84,14 @@ function initTables() {
       archive_year INTEGER,
       archive_month INTEGER,
       treatments_json TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS dossiers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      dossier_number TEXT,
+      patient_nom TEXT NOT NULL,
+      diagnostic TEXT NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -129,6 +138,7 @@ function initTables() {
     `ALTER TABLE medical_records ADD COLUMN archive_year INTEGER`,
     `ALTER TABLE medical_records ADD COLUMN archive_month INTEGER`,
     `ALTER TABLE medical_records ADD COLUMN treatments_json TEXT`,
+    `ALTER TABLE medical_records ADD COLUMN dossier_id INTEGER`,
     `ALTER TABLE users ADD COLUMN username TEXT`,
     `ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'`,
     `ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 0`,
@@ -159,9 +169,15 @@ function initTables() {
   }
 
   try {
-    schemaChanged = backfillRegistryNumbers(db) || schemaChanged;
-  } catch {
-    /* ignore */
+    backfillRegistryNumbers(db);
+  } catch (e) {
+    console.error('backfillRegistryNumbers error:', e);
+  }
+
+  try {
+    backfillDossiers(db);
+  } catch (e) {
+    console.error('backfillDossiers error:', e);
   }
 
   // Persist schema changes so they survive app restart
@@ -198,6 +214,78 @@ function registryPrefix(category) {
   return prefixes[category] || String(category || 'REG').slice(0, 4).toUpperCase();
 }
 
+function nextDossierNumber(d) {
+  const rows = toObjects(d.exec(`SELECT dossier_number FROM dossiers WHERE dossier_number IS NOT NULL`));
+  const maxSeq = rows.reduce((max, row) => {
+    const match = String(row.dossier_number || '').match(/-(\d+)$/);
+    const value = match ? Number(match[1]) : 0;
+    return Number.isFinite(value) && value > max ? value : max;
+  }, 0);
+  return `DOS-${String(maxSeq + 1).padStart(4, '0')}`;
+}
+
+async function getOrCreateDossier(d, data) {
+  const patient = String(data.patient_nom || '').trim();
+  const diagnostic = String(data.diagnostic || '').trim();
+  const rows = toObjects(d.exec('SELECT * FROM dossiers WHERE LOWER(patient_nom)=? AND LOWER(diagnostic)=? LIMIT 1', [patient.toLowerCase(), diagnostic.toLowerCase()]));
+  if (rows && rows[0]) return rows[0];
+
+  const number = nextDossierNumber(d);
+  d.run('INSERT INTO dossiers (dossier_number, patient_nom, diagnostic) VALUES (?, ?, ?)', [number, patient, diagnostic]);
+  const idRes = toObjects(d.exec('SELECT last_insert_rowid() as id'))[0];
+  const id = idRes?.id;
+  const created = toObjects(d.exec('SELECT * FROM dossiers WHERE id = ?', [id]))[0];
+  return created;
+}
+
+async function listDossiers(search) {
+  const d = await getDB();
+  const where = [];
+  const params = [];
+  if (search) {
+    where.push('(LOWER(patient_nom) LIKE ? OR LOWER(diagnostic) LIKE ? OR LOWER(dossier_number) LIKE ?)');
+    const q = `%${String(search).toLowerCase()}%`;
+    params.push(q, q, q);
+  }
+  const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
+  const res = d.exec(`SELECT * FROM dossiers ${whereClause} ORDER BY id DESC`, params);
+  return toObjects(res);
+}
+
+async function getDossierById(id) {
+  const d = await getDB();
+  const rows = toObjects(d.exec('SELECT * FROM dossiers WHERE id = ?', [id]));
+  return rows[0] || null;
+}
+
+async function fetchRecordsByDossier(dossierId) {
+  const d = await getDB();
+  const rows = toObjects(d.exec('SELECT * FROM medical_records WHERE dossier_id = ? ORDER BY created_at ASC', [dossierId]));
+  const ids = rows.map(r => r.id);
+  if (!ids.length) return rows;
+
+  const medsRows = toObjects(d.exec(`SELECT * FROM record_medications WHERE record_id IN (${ids.join(',')})`));
+  const byRecord = new Map();
+  medsRows.forEach((m) => {
+    if (!byRecord.has(m.record_id)) byRecord.set(m.record_id, []);
+    byRecord.get(m.record_id).push({
+      medication_id: m.medication_id ?? null,
+      name: m.medication_name,
+      unit: m.medication_unit || null,
+      quantity: Number(m.quantity) || 0,
+      unit_price: Number(m.unit_price) || 0,
+      total: Number(m.total) || 0,
+    });
+  });
+
+  return rows.map((r) => {
+    const treatments = byRecord.get(r.id) || null;
+    let treatmentsJson;
+    try { treatmentsJson = r.treatments_json ? JSON.parse(r.treatments_json) : null; } catch { treatmentsJson = null; }
+    return { ...r, treatments: treatments || treatmentsJson || null };
+  });
+}
+
 function registryPeriod(year, month) {
   return `${String(year).slice(-2)}${String(month).padStart(2, '0')}`;
 }
@@ -206,7 +294,7 @@ function displayRegistryNumber(value) {
   const match = String(value || '').match(/(\d+)$/);
   if (!match) return value || '-';
   const number = Number(match[1]) || 0;
-  return String(number).padStart(2, '0');
+  return String(number).padStart(3, '0');
 }
 
 function patientIllnessKey(row) {
@@ -292,6 +380,35 @@ function backfillRegistryNumbers(d) {
     changed = true;
   });
 
+  return changed;
+}
+
+function backfillDossiers(d) {
+  // Find distinct patient+diagnostic tuples without dossier_id and create dossiers
+  const rows = toObjects(d.exec(`
+    SELECT DISTINCT patient_nom, diagnostic
+    FROM medical_records
+    WHERE dossier_id IS NULL
+  `));
+  if (!rows.length) return false;
+  let changed = false;
+  rows.forEach((r) => {
+    try {
+      const patient = r.patient_nom || '';
+      const diagnostic = r.diagnostic || '';
+      // create dossier
+      const number = nextDossierNumber(d);
+      d.run('INSERT INTO dossiers (dossier_number, patient_nom, diagnostic) VALUES (?, ?, ?)', [number, patient, diagnostic]);
+      const idRes = toObjects(d.exec('SELECT last_insert_rowid() as id'))[0];
+      const id = idRes?.id;
+      if (id) {
+        d.run('UPDATE medical_records SET dossier_id = ? WHERE LOWER(patient_nom)=? AND LOWER(diagnostic)=?', [id, String(patient).toLowerCase(), String(diagnostic).toLowerCase()]);
+        changed = true;
+      }
+    } catch (e) {
+      // ignore per-row failures
+    }
+  });
   return changed;
 }
 
@@ -711,6 +828,14 @@ async function createRecord(data) {
     throw new Error(`Ce patient est déjà enregistré ce mois pour cette même maladie sous le N° ${displayRegistryNumber(existingCase.registry_number)}. Recherchez ce numéro et modifiez le dossier existant pour continuer le traitement.`);
   }
 
+  // Ensure dossier exists and attach
+  try {
+    const dossier = await getOrCreateDossier(d, data);
+    if (dossier && dossier.id) data.dossier_id = dossier.id;
+  } catch (e) {
+    // ignore dossier creation failures
+  }
+
   let treatments = normalizeTreatments(data.treatments);
   if (!treatments.length && String(data.traitement || '').trim()) {
     treatments = treatmentsFromFreeText(d, data.traitement);
@@ -724,26 +849,27 @@ async function createRecord(data) {
   try {
     try {
       d.run(`INSERT INTO medical_records
-      (category, patient_nom, patient_prenom, sexe, age, age_type, domicile, diagnostic, traitement, observation, cost, created_by, registry_number, archive_year, archive_month, treatments_json)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        data.category,
-        data.patient_nom,
-        data.patient_prenom,
-        data.sexe || null,
-        data.age,
-        data.age_type || 'ans',
-        data.domicile,
-        data.diagnostic,
-        traitementText || '',
-        data.observation,
-        computedCost,
-        data.created_by || null,
-        registryNumber,
-        year,
-        month,
-        hasTreatments ? JSON.stringify(treatments) : null,
-      ]);
+        (category, dossier_id, patient_nom, patient_prenom, sexe, age, age_type, domicile, diagnostic, traitement, observation, cost, created_by, registry_number, archive_year, archive_month, treatments_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          data.category,
+          data.dossier_id || null,
+          data.patient_nom,
+          data.patient_prenom,
+          data.sexe || null,
+          data.age,
+          data.age_type || 'ans',
+          data.domicile,
+          data.diagnostic,
+          traitementText || '',
+          data.observation,
+          computedCost,
+          data.created_by || null,
+          registryNumber,
+          year,
+          month,
+          hasTreatments ? JSON.stringify(treatments) : null,
+        ]);
     } catch (err) {
       // Retry once after auto-migration (handles "no column named sexe")
       if (String(err?.message || '').includes('no column named')) {
@@ -799,6 +925,81 @@ async function createRecord(data) {
     d.run('COMMIT');
     saveDB();
     return recordId;
+  } catch (e) {
+    try { d.run('ROLLBACK'); } catch { /* ignore */ }
+    throw e;
+  }
+}
+
+async function addTreatmentsToRecord(recordId, data) {
+  const d = await getDB();
+
+  if (ensureMedicalRecordsSchema(d)) {
+    try { saveDB(); } catch { /* ignore */ }
+  }
+
+  const existingRows = toObjects(d.exec('SELECT * FROM medical_records WHERE id = ?', [recordId]));
+  const existing = existingRows[0];
+  if (!existing) throw new Error('Dossier existant introuvable.');
+
+  let treatments = normalizeTreatments(data.treatments);
+  if (!treatments.length && String(data.traitement || '').trim()) {
+    treatments = treatmentsFromFreeText(d, data.traitement);
+  }
+  if (!treatments.length) throw new Error('Aucun traitement fourni.');
+
+  const hasTreatments = treatments.length > 0;
+  const visitCost = computeTotalCostAr(treatments);
+  const traitementText = hasTreatments ? buildTraitementText(treatments) : (data.traitement || '');
+  const dossierId = existing.dossier_id || null;
+  const registryNumber = existing.registry_number || getRegistryNumberForRecord(d, existing, Number(existing.archive_year), Number(existing.archive_month), recordId);
+
+  d.run('BEGIN');
+  try {
+    d.run(`INSERT INTO medical_records
+      (category, dossier_id, patient_nom, patient_prenom, sexe, age, age_type, domicile, diagnostic, traitement, observation, cost, created_by, registry_number, archive_year, archive_month, treatments_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        existing.category,
+        dossierId,
+        existing.patient_nom,
+        existing.patient_prenom,
+        existing.sexe || null,
+        existing.age,
+        existing.age_type || 'ans',
+        existing.domicile,
+        existing.diagnostic,
+        traitementText || '',
+        data.observation || existing.observation || '',
+        visitCost,
+        data.created_by || null,
+        registryNumber,
+        Number(existing.archive_year) || getArchiveFromDate(new Date()).year,
+        Number(existing.archive_month) || getArchiveFromDate(new Date()).month,
+        hasTreatments ? JSON.stringify(treatments) : null,
+      ]);
+
+    const idRes = toObjects(d.exec('SELECT last_insert_rowid() as id'))[0];
+    const newRecordId = idRes[0]?.id || idRes?.id;
+
+    if (newRecordId && hasTreatments) {
+      const deltas = new Map();
+      treatments.forEach((t) => {
+        const total = (t.unit_price || 0) * (t.quantity || 0);
+        d.run(
+          'INSERT INTO record_medications (record_id, medication_id, medication_name, medication_unit, quantity, unit_price, total) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          [newRecordId, t.medication_id, t.name, t.unit || null, t.quantity, t.unit_price || 0, total]
+        );
+        if (t.medication_id) {
+          deltas.set(Number(t.medication_id), (deltas.get(Number(t.medication_id)) || 0) - Number(t.quantity || 0));
+        }
+      });
+      if (deltas.size) applyMedicationStockDeltas(d, deltas);
+    }
+
+    d.run('COMMIT');
+    saveDB();
+    return true;
   } catch (e) {
     try { d.run('ROLLBACK'); } catch { /* ignore */ }
     throw e;
@@ -1087,15 +1288,30 @@ async function getStockReport() {
   return toObjects(res);
 }
 
+async function ensureRegistryNumbers() {
+  const d = await getDB();
+  try {
+    backfillRegistryNumbers(d);
+    saveDB();
+    return true;
+  } catch (e) {
+    console.error('ensureRegistryNumbers error:', e);
+    throw e;
+  }
+}
+
 module.exports = {
   loginUser, registerUser,
   getAllUsers, toggleUserActive, resetUserPassword, deleteUser,
-  fetchRecords, fetchRecordsByArchive, fetchRecordById, fetchStats, fetchStatsByArchive, createRecord, updateRecord, deleteRecord,
+  fetchRecords, fetchRecordsByArchive, fetchRecordById, fetchRecordsByDossier, fetchStats, fetchStatsByArchive, createRecord, updateRecord, deleteRecord,
   listArchives, getCurrentArchive,
   listMedications, createMedication, updateMedication, deleteMedication,
   addMedicationStock,
   getMedicationMovements,
   getTopSellingMedications,
   getLowStockMedications,
-  getStockReport
+  ensureRegistryNumbers,
+  getStockReport,
+  listDossiers, getDossierById,
+  addTreatmentsToRecord
 };

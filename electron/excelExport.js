@@ -26,6 +26,7 @@ async function writeArchiveExcel({ filePath, year, month, records }) {
   });
 
   ws.columns = [
+    { header: 'N° registre', key: 'registry', width: 12 },
     { header: 'Nom', key: 'nom', width: 18 },
     { header: 'Prénom', key: 'prenom', width: 18 },
     { header: 'Âge', key: 'age', width: 10 },
@@ -61,8 +62,11 @@ async function writeArchiveExcel({ filePath, year, month, records }) {
     grandTotal += total;
 
     const createdAt = r.created_at ? String(r.created_at).slice(0, 10) : '';
+    const registryNumber = String(r.registry_number || '').match(/(\d+)$/);
+    const displayRegistry = registryNumber ? String(registryNumber[1]).padStart(3, '0') : '-';
 
     const row = ws.addRow({
+      registry: displayRegistry,
       nom: r.patient_nom || '',
       prenom: r.patient_prenom || '',
       age: displayAge(r.age),

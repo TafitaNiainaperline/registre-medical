@@ -108,12 +108,32 @@ ipcMain.handle('records:create', (_, data) => {
   return db.createRecord(data);
 });
 
+ipcMain.handle('records:continue', (_, id, data) => {
+  return db.addTreatmentsToRecord(id, data);
+});
+
+ipcMain.handle('records:fetchByDossier', async (_, dossierId) => {
+  return db.fetchRecordsByDossier(dossierId);
+});
+
+ipcMain.handle('dossiers:list', (_, search) => {
+  return db.listDossiers(search || '');
+});
+
+ipcMain.handle('dossiers:get', (_, id) => {
+  return db.getDossierById(id);
+});
+
 ipcMain.handle('records:update', (_, id, data) => {
   return db.updateRecord(id, data);
 });
 
 ipcMain.handle('records:delete', (_, id) => {
   return db.deleteRecord(id);
+});
+
+ipcMain.handle('records:backfillRegistry', async () => {
+  return db.ensureRegistryNumbers();
 });
 
 ipcMain.handle('receipt:pdf', async (_, id) => {
