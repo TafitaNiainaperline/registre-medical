@@ -27,7 +27,7 @@
     "@vitejs/plugin-react": "^6.0.1",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
-    "electron": "^42.0.1",
+    "electron": "^35.7.5",
     "electron-builder": "^26.8.1",
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
@@ -61,5 +61,9 @@
     "linux": {
       "target": "AppImage"
     }
-  }
+  },
+  "description": "Application desktop de gestion médicale développée avec **React**, **Electron** et **Node.js**.",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }
