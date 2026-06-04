@@ -22,27 +22,22 @@ export default function MedicamentsPage() {
   const [stockQuantity, setStockQuantity] = useState('');
   const [movements, setMovements] = useState([]);
   const [topSelling, setTopSelling] = useState([]);
-  const [lowStock, setLowStock] = useState([]);
+  
 
   const load = () =>
     window.api.listMedications()
       .then((r) => setRows(r || []))
       .catch(() => setRows([]));
 
-  useEffect(() => {
-
-    load();
-
-    window.api.getMedicationMovements()
-      .then(setMovements);
-
-    window.api.getTopSellingMedications()
-      .then(setTopSelling);
-
-    window.api.getLowStockMedications()
-      .then(setLowStock);
-
-  }, []);
+   useEffect(() => {
+     load();
+ 
+     window.api.getMedicationMovements()
+       .then(setMovements);
+ 
+     window.api.getTopSellingMedications()
+       .then(setTopSelling);
+   }, []);
 
   const notify = (text, type = 'ok') => {
     setMsg({ text, type });
@@ -212,15 +207,33 @@ export default function MedicamentsPage() {
           
           <input name="price" type="number" min="0" placeholder="Prix (Ar)" value={form.price} onChange={onChange} required />
           
-          <select name="unit" value={form.unit} onChange={onChange} className="select" required>
-            <option value="unité">Unité</option>
-            <option value="comprimé">Comprimé</option>
-            <option value="plaquette">Plaquette</option>
-            <option value="boîte">Boîte</option>
-            <option value="ampoule">Ampoule</option>
-            <option value="flacon">Flacon</option>
-            <option value="sachet">Sachet</option>
-          </select>
+            <select name="unit" value={form.unit} onChange={onChange} className="select" required>
+              <option value="unité">Unité</option>
+              <option value="comprimé">Comprimé</option>
+              <option value="gélule">Gélule</option>
+              <option value="sachet">Sachet</option>
+              <option value="sirop">Sirop</option>
+              <option value="solution buvable">Solution buvable</option>
+              <option value="ampoule">Ampoule</option>
+              <option value="injection">Injection</option>
+              <option value="perfusion">Perfusion</option>
+              <option value="pommade">Pommade</option>
+              <option value="crème">Crème</option>
+              <option value="gel">Gel</option>
+              <option value="spray">Spray</option>
+              <option value="gouttes">Gouttes</option>
+              <option value="suppositoire">Suppositoire</option>
+              <option value="ovule">Ovule</option>
+              <option value="patch">Patch</option>
+              <option value="inhalateur">Inhalateur</option>
+              <option value="poudre">Poudre</option>
+              <option value="pastille">Pastille</option>
+              <option value="plaquette">Plaquette</option>
+              <option value="boîte">Boîte</option>
+              <option value="flacon">Flacon</option>
+              <option value="tube">Tube</option>
+              <option value="sachet individuel">Sachet individuel</option>
+            </select>
 
           <input name="stock" type="number" min="0" placeholder="Stock (optionnel)" value={form.stock} onChange={onChange} />
           
@@ -308,23 +321,7 @@ export default function MedicamentsPage() {
           </table>
         </div>
 
-        {/* Alertes stock faible */}
-        {lowStock.length > 0 && (
-          <div
-            className="error-msg"
-            style={{ marginTop: '20px' }}
-          >
-            <strong>⚠ Stock faible</strong>
 
-            <ul style={{ marginTop: '10px' }}>
-              {lowStock.map((m) => (
-                <li key={m.id}>
-                  {m.name} ({m.stock})
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
 
         {/* Médicaments les plus vendus */}
         <div className="table-wrap" style={{ marginTop: '30px' }}>

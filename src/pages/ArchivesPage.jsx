@@ -12,6 +12,13 @@ function renderTreatments(row) {
   return t.map((x) => `${x.name} x${x.quantity}${x.unit ? ` ${x.unit}` : ''} (${x.unit_price} Ar)`).join(' • ');
 }
 
+function displayRegistryNumber(value) {
+  const match = String(value || '').match(/(\d+)$/);
+  if (!match) return value || '-';
+  const number = Number(match[1]) || 0;
+  return String(number).padStart(3, '0');
+}
+
 export default function ArchivesPage() {
   const currentUser = useMemo(() => JSON.parse(localStorage.getItem('user') || '{}'), []);
   const isAdmin = currentUser.role === 'admin';
@@ -144,6 +151,7 @@ export default function ArchivesPage() {
         <table>
           <thead>
             <tr>
+              <th>N° registre</th>
               <th>Patient</th>
               <th>Sexe</th>
               <th>Âge</th>
@@ -156,13 +164,14 @@ export default function ArchivesPage() {
           <tbody>
             {rows.length === 0 && (
               <tr>
-                <td colSpan="7" style={{ textAlign: 'center', color: '#5f7b84', padding: '24px' }}>
+                <td colSpan="8" style={{ textAlign: 'center', color: '#5f7b84', padding: '24px' }}>
                   {loading ? 'Chargement...' : 'Aucune donnée.'}
                 </td>
               </tr>
             )}
             {rows.map((r) => (
               <tr key={r.id}>
+                <td style={{ color: '#5f7b84', fontWeight: 700 }}>{displayRegistryNumber(r.registry_number)}</td>
                 <td><strong>{r.patient_nom}</strong> {r.patient_prenom}</td>
                 <td>{r.sexe || '-'}</td>
                 <td>{String(r.age || '').includes('|') ? String(r.age).split('|')[0] : r.age}</td>

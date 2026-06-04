@@ -83,7 +83,7 @@ export default function HelpPage() {
       <div className="cards-grid" style={{ marginBottom: '18px' }}>
         <article className="stat-card" style={{ borderTop: '5px solid #1c96a4' }}>
           <h3>Numéro mensuel</h3>
-          <strong style={{ fontSize: '1.35rem' }}>01</strong>
+           <strong style={{ fontSize: '1.35rem' }}>01</strong>
           <span className="stat-subtitle">Identifiant patient lisible dans les registres.</span>
         </article>
 

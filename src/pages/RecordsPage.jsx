@@ -4,7 +4,6 @@ import MonthlyArchiveBanner from '../components/MonthlyArchiveBanner';
 
 const emptyForm = {
   patient_nom: '',
-  patient_prenom: '',
   sexe: '',
   age: '',
   age_type: 'ans',
@@ -62,7 +61,7 @@ function displayRegistryNumber(value) {
   const match = String(value || '').match(/(\d+)$/);
   if (!match) return value || '-';
   const number = Number(match[1]) || 0;
-  return String(number).padStart(2, '0');
+  return String(number).padStart(3, '0');
 }
 
 function patientIllnessKey(row) {
@@ -80,6 +79,51 @@ function normalizeMedicationName(value) {
     .toLowerCase()
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function mergeRecords(records) {
+  const normalize = (value) => String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const grouped = {};
+
+  const addTreatment = (group, treatment) => {
+    if (!treatment || !treatment.name) return;
+    const exists = group.treatments.some((existing) => (
+      normalize(existing.name) === normalize(treatment.name)
+      && String(existing.quantity) === String(treatment.quantity)
+      && normalize(existing.unit) === normalize(treatment.unit)
+    ));
+    if (!exists) group.treatments.push(treatment);
+  };
+
+  records.forEach((record) => {
+    const year = record.archive_year || '';
+    const month = record.archive_month || '';
+    const baseKey = record.registry_number
+      ? `${record.registry_number}|${year}|${month}`
+      : `${patientIllnessKey(record)}|${year}|${month}`;
+
+    if (!grouped[baseKey]) {
+      grouped[baseKey] = { ...record, treatments: [], cost: Number(record.cost) || 0 };
+    }
+
+    let group = grouped[baseKey];
+
+    if (record.created_at && (!group.created_at || record.created_at > group.created_at)) {
+      grouped[baseKey] = { ...group, ...record, treatments: group.treatments, cost: Number(record.cost) || 0 };
+      group = grouped[baseKey];
+    }
+
+    if (Array.isArray(record.treatments) && record.treatments.length > 0) {
+      record.treatments.forEach((t) => addTreatment(group, t));
+    } else if (record.traitement) {
+      addTreatment(group, { name: record.traitement });
+    }
+  });
+
+  return Object.values(grouped).map((group) => ({
+    ...group,
+    cost: Number(group.cost) || 0,
+  }));
 }
 
 function findMedicationByText(text, medications) {
@@ -215,6 +259,10 @@ export default function RecordsPage({ category }) {
   const [activeArchive, setActiveArchive] = useState(null);
   const [actionError, setActionError] = useState('');
   const [actionOk, setActionOk] = useState('');
+  const [duplicateCase, setDuplicateCase] = useState(null);
+  const [selectedHistoryRow, setSelectedHistoryRow] = useState(null);
+  const [dossierHistory, setDossierHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   // ── Rôle de l'utilisateur connecté ──────────────────
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -227,11 +275,38 @@ export default function RecordsPage({ category }) {
       : window.api.fetchRecords(category.key);
 
     return fetcher
-      .then(result => setRecords(result || []))
+      .then(result => {
+        setRecords(mergeRecords(result || []));
+      })
       .catch((err) => {
         console.error('fetchRecords failed:', err);
         setRecords([]);
       });
+  };
+
+  const loadDossierHistory = async (dossierId, duplicate) => {
+    if (!dossierId) {
+      if (!duplicate) {
+        setDossierHistory([]);
+        return;
+      }
+      const history = records.filter((row) => patientIllnessKey(row) === patientIllnessKey(duplicate));
+      setDossierHistory(history);
+      setSelectedHistoryRow(duplicate || null);
+      return;
+    }
+
+    setHistoryLoading(true);
+    try {
+      const history = await window.api.fetchRecordsByDossier(dossierId);
+      setDossierHistory(history || []);
+    } catch (err) {
+      console.error('fetchRecordsByDossier failed:', err);
+      setActionError('Impossible de charger l’historique du dossier.');
+      setDossierHistory([]);
+    } finally {
+      setHistoryLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -277,6 +352,14 @@ export default function RecordsPage({ category }) {
     ));
   };
 
+  const viewHistory = async (row) => {
+    setActionError('');
+    setActionOk('');
+    setDuplicateCase(null);
+    setSelectedHistoryRow(row);
+    await loadDossierHistory(row.dossier_id, row);
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     setActionError('');
@@ -285,10 +368,10 @@ export default function RecordsPage({ category }) {
     if (!editingId) {
       const duplicate = findCurrentMonthDuplicate();
       if (duplicate) {
-        const number = displayRegistryNumber(duplicate.registry_number);
-        edit(duplicate);
-        setSearch(number);
-        setActionError(`Ce patient est déjà enregistré ce mois pour cette même maladie sous le N° ${number}. Le dossier existant est chargé : continuez le traitement puis cliquez sur Modifier.`);
+        // Offer user to either open the existing dossier or continue treatment
+        setDuplicateCase(duplicate);
+        loadDossierHistory(duplicate.dossier_id, duplicate);
+        setActionError(`Dossier existant trouvé pour ce patient ce mois-ci : ${displayRegistryNumber(duplicate.registry_number)}. Choisissez une action ci-dessous.`);
         return;
       }
     }
@@ -306,7 +389,7 @@ export default function RecordsPage({ category }) {
     const computedCost = treatments.reduce((sum, t) => sum + (Number(t.unit_price) * Number(t.quantity)), 0);
     const payload = {
       patient_nom:    form.patient_nom,
-      patient_prenom: form.patient_prenom,
+      patient_prenom: '',
       sexe:           form.sexe,
       age:            storedAge,
       age_type:       form.age_type,
@@ -345,8 +428,7 @@ export default function RecordsPage({ category }) {
     const parsed = parseStoredAge(row.age);
     const treatments = Array.isArray(row.treatments) ? row.treatments : [];
     setForm({
-      patient_nom:    row.patient_nom    || '',
-      patient_prenom: row.patient_prenom || '',
+      patient_nom:    `${row.patient_nom || ''} ${row.patient_prenom || ''}`.trim(),
       sexe:           row.sexe || '',
       age:            parsed.age,
       age_type:       parsed.age_type,
@@ -419,6 +501,74 @@ export default function RecordsPage({ category }) {
         </p>
       )}
 
+      {duplicateCase && (
+        <div className="info-msg" style={{ marginBottom: '12px', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <span>⚠ Dossier existant : {displayRegistryNumber(duplicateCase.registry_number)}</span>
+          <button type="button" className="btn-light" onClick={() => { edit(duplicateCase); setDuplicateCase(null); setActionError(''); setDossierHistory([]); }}>
+            Charger le dossier
+          </button>
+          <button type="button" onClick={async () => {
+            setActionError(''); setActionOk('');
+            try {
+              await window.api.continueRecord(duplicateCase.id, { treatments: form.treatments, traitement: form.traitement, observation: form.observation, cost: form.cost });
+              setActionOk('Traitement ajouté au dossier existant.');
+              setForm(emptyForm);
+              setDuplicateCase(null);
+              setDossierHistory([]);
+              await load();
+            } catch (err) {
+              console.error('continueRecord failed:', err);
+              setActionError(err?.message || 'Impossible d\'ajouter le traitement.');
+            }
+          }}>
+            Continuer le traitement
+          </button>
+        </div>
+      )}
+      {(duplicateCase || selectedHistoryRow) && (
+        <div style={{ marginBottom: '18px', padding: '12px', border: '1px solid #e6e6e6', borderRadius: '8px', background: '#fafafa' }}>
+          <h3 style={{ margin: '0 0 8px 0' }}>Historique du dossier</h3>
+          {historyLoading ? (
+            <p>Chargement de l'historique...</p>
+          ) : dossierHistory.length === 0 ? (
+            <p style={{ margin: 0 }}>Aucun historique de dossier disponible.</p>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'left', padding: '6px 8px' }}>Visite</th>
+                    <th style={{ textAlign: 'left', padding: '6px 8px' }}>N°</th>
+                    <th style={{ textAlign: 'left', padding: '6px 8px' }}>Date / Heure</th>
+                    <th style={{ textAlign: 'left', padding: '6px 8px' }}>Traitement</th>
+                    <th style={{ textAlign: 'left', padding: '6px 8px' }}>Observation</th>
+                    <th style={{ textAlign: 'left', padding: '6px 8px' }}>Coût ancien</th>
+                    <th style={{ textAlign: 'left', padding: '6px 8px' }}>Coût présent</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dossierHistory.map((historyRow, idx) => (
+                    <tr key={historyRow.id}>
+                      <td style={{ padding: '6px 8px' }}>{idx === dossierHistory.length - 1 ? 'Présent' : `Ancien ${idx + 1}`}</td>
+                      <td style={{ padding: '6px 8px' }}>{displayRegistryNumber(historyRow.registry_number)}</td>
+                      <td style={{ padding: '6px 8px' }}>{historyRow.created_at ? historyRow.created_at.slice(0, 16).replace('T', ' ') : '-'}</td>
+                      <td style={{ padding: '6px 8px' }}>
+                        {Array.isArray(historyRow.treatments) && historyRow.treatments.length > 0
+                          ? historyRow.treatments.map((t) => `${t.name} x${t.quantity}${t.unit ? ` ${t.unit}` : ''}`).join(', ')
+                          : historyRow.traitement || '-'}
+                      </td>
+                      <td style={{ padding: '6px 8px' }}>{historyRow.observation || '-'}</td>
+                      <td style={{ padding: '6px 8px' }}>{idx === dossierHistory.length - 1 ? '-' : `${historyRow.cost} Ar`}</td>
+                      <td style={{ padding: '6px 8px' }}>{idx === dossierHistory.length - 1 ? `${historyRow.cost} Ar` : '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* BARRE RECHERCHE */}
       <div className="search-bar">
         <input
@@ -452,8 +602,7 @@ export default function RecordsPage({ category }) {
 
       {/* FORMULAIRE */}
       <form className="record-form" onSubmit={submit} style={{ borderColor: category.color }}>
-        <input name="patient_nom" placeholder="Nom" value={form.patient_nom} onChange={onChange} required />
-        <input name="patient_prenom" placeholder="Prénom" value={form.patient_prenom} onChange={onChange} required />
+        <input name="patient_nom" placeholder="Nom et prénom" value={form.patient_nom} onChange={onChange} required />
 
         {/* CHAMP ÂGE */}
         <div className="age-group">
@@ -539,6 +688,7 @@ export default function RecordsPage({ category }) {
             <tr>
               <th>N° registre</th>
               <th>Patient</th>
+              <th>Sexe</th>
               <th>Âge</th>
               <th>Domicile</th>
               <th>Diagnostic</th>
@@ -552,7 +702,7 @@ export default function RecordsPage({ category }) {
           <tbody>
             {filteredRecords.length === 0 && (
               <tr>
-                <td colSpan="10" style={{ textAlign: 'center', color: '#5f7b84', padding: '24px' }}>
+                <td colSpan="11" style={{ textAlign: 'center', color: '#5f7b84', padding: '24px' }}>
                   Aucune donnée enregistrée.
                 </td>
               </tr>
@@ -561,6 +711,7 @@ export default function RecordsPage({ category }) {
               <tr key={row.id}>
                 <td style={{ color: '#5f7b84', fontWeight: 700 }}>{displayRegistryNumber(row.registry_number)}</td>
                 <td><strong>{row.patient_nom}</strong> {row.patient_prenom}</td>
+                <td>{row.sexe || '-'}</td>
                 <td>
                   <span className={`age-badge ${ageBadgeClass(row.age)}`}>
                     {displayAge(row.age)}
@@ -582,6 +733,10 @@ export default function RecordsPage({ category }) {
                   {/* Editer : visible pour tous */}
                   <button className="icon-btn" title="Modifier" aria-label="Modifier" onClick={() => edit(row)}>
                     ✏️
+                  </button>
+                  {' '}
+                  <button className="icon-btn" title="Voir l'historique" aria-label="Voir l'historique" onClick={() => viewHistory(row)}>
+                    📜
                   </button>
                   {' '}
                   <button className="icon-btn" title="Télécharger le reçu" aria-label="Télécharger le reçu" onClick={() => downloadReceipt(row)}>
