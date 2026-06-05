@@ -25,11 +25,14 @@ function formatAge(age, age_type, age_mois, age_jours) {
   return '';
 }
 
-function capitalizeWords(value) {
-  return String(value || '')
-    .trim()
+function capitalizeWords(value, preserveTrailingSpace = false) {
+  const input = String(value || '');
+  const trailingSpace = preserveTrailingSpace ? input.match(/\s*$/)?.[0] || '' : '';
+  return input
+    .trimStart()
     .toLowerCase()
-    .replace(/(^|\s|[-'’])(\p{L})/gu, (_, separator, char) => `${separator}${char.toUpperCase()}`);
+    .replace(/(^|\s|[-'’])(\p{L})/gu, (_, separator, char) => `${separator}${char.toUpperCase()}`)
+    + trailingSpace;
 }
 
 function formatTextField(name, value) {
@@ -40,7 +43,7 @@ function formatTextField(name, value) {
     'traitement',
     'observation',
   ]);
-  return textFields.has(name) ? capitalizeWords(value) : value;
+  return textFields.has(name) ? capitalizeWords(value, true) : value;
 }
 
 function parseStoredAge(stored) {

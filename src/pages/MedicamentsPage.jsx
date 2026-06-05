@@ -8,16 +8,19 @@ const emptyForm = {
   unit: 'comprimé' 
 };
 
-function capitalizeWords(value) {
-  return String(value || '')
-    .trim()
+function capitalizeWords(value, preserveTrailingSpace = false) {
+  const input = String(value || '');
+  const trailingSpace = preserveTrailingSpace ? input.match(/\s*$/)?.[0] || '' : '';
+  return input
+    .trimStart()
     .toLowerCase()
-    .replace(/(^|\s|[-'’])(\p{L})/gu, (_, separator, char) => `${separator}${char.toUpperCase()}`);
+    .replace(/(^|\s|[-'’])(\p{L})/gu, (_, separator, char) => `${separator}${char.toUpperCase()}`)
+    + trailingSpace;
 }
 
 function formatTextField(name, value) {
   const textFields = new Set(['name', 'description']);
-  return textFields.has(name) ? capitalizeWords(value) : value;
+  return textFields.has(name) ? capitalizeWords(value, true) : value;
 }
 
 export default function MedicamentsPage() {
