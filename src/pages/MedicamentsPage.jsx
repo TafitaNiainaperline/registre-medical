@@ -8,6 +8,18 @@ const emptyForm = {
   unit: 'comprimé' 
 };
 
+function capitalizeWords(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/(^|\s|[-'’])(\p{L})/gu, (_, separator, char) => `${separator}${char.toUpperCase()}`);
+}
+
+function formatTextField(name, value) {
+  const textFields = new Set(['name', 'description']);
+  return textFields.has(name) ? capitalizeWords(value) : value;
+}
+
 export default function MedicamentsPage() {
   const currentUser = useMemo(() => JSON.parse(localStorage.getItem('user') || '{}'), []);
   const isAdmin = currentUser.role === 'admin';
@@ -44,16 +56,19 @@ export default function MedicamentsPage() {
     setTimeout(() => setMsg({ text: '', type: 'ok' }), 2500);
   };
 
-  const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const onChange = (e) => {
+    const value = formatTextField(e.target.name, e.target.value);
+    setForm({ ...form, [e.target.name]: value });
+  };
 
   const submit = async (e) => {
     e.preventDefault();
     if (!isAdmin) return;
     try {
       const payload = {
-        name: form.name.trim(),
+        name: capitalizeWords(form.name.trim()),
         price: Number(form.price) || 0,
-        description: form.description || '',
+        description: capitalizeWords(form.description || ''),
         stock: form.stock === '' ? null : Number(form.stock),
         unit: form.unit || 'comprimé',
       };
@@ -74,9 +89,9 @@ export default function MedicamentsPage() {
   const edit = (row) => {
     setEditingId(row.id);
     setForm({
-      name: row.name || '',
+      name: capitalizeWords(row.name || ''),
       price: String(row.price ?? ''),
-      description: row.description || '',
+      description: capitalizeWords(row.description || ''),
       stock: row.stock === null || row.stock === undefined ? '' : String(row.stock),
       unit: row.unit || 'comprimé',
     });

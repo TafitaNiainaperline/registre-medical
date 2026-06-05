@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import TreatmentSelector from '../components/TreatmentSelector';
 import MonthlyArchiveBanner from '../components/MonthlyArchiveBanner';
 
@@ -23,6 +23,24 @@ function formatAge(age, age_type, age_mois, age_jours) {
   if (age_type === 'mois_jours') return `${age_mois || 0}|mois_jours|${age_jours || 0}||`;
   if (age_type === 'jours')      return `${age_jours || 0}|jours||`;
   return '';
+}
+
+function capitalizeWords(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/(^|\s|[-'’])(\p{L})/gu, (_, separator, char) => `${separator}${char.toUpperCase()}`);
+}
+
+function formatTextField(name, value) {
+  const textFields = new Set([
+    'patient_nom',
+    'domicile',
+    'diagnostic',
+    'traitement',
+    'observation',
+  ]);
+  return textFields.has(name) ? capitalizeWords(value) : value;
 }
 
 function parseStoredAge(stored) {
@@ -79,6 +97,51 @@ function normalizeMedicationName(value) {
     .toLowerCase()
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function getTreatmentQuery(text) {
+  const raw = String(text || '').split(/[,;\n]+/).pop() || '';
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+  const match = trimmed.match(/^(.+?)(\s+(?:x\s*)?\d+.*|$)/i);
+  return match ? match[1].trim() : trimmed;
+}
+
+function getTreatmentSuggestions(text, medications) {
+  const query = normalizeMedicationName(getTreatmentQuery(text));
+  if (!query) return [];
+
+  return (Array.isArray(medications) ? medications : [])
+    .map((med) => ({ med, normalized: normalizeMedicationName(med.name) }))
+    .filter(({ normalized }) => normalized.includes(query))
+    .sort((a, b) => {
+      const aStarts = a.normalized.startsWith(query);
+      const bStarts = b.normalized.startsWith(query);
+      if (aStarts !== bStarts) return aStarts ? -1 : 1;
+      return a.normalized.localeCompare(b.normalized);
+    })
+    .slice(0, 6)
+    .map(({ med }) => med);
+}
+
+function replaceLastTreatmentEntry(text, medName) {
+  const match = String(text || '').match(/([\s\S]*?)([^,;\n]*)$/);
+  const prefix = match ? match[1] : '';
+  const last = match ? match[2].trim() : '';
+  if (!last) return `${prefix}${medName}`;
+  const tokens = last.split(/\s+/);
+  const suffix = tokens.length > 1 ? tokens.slice(1).join(' ') : '';
+  return `${prefix}${medName}${suffix ? ` ${suffix}` : ''}`;
+}
+
+function correctLastTreatmentEntry(text, medications) {
+  const query = getTreatmentQuery(text);
+  if (!query) return String(text || '');
+  const normalizedQuery = normalizeMedicationName(query);
+  const med = (Array.isArray(medications) ? medications : [])
+    .find((m) => normalizeMedicationName(m.name) === normalizedQuery);
+  if (!med) return String(text || '');
+  return replaceLastTreatmentEntry(text, med.name);
 }
 
 function mergeRecords(records) {
@@ -264,6 +327,11 @@ export default function RecordsPage({ category }) {
   const [dossierHistory, setDossierHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
+  const treatmentSuggestions = useMemo(
+    () => getTreatmentSuggestions(form.traitement, medications),
+    [form.traitement, medications]
+  );
+
   // ── Rôle de l'utilisateur connecté ──────────────────
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = currentUser.role === 'admin';
@@ -340,7 +408,10 @@ export default function RecordsPage({ category }) {
     setActionOk('');
   }, [category.key]);
 
-  const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const onChange = (e) => {
+    const value = formatTextField(e.target.name, e.target.value);
+    setForm({ ...form, [e.target.name]: value });
+  };
 
   const findCurrentMonthDuplicate = () => {
     const formKey = patientIllnessKey(form);
@@ -388,16 +459,16 @@ export default function RecordsPage({ category }) {
     }
     const computedCost = treatments.reduce((sum, t) => sum + (Number(t.unit_price) * Number(t.quantity)), 0);
     const payload = {
-      patient_nom:    form.patient_nom,
+      patient_nom:    capitalizeWords(form.patient_nom),
       patient_prenom: '',
       sexe:           form.sexe,
       age:            storedAge,
       age_type:       form.age_type,
-      domicile:       form.domicile,
-      diagnostic:     form.diagnostic,
-      traitement:     form.traitement,
+      domicile:       capitalizeWords(form.domicile),
+      diagnostic:     capitalizeWords(form.diagnostic),
+      traitement:     capitalizeWords(form.traitement),
       treatments,
-      observation:    form.observation,
+      observation:    capitalizeWords(form.observation),
       cost:           computedCost,
     };
     try {
@@ -428,16 +499,16 @@ export default function RecordsPage({ category }) {
     const parsed = parseStoredAge(row.age);
     const treatments = Array.isArray(row.treatments) ? row.treatments : [];
     setForm({
-      patient_nom:    `${row.patient_nom || ''} ${row.patient_prenom || ''}`.trim(),
+      patient_nom:    capitalizeWords(`${row.patient_nom || ''} ${row.patient_prenom || ''}`.trim()),
       sexe:           row.sexe || '',
       age:            parsed.age,
       age_type:       parsed.age_type,
       age_mois:       parsed.age_mois,
       age_jours:      parsed.age_jours,
-      domicile:       row.domicile    || '',
-      diagnostic:     row.diagnostic  || '',
-      traitement:     row.traitement  || '',
-      observation:    row.observation || '',
+      domicile:       capitalizeWords(row.domicile || ''),
+      diagnostic:     capitalizeWords(row.diagnostic || ''),
+      traitement:     capitalizeWords(row.traitement || ''),
+      observation:    capitalizeWords(row.observation || ''),
       cost:           row.cost        || '',
       treatments,
     });
@@ -654,13 +725,58 @@ export default function RecordsPage({ category }) {
           />
 
           {(!Array.isArray(form.treatments) || form.treatments.length === 0) && (
-            <input
-              name="traitement"
-              placeholder="Traitement : ex. Cerum x2 sachet, Paracetamol x1 boîte"
-              value={form.traitement}
-              onChange={onChange}
-              required
-            />
+            <>
+              <input
+                name="traitement"
+                placeholder="Traitement : ex. Cerum x2 sachet, Paracetamol x1 boîte"
+                value={form.traitement}
+                onChange={onChange}
+                onBlur={() => setForm({
+                  ...form,
+                  traitement: correctLastTreatmentEntry(form.traitement, medications),
+                })}
+                required
+                autoComplete="off"
+              />
+
+              {treatmentSuggestions.length > 0 && (
+                <div
+                  style={{
+                    marginTop: 6,
+                    padding: 8,
+                    border: '1px solid #ccc',
+                    borderRadius: 6,
+                    background: '#fff',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                    maxHeight: 180,
+                    overflowY: 'auto',
+                    zIndex: 20,
+                  }}
+                >
+                  {treatmentSuggestions.map((med) => (
+                    <button
+                      key={med.id}
+                      type="button"
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        textAlign: 'left',
+                        padding: '6px 8px',
+                        border: 'none',
+                        background: 'transparent',
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => setForm({
+                        ...form,
+                        traitement: replaceLastTreatmentEntry(form.traitement, med.name),
+                      })}
+                    >
+                      {med.name} {med.unit ? `(${med.unit})` : ''}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
 
