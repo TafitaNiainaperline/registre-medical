@@ -8,19 +8,17 @@ const emptyForm = {
   unit: 'comprimé' 
 };
 
-function capitalizeWords(value, preserveTrailingSpace = false) {
-  const input = String(value || '');
-  const trailingSpace = preserveTrailingSpace ? input.match(/\s*$/)?.[0] || '' : '';
-  return input
-    .trimStart()
+function capitalizeWords(value) {
+  return String(value || '')
+    .trim()
     .toLowerCase()
-    .replace(/(^|\s|[-'’])(\p{L})/gu, (_, separator, char) => `${separator}${char.toUpperCase()}`)
-    + trailingSpace;
+    .replace(/\s+/g, ' ')
+    .replace(/(^|\s|[-'’])(\p{L})/gu, (_, separator, char) => `${separator}${char.toUpperCase()}`);
 }
 
 function formatTextField(name, value) {
   const textFields = new Set(['name', 'description']);
-  return textFields.has(name) ? capitalizeWords(value, true) : value;
+  return textFields.has(name) ? capitalizeWords(value) : value;
 }
 
 export default function MedicamentsPage() {
@@ -37,6 +35,10 @@ export default function MedicamentsPage() {
   const [stockQuantity, setStockQuantity] = useState('');
   const [movements, setMovements] = useState([]);
   const [topSelling, setTopSelling] = useState([]);
+  const [reserveThreshold, setReserveThreshold] = useState(() => {
+    const stored = localStorage.getItem('medReserveThreshold');
+    return stored !== null ? stored : '5';
+  });
   
 
   const load = () =>
@@ -53,6 +55,10 @@ export default function MedicamentsPage() {
      window.api.getTopSellingMedications()
        .then(setTopSelling);
    }, []);
+
+   useEffect(() => {
+     localStorage.setItem('medReserveThreshold', String(reserveThreshold));
+   }, [reserveThreshold]);
 
   const notify = (text, type = 'ok') => {
     setMsg({ text, type });
@@ -220,6 +226,12 @@ export default function MedicamentsPage() {
           </div>
         )}
 
+        {rows.filter((r) => r.stock !== null && r.stock !== undefined && Number(r.stock) <= Number(reserveThreshold)).length > 0 && (
+          <div style={{ marginBottom: '14px', padding: '12px 14px', borderRadius: '12px', background: '#fff4e5', border: '1px solid #f5d1a3', color: '#7f4a00' }}>
+            ⚠️ {rows.filter((r) => r.stock !== null && r.stock !== undefined && Number(r.stock) <= Number(reserveThreshold)).length} médicament(s) en stock faible ou au-dessous du seuil de réserve ({reserveThreshold}).
+          </div>
+        )}
+
         <form className="record-form" onSubmit={submit}>
           <input name="name" placeholder="Nom médicament" value={form.name} onChange={onChange} required />
           
@@ -274,7 +286,21 @@ export default function MedicamentsPage() {
             placeholder="🔍 Rechercher un médicament..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            style={{ flex: 1, minWidth: '220px' }}
           />
+
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#33475b' }}>
+              Seuil réserve
+              <input
+                type="number"
+                min="0"
+                value={reserveThreshold}
+                onChange={(e) => setReserveThreshold(e.target.value)}
+                style={{ width: '90px' }}
+              />
+            </label>
+          </div>
         </div>
 
         <div className="archive-grid" style={{ marginBottom: '20px' }}>
@@ -312,20 +338,42 @@ export default function MedicamentsPage() {
                   </td>
                 </tr>
               )}
-              {filtered.map((r) => (
-                <tr key={r.id}>
-                  <td><strong>{r.name}</strong></td>
-                  <td>{Number(r.price).toLocaleString()} Ar</td>
-                  <td>
-                    <span className="unit-badge">{r.unit || 'comprimé'}</span>
-                  </td>
-                  <td>
-                    {r.stock !== null && r.stock !== undefined 
-                      ? <strong>{r.stock}</strong> 
-                      : <span style={{color: '#888'}}>Non suivi</span>}
-                  </td>
-                  <td>{r.description || '-'}</td>
-                  <td>
+              {filtered.map((r) => {
+                const isLowStock = r.stock !== null && r.stock !== undefined && Number(r.stock) <= Number(reserveThreshold);
+                return (
+                  <tr
+                    key={r.id}
+                    style={isLowStock ? { background: '#fff7ea' } : undefined}
+                  >
+                    <td><strong>{r.name}</strong></td>
+                    <td>{Number(r.price).toLocaleString()} Ar</td>
+                    <td>
+                      <span className="unit-badge">{r.unit || 'comprimé'}</span>
+                    </td>
+                    <td>
+                      {r.stock !== null && r.stock !== undefined
+                        ? (
+                          <>
+                            <strong>{r.stock}</strong>
+                            {isLowStock && (
+                              <span style={{
+                                marginLeft: '8px',
+                                padding: '3px 8px',
+                                background: '#ffe4c2',
+                                color: '#8f4c00',
+                                borderRadius: '999px',
+                                fontSize: '0.8rem',
+                                fontWeight: 600,
+                              }}>
+                                Stock faible
+                              </span>
+                            )}
+                          </>
+                        )
+                        : <span style={{ color: '#888' }}>Non suivi</span>}
+                    </td>
+                    <td>{r.description || '-'}</td>
+                    <td>
                     <button className="icon-btn" onClick={() => addStock(r)} title="Ajouter du stock">➕</button>
 
                     <button className="icon-btn" onClick={() => edit(r)} title="Modifier">✏️</button>
@@ -333,7 +381,8 @@ export default function MedicamentsPage() {
                     <button className="icon-btn danger" onClick={() => remove(r.id)} title="Supprimer">🗑️</button>
                   </td>
                 </tr>
-              ))}
+                );
+             })}
             </tbody>
           </table>
         </div>
@@ -366,12 +415,14 @@ export default function MedicamentsPage() {
                 </tr>
               )}
 
-              {topSelling.map((m, i) => (
-                <tr key={i}>
-                  <td>{m.medication_name}</td>
-                  <td>{m.total_sold}</td>
-                </tr>
-              ))}
+              {topSelling.map((m, i) => {
+                return (
+                  <tr key={i}>
+                    <td>{m.medication_name}</td>
+                    <td>{m.total_sold}</td>
+                  </tr>
+                );
+              })}
 
             </tbody>
           </table>
