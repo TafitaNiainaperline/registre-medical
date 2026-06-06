@@ -337,10 +337,15 @@ export default function RecordsPage({ category }) {
   );
 
   const diagnosticOptions = useMemo(() => {
-    const values = Array.from(new Set(records
-      .map((row) => String(row.diagnostic || '').trim())
-      .filter(Boolean)));
-    return values.sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
+    const counts = records.reduce((acc, row) => {
+      const diagnostic = String(row.diagnostic || '').trim();
+      if (!diagnostic) return acc;
+      acc[diagnostic] = (acc[diagnostic] || 0) + 1;
+      return acc;
+    }, {});
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'fr', { sensitivity: 'base' }))
+      .map(([diagnostic]) => diagnostic);
   }, [records]);
 
   // ── Rôle de l'utilisateur connecté ──────────────────
@@ -413,6 +418,7 @@ export default function RecordsPage({ category }) {
     setForm(emptyForm);
     setEditingId(null);
     setSearch('');
+    setDiagnosticFilter('');
     setAgeFilter('');
     setDateFilter('');
     setActionError('');
@@ -544,8 +550,9 @@ export default function RecordsPage({ category }) {
     const fullRegistry = String(row.registry_number || '').toLowerCase();
     const fullName    = `${row.patient_nom || ''} ${row.patient_prenom || ''}`.toLowerCase();
     const diagnostic = String(row.diagnostic || '').toLowerCase();
+    const diagnosticQuery = diagnosticFilter.toLowerCase().trim();
     const matchesSearch = !q || fullName.includes(q) || diagnostic.includes(q) || registry.includes(q) || fullRegistry.includes(q);
-    const matchesDiagnostic = !diagnosticFilter || diagnostic === diagnosticFilter.toLowerCase();
+    const matchesDiagnostic = !diagnosticQuery || diagnostic.includes(diagnosticQuery);
     const matchesAge    = !ageFilter || displayAge(row.age).toLowerCase().includes(ageFilter.toLowerCase());
     const matchesDate   = !dateFilter || (row.created_at && row.created_at.slice(0, 10) === dateFilter);
     return matchesSearch && matchesDiagnostic && matchesAge && matchesDate;
@@ -588,9 +595,21 @@ export default function RecordsPage({ category }) {
           <strong>Synthèse diagnostics ce mois :</strong>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '8px' }}>
             {diagnosticSummary.slice(0, 6).map(([diagnostic, count]) => (
-              <span key={diagnostic} style={{ padding: '8px 12px', background: '#f4f9fd', border: '1px solid #dceaf2', borderRadius: '10px', color: '#184a6e' }}>
+              <button
+                key={diagnostic}
+                type="button"
+                onClick={() => setDiagnosticFilter(diagnostic)}
+                style={{
+                  padding: '8px 12px',
+                  background: diagnosticFilter === diagnostic ? '#d8e9f7' : '#f4f9fd',
+                  border: diagnosticFilter === diagnostic ? '1px solid #74a7d9' : '1px solid #dceaf2',
+                  borderRadius: '10px',
+                  color: '#184a6e',
+                  cursor: 'pointer',
+                }}
+              >
                 {diagnostic} : {count}
-              </span>
+              </button>
             ))}
             {diagnosticSummary.length > 6 && (
               <span style={{ padding: '8px 12px', background: '#f4f9fd', border: '1px solid #dceaf2', borderRadius: '10px', color: '#184a6e' }}>
