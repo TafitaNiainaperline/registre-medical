@@ -542,6 +542,16 @@ export default function RecordsPage({ category }) {
     return matchesSearch && matchesAge && matchesDate;
   });
 
+  const diagnosticCounts = records.reduce((counts, row) => {
+    const diagnostic = String(row.diagnostic || '').trim();
+    if (!diagnostic) return counts;
+    counts[diagnostic] = (counts[diagnostic] || 0) + 1;
+    return counts;
+  }, {});
+
+  const diagnosticSummary = Object.entries(diagnosticCounts)
+    .sort((a, b) => b[1] - a[1]);
+
   const liveTotal = (Array.isArray(form.treatments) ? form.treatments : [])
     .reduce((sum, t) => sum + (Number(t.unit_price) * Number(t.quantity)), 0);
   const treatmentTotal = liveTotal || previewTreatmentsTotal(form.traitement, form.treatments, medications);
@@ -563,6 +573,24 @@ export default function RecordsPage({ category }) {
         archives={archives}
         onChange={(a) => { setActiveArchive(a); load(a); }}
       />
+
+      {diagnosticSummary.length > 0 && (
+        <div style={{ marginBottom: '16px' }}>
+          <strong>Synthèse diagnostics ce mois :</strong>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '8px' }}>
+            {diagnosticSummary.slice(0, 6).map(([diagnostic, count]) => (
+              <span key={diagnostic} style={{ padding: '8px 12px', background: '#f4f9fd', border: '1px solid #dceaf2', borderRadius: '10px', color: '#184a6e' }}>
+                {diagnostic} : {count}
+              </span>
+            ))}
+            {diagnosticSummary.length > 6 && (
+              <span style={{ padding: '8px 12px', background: '#f4f9fd', border: '1px solid #dceaf2', borderRadius: '10px', color: '#184a6e' }}>
+                +{diagnosticSummary.length - 6} autres diagnostics
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {actionError && (
         <p className="error-msg" style={{ marginBottom: '12px' }}>
