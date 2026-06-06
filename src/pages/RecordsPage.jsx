@@ -318,6 +318,7 @@ export default function RecordsPage({ category }) {
   const [form, setForm]           = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch]       = useState('');
+  const [diagnosticFilter, setDiagnosticFilter] = useState('');
   const [ageFilter, setAgeFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [medications, setMedications] = useState([]);
@@ -334,6 +335,13 @@ export default function RecordsPage({ category }) {
     () => getTreatmentSuggestions(form.traitement, medications),
     [form.traitement, medications]
   );
+
+  const diagnosticOptions = useMemo(() => {
+    const values = Array.from(new Set(records
+      .map((row) => String(row.diagnostic || '').trim())
+      .filter(Boolean)));
+    return values.sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
+  }, [records]);
 
   // ── Rôle de l'utilisateur connecté ──────────────────
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -537,9 +545,10 @@ export default function RecordsPage({ category }) {
     const fullName    = `${row.patient_nom || ''} ${row.patient_prenom || ''}`.toLowerCase();
     const diagnostic = String(row.diagnostic || '').toLowerCase();
     const matchesSearch = !q || fullName.includes(q) || diagnostic.includes(q) || registry.includes(q) || fullRegistry.includes(q);
+    const matchesDiagnostic = !diagnosticFilter || diagnostic === diagnosticFilter.toLowerCase();
     const matchesAge    = !ageFilter || displayAge(row.age).toLowerCase().includes(ageFilter.toLowerCase());
     const matchesDate   = !dateFilter || (row.created_at && row.created_at.slice(0, 10) === dateFilter);
-    return matchesSearch && matchesAge && matchesDate;
+    return matchesSearch && matchesDiagnostic && matchesAge && matchesDate;
   });
 
   const diagnosticCounts = records.reduce((counts, row) => {
@@ -679,6 +688,16 @@ export default function RecordsPage({ category }) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+        <select
+          value={diagnosticFilter}
+          onChange={(e) => setDiagnosticFilter(e.target.value)}
+          style={{ maxWidth: '220px' }}
+        >
+          <option value="">Filtrer par diagnostic</option>
+          {diagnosticOptions.map((diagnostic) => (
+            <option key={diagnostic} value={diagnostic}>{diagnostic}</option>
+          ))}
+        </select>
         <input
           type="text"
           placeholder="Filtrer par âge"
@@ -691,9 +710,9 @@ export default function RecordsPage({ category }) {
           value={dateFilter}
           onChange={(e) => setDateFilter(e.target.value)}
         />
-        {(search || ageFilter || dateFilter) && (
+        {(search || diagnosticFilter || ageFilter || dateFilter) && (
           <button type="button" className="btn-light"
-            onClick={() => { setSearch(''); setAgeFilter(''); setDateFilter(''); }}>
+            onClick={() => { setSearch(''); setDiagnosticFilter(''); setAgeFilter(''); setDateFilter(''); }}>
             ✕ Effacer
           </button>
         )}
