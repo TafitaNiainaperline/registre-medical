@@ -36,6 +36,25 @@ function sumNumber(value) {
   return Number.isFinite(number) ? number : 0;
 }
 
+function normalizeText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function getPatientId(row) {
+  const nom = String(row.patient_nom || '').trim();
+  const prenom = String(row.patient_prenom || '').trim();
+  return normalizeText(`${nom} ${prenom}`);
+}
+
+function getDossierKey(row) {
+  return `${getPatientId(row)}|${normalizeText(row.diagnostic)}`;
+}
+
 export default function DashboardPage() {
   const [records, setRecords] = useState([]);
   const [stats, setStats] = useState({});
@@ -54,10 +73,13 @@ export default function DashboardPage() {
 
         const nextStats = allRecords.reduce((acc, row) => {
           const category = row.category || 'unknown';
-          acc[category] = (acc[category] || 0) + 1;
+          if (!acc[category]) acc[category] = new Set();
+          acc[category].add(getDossierKey(row));
           return acc;
         }, {});
-        setStats(nextStats);
+        const statsWithSizes = {};
+        Object.keys(nextStats).forEach(k => { statsWithSizes[k] = nextStats[k].size; });
+        setStats(statsWithSizes);
 
         const archives = await window.api.listArchives?.() || [];
         const sortedArchives = [...archives].sort((a, b) => {
@@ -67,13 +89,15 @@ export default function DashboardPage() {
 
         const archiveSummaries = await Promise.all(sortedArchives.map(async (archive) => {
           const archiveRecords = await window.api.fetchRecordsByArchive?.({ year: archive.year, month: archive.month }) || [];
-          const diagnosticCounts = archiveRecords.reduce((acc, row) => {
+          const groups = archiveRecords.reduce((acc, row) => {
             const diagnostic = String(row.diagnostic || '').trim();
             if (!diagnostic) return acc;
-            acc[diagnostic] = (acc[diagnostic] || 0) + 1;
+            if (!acc[diagnostic]) acc[diagnostic] = new Set();
+            acc[diagnostic].add(getPatientId(row));
             return acc;
           }, {});
-          const topDiagnostics = Object.entries(diagnosticCounts)
+          const topDiagnostics = Object.entries(groups)
+            .map(([diag, set]) => [diag, set.size])
             .sort((a, b) => b[1] - a[1])
             .slice(0, 3);
           return {
@@ -91,30 +115,34 @@ export default function DashboardPage() {
     load();
   }, []);
 
-  const totalRecords = records.length;
+  const totalRecords = new Set(records.map(getDossierKey)).size;
   const totalAmount = records.reduce((sum, row) => sum + sumNumber(row.cost), 0);
-  const sexCounts = records.reduce((acc, row) => {
-    const sex = String(row.sexe || '').trim().toUpperCase() || 'Non renseigné';
-    acc[sex] = (acc[sex] || 0) + 1;
-    return acc;
-  }, {});
 
-  const ageGroupCounts = records.reduce((acc, row) => {
+  const sexSummary = Object.entries(records.reduce((acc, row) => {
+    const sex = String(row.sexe || '').trim().toUpperCase() || 'Non renseigné';
+    if (!acc[sex]) acc[sex] = new Set();
+    acc[sex].add(getPatientId(row));
+    return acc;
+  }, {})).map(([sex, set]) => [sex, set.size]);
+
+  const ageGroupSummary = Object.entries(records.reduce((acc, row) => {
     const years = parseAgeToYears(row.age);
     const group = getAgeGroup(years);
-    acc[group] = (acc[group] || 0) + 1;
+    if (!acc[group]) acc[group] = new Set();
+    acc[group].add(getPatientId(row));
     return acc;
-  }, {});
-
-  const ageGroupSummary = Object.entries(ageGroupCounts)
+  }, {}))
+    .map(([group, set]) => [group, set.size])
     .sort((a, b) => a[0].localeCompare(b[0], 'fr', { numeric: true }));
 
   const diagnosticSummary = Object.entries(records.reduce((acc, row) => {
     const diagnostic = String(row.diagnostic || '').trim();
     if (!diagnostic) return acc;
-    acc[diagnostic] = (acc[diagnostic] || 0) + 1;
+    if (!acc[diagnostic]) acc[diagnostic] = new Set();
+    acc[diagnostic].add(getPatientId(row));
     return acc;
   }, {}))
+    .map(([diag, set]) => [diag, set.size])
     .sort((a, b) => b[1] - a[1]);
 
   return (
@@ -154,7 +182,7 @@ export default function DashboardPage() {
             <h3>Sexe des patients</h3>
           </div>
           <div style={{ display: 'grid', gap: '4px', marginTop: '10px' }}>
-            {Object.entries(sexCounts).map(([sex, count]) => (
+            {sexSummary.map(([sex, count]) => (
               <span key={sex} style={{ fontSize: '0.95rem' }}>{sex} : {count}</span>
             ))}
           </div>
