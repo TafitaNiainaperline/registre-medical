@@ -707,16 +707,6 @@ export default function RecordsPage({ category }) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <select
-          value={diagnosticFilter}
-          onChange={(e) => setDiagnosticFilter(e.target.value)}
-          style={{ maxWidth: '220px' }}
-        >
-          <option value="">Filtrer par diagnostic</option>
-          {diagnosticOptions.map((diagnostic) => (
-            <option key={diagnostic} value={diagnostic}>{diagnostic}</option>
-          ))}
-        </select>
         <input
           type="text"
           placeholder="Filtrer par âge"
