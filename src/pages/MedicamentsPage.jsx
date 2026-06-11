@@ -18,6 +18,17 @@ function capitalizeWords(value, preserveTrailingSpace = false) {
     + trailingSpace;
 }
 
+function formatMadagascarDate(utcString) {
+  if (!utcString) return '-';
+  const d = new Date(utcString);
+  const offset = 3 * 60;
+  const local = new Date(d.getTime() + offset * 60 * 1000);
+  const y = local.getFullYear();
+  const m = String(local.getMonth() + 1).padStart(2, '0');
+  const day = String(local.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function formatTextField(name, value) {
   const textFields = new Set(['name', 'description']);
   return textFields.has(name) ? capitalizeWords(value, true) : value;
@@ -461,7 +472,7 @@ export default function MedicamentsPage() {
 
               {movements.map((m) => (
                 <tr key={m.id}>
-                  <td>{m.created_at}</td>
+                  <td>{formatMadagascarDate(m.created_at)}</td>
 
                   <td>{m.medication_name}</td>
 

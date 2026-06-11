@@ -12,6 +12,17 @@ function displayAge(stored) {
   return value;
 }
 
+function formatMadagascarDate(utcString) {
+  if (!utcString) return '';
+  const d = new Date(utcString);
+  const offset = 3 * 60;
+  const local = new Date(d.getTime() + offset * 60 * 1000);
+  const y = local.getFullYear();
+  const m = String(local.getMonth() + 1).padStart(2, '0');
+  const day = String(local.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function pad2(n) {
   return String(n).padStart(2, '0');
 }
@@ -61,7 +72,7 @@ async function writeArchiveExcel({ filePath, year, month, records }) {
     const total = meds.length ? computedFromMeds : (Number(r.cost) || 0);
     grandTotal += total;
 
-    const createdAt = r.created_at ? String(r.created_at).slice(0, 10) : '';
+    const createdAt = r.created_at ? formatMadagascarDate(r.created_at) : '';
     const registryNumber = String(r.registry_number || '').match(/(\d+)$/);
     const displayRegistry = registryNumber ? String(registryNumber[1]).padStart(3, '0') : '-';
 

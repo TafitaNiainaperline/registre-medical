@@ -12,6 +12,19 @@ function renderTreatments(row) {
   return t.map((x) => `${x.name} x${x.quantity}${x.unit ? ` ${x.unit}` : ''} (${x.unit_price} Ar)`).join(' • ');
 }
 
+function formatMadagascarDateTime(utcString) {
+  if (!utcString) return '-';
+  const d = new Date(utcString);
+  const offset = 3 * 60;
+  const local = new Date(d.getTime() + offset * 60 * 1000);
+  const y = local.getFullYear();
+  const m = String(local.getMonth() + 1).padStart(2, '0');
+  const day = String(local.getDate()).padStart(2, '0');
+  const h = String(local.getHours()).padStart(2, '0');
+  const min = String(local.getMinutes()).padStart(2, '0');
+  return `${y}-${m}-${day} ${h}:${min}`;
+}
+
 function displayRegistryNumber(value) {
   const match = String(value || '').match(/(\d+)$/);
   if (!match) return value || '-';
@@ -177,11 +190,11 @@ export default function ArchivesPage() {
                 <td>{String(r.age || '').includes('|') ? String(r.age).split('|')[0] : r.age}</td>
                 <td>{r.diagnostic}</td>
                 <td style={{ color: '#244955' }}>{renderTreatments(r)}</td>
-                <td><strong>{r.cost} Ar</strong></td>
-                <td style={{ fontSize: '0.85rem', color: '#5f7b84' }}>
-                  {r.created_at ? String(r.created_at).slice(0, 10) : '-'}
-                </td>
-              </tr>
+<td><strong>{r.cost} Ar</strong></td>
+                 <td style={{ fontSize: '0.85rem', color: '#5f7b84' }}>
+                   {r.created_at ? formatMadagascarDateTime(r.created_at).slice(0, 10) : '-'}
+                 </td>
+               </tr>
             ))}
           </tbody>
         </table>

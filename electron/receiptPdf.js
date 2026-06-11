@@ -10,6 +10,19 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+function formatMadagascarDateTime(utcString) {
+  if (!utcString) return '-';
+  const d = new Date(utcString);
+  const offset = 3 * 60;
+  const local = new Date(d.getTime() + offset * 60 * 1000);
+  const y = local.getFullYear();
+  const m = String(local.getMonth() + 1).padStart(2, '0');
+  const day = String(local.getDate()).padStart(2, '0');
+  const h = String(local.getHours()).padStart(2, '0');
+  const min = String(local.getMinutes()).padStart(2, '0');
+  return `${y}-${m}-${day} ${h}:${min}`;
+}
+
 function displayAge(stored) {
   const value = String(stored || '');
   if (!value) return '-';
@@ -85,7 +98,7 @@ function buildReceiptHtml(record) {
       </tr>
     `;
 
-  const date = record.created_at ? String(record.created_at).slice(0, 10) : new Date().toISOString().slice(0, 10);
+  const date = record.created_at ? formatMadagascarDateTime(record.created_at).slice(0, 10) : formatMadagascarDateTime(new Date()).slice(0, 10);
 
   return `<!doctype html>
   <html>

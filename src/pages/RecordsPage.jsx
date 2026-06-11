@@ -102,6 +102,19 @@ function normalizeMedicationName(value) {
     .trim();
 }
 
+function formatMadagascarDateTime(utcString) {
+  if (!utcString) return '-';
+  const d = new Date(utcString);
+  const offset = 3 * 60;
+  const local = new Date(d.getTime() + offset * 60 * 1000);
+  const y = local.getFullYear();
+  const m = String(local.getMonth() + 1).padStart(2, '0');
+  const day = String(local.getDate()).padStart(2, '0');
+  const h = String(local.getHours()).padStart(2, '0');
+  const min = String(local.getMinutes()).padStart(2, '0');
+  return `${y}-${m}-${day} ${h}:${min}`;
+}
+
 function getTreatmentQuery(text) {
   const raw = String(text || '').split(/[,;\n]+/).pop() || '';
   const trimmed = raw.trim();
@@ -681,7 +694,7 @@ export default function RecordsPage({ category }) {
                     <tr key={historyRow.id}>
                       <td style={{ padding: '6px 8px' }}>{idx === dossierHistory.length - 1 ? 'Présent' : `Ancien ${idx + 1}`}</td>
                       <td style={{ padding: '6px 8px' }}>{displayRegistryNumber(historyRow.registry_number)}</td>
-                      <td style={{ padding: '6px 8px' }}>{historyRow.created_at ? historyRow.created_at.slice(0, 16).replace('T', ' ') : '-'}</td>
+                      <td style={{ padding: '6px 8px' }}>{formatMadagascarDateTime(historyRow.created_at)}</td>
                       <td style={{ padding: '6px 8px' }}>
                         {Array.isArray(historyRow.treatments) && historyRow.treatments.length > 0
                           ? historyRow.treatments.map((t) => `${t.name} x${t.quantity}${t.unit ? ` ${t.unit}` : ''}`).join(', ')
@@ -900,11 +913,11 @@ export default function RecordsPage({ category }) {
                     : row.traitement}
                 </td>
                 <td>{row.observation || '-'}</td>
-                <td>{row.cost} Ar</td>
-                <td style={{ fontSize: '0.85rem', color: '#5f7b84' }}>
-                  {row.created_at ? row.created_at.slice(0, 10) : '-'}
-                </td>
-                <td>
+<td>{row.cost} Ar</td>
+                 <td style={{ fontSize: '0.85rem', color: '#5f7b84' }}>
+                   {row.created_at ? formatMadagascarDateTime(row.created_at).slice(0, 10) : '-'}
+                 </td>
+                 <td>
                   {/* Editer : visible pour tous */}
                   <button className="icon-btn" title="Modifier" aria-label="Modifier" onClick={() => edit(row)}>
                     ✏️
