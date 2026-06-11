@@ -165,7 +165,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="dashboard-badge">
-          ?? Gestion Clinique
+           Gestion Clinique
         </div>
       </div>
 
