@@ -327,10 +327,18 @@ ipcMain.handle('stock:pdf', async () => {
  // DISPENSATIONS
  // ─────────────────────────────────────────────────────
 
- ipcMain.handle('dispensations:list', () => {
-   return db.getDispensations();
- });
+ipcMain.handle('dispensations:list', () => {
+  return db.getDispensations();
+});
 
- ipcMain.handle('dispensations:create', (_, data) => {
-   return db.createDispensation(data);
- });
+ipcMain.handle('dispensations:create', (_, data) => {
+  return db.createDispensation(data);
+});
+
+ipcMain.handle('dispensations:delete', (_, id) => {
+  return db.deleteDispensation(id);
+});
+
+ipcMain.handle('dispensations:update', (_, data) => {
+  return db.updateDispensation(data.id, data);
+});

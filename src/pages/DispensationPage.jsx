@@ -19,6 +19,8 @@ export default function DispensationPage() {
   const [selectedMedicationId, setSelectedMedicationId] = useState('');
   const [quantity, setQuantity] = useState('');
   const [msg, setMsg] = useState({ type: 'ok', text: '' });
+  const [editingDisp, setEditingDisp] = useState(null);
+  const [editDispForm, setEditDispForm] = useState({ medication_id: '', quantity: '' });
 
   const load = () => {
     window.api.listMedications()
@@ -68,6 +70,38 @@ export default function DispensationPage() {
       load();
     } catch (err) {
       notify(err.message || 'Erreur lors de l\'enregistrement.', 'err');
+    }
+  };
+
+  const deleteDispensation = async (id, medicationId, qty) => {
+    if (!window.confirm('Supprimer cette dispensation ? Le stock sera recrédité.')) return;
+    try {
+      await window.api.deleteDispensation(id);
+      notify('Dispensation supprimée, stock recrédité.');
+      load();
+    } catch (err) {
+      notify(err.message || 'Erreur lors de la suppression.', 'err');
+    }
+  };
+
+  const startEditDisp = (d) => {
+    setEditingDisp(Number(d.id));
+    setEditDispForm({ medication_id: String(d.medication_id), quantity: String(d.quantity) });
+  };
+
+  const saveEditDisp = async () => {
+    try {
+      await window.api.updateDispensation({
+        id: editingDisp,
+        medication_id: Number(editDispForm.medication_id),
+        quantity: Number(editDispForm.quantity),
+      });
+      notify('Dispensation modifiée.');
+      setEditingDisp(null);
+      setEditDispForm({ medication_id: '', quantity: '' });
+      load();
+    } catch (err) {
+      notify(err.message || 'Erreur lors de la modification.', 'err');
     }
   };
 
@@ -133,10 +167,10 @@ export default function DispensationPage() {
             <tr>
               <th>Date</th>
               <th>Médicament</th>
-              <th>Quantité</th>
               <th>Unité</th>
-              <th>Prix (Ar)</th>
+              <th>Quantité</th>
               <th>Total (Ar)</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -148,15 +182,53 @@ export default function DispensationPage() {
               </tr>
             )}
             {dispensations.map((d) => {
-              const itemTotal = Number(d.unit_price || 0) * Number(d.quantity);
+              const editing = editingDisp === Number(d.id);
+              const itemTotal = (Number(d.unit_price || 0) * Number(d.quantity)).toLocaleString();
               return (
                 <tr key={d.id}>
                   <td>{formatMadagascarDateTime(d.created_at)}</td>
-                  <td><strong>{d.medication_name}</strong></td>
-                  <td>{d.quantity}</td>
-                  <td>{d.unit || 'comprimé'}</td>
-                  <td>{Number(d.unit_price || 0).toLocaleString()} Ar</td>
-                  <td>{itemTotal.toLocaleString()} Ar</td>
+                  {editing ? (
+                    <>
+                      <td>
+                        <select
+                          style={{ width: '100%', padding: '7px', border: '1px solid #c8d9df', borderRadius: '8px', font: 'inherit' }}
+                          value={editDispForm.medication_id}
+                          onChange={(e) => setEditDispForm({ ...editDispForm, medication_id: e.target.value })}
+                        >
+                          <option value="">--</option>
+                          {medications.map((m) => (
+                            <option key={m.id} value={String(m.id)}>{m.name}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>{medications.find((m) => Number(m.id) === Number(editDispForm.medication_id))?.unit || 'comprimé'}</td>
+                      <td>
+                        <input type="number" min="1" value={editDispForm.quantity}
+                          onChange={(e) => setEditDispForm({ ...editDispForm, quantity: e.target.value })}
+                          style={{ width: '80px', padding: '7px', border: '1px solid #c8d9df', borderRadius: '8px', font: 'inherit' }} />
+                      </td>
+                      <td>-</td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button type="button" style={{ background: '#1c96a4' }} onClick={saveEditDisp}>✓</button>
+                          <button type="button" className="btn-light" onClick={() => setEditingDisp(null)}>✕</button>
+                        </div>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td><strong>{d.medication_name}</strong></td>
+                      <td>{d.unit || 'comprimé'}</td>
+                      <td>{d.quantity}</td>
+                      <td>{itemTotal} Ar</td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button className="icon-btn" onClick={() => startEditDisp(d)} title="Modifier">✏️</button>
+                          <button className="icon-btn danger" onClick={() => deleteDispensation(d.id)} title="Supprimer">🗑️</button>
+                        </div>
+                      </td>
+                    </>
+                  )}
                 </tr>
               );
             })}

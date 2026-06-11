@@ -113,4 +113,10 @@ contextBridge.exposeInMainWorld('api', {
 
   createDispensation: (data) =>
     ipcRenderer.invoke('dispensations:create', data),
+
+  deleteDispensation: (id) =>
+    ipcRenderer.invoke('dispensations:delete', id),
+
+  updateDispensation: (data) =>
+    ipcRenderer.invoke('dispensations:update', data),
 });
