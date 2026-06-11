@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+ï»¿import { useEffect, useState } from 'react';
 import { categories } from '../constants';
 
 function parseAgeToYears(stored) {
@@ -22,7 +22,7 @@ function parseAgeToYears(stored) {
 }
 
 function getAgeGroup(years) {
-  if (years === null) return 'Non renseigné';
+  if (years === null) return 'Non renseignÃ©';
   if (years < 1) return '0-11 mois';
   if (years <= 5) return '1-5 ans';
   if (years <= 17) return '6-17 ans';
@@ -128,7 +128,7 @@ export default function DashboardPage() {
   const totalAmount = records.reduce((sum, row) => sum + sumNumber(row.cost), 0) + (Number(dispensationTotal) || 0);
 
   const sexSummary = Object.entries(records.reduce((acc, row) => {
-    const sex = String(row.sexe || '').trim().toUpperCase() || 'Non renseigné';
+    const sex = String(row.sexe || '').trim().toUpperCase() || 'Non renseignÃ©';
     if (!acc[sex]) acc[sex] = new Set();
     acc[sex].add(getPatientId(row));
     return acc;
@@ -160,7 +160,7 @@ export default function DashboardPage() {
         <div>
           <h1>Tableau de bord</h1>
           <p>
-            Aperçu général des registres{archiveLabel ? ` — ${archiveLabel}` : ''}.
+            AperÃ§u gÃ©nÃ©ral des registres{archiveLabel ? ` â€” ${archiveLabel}` : ''}.
           </p>
         </div>
 
@@ -180,10 +180,10 @@ export default function DashboardPage() {
 
         <article className="stat-card" style={{ borderTop: '5px solid #28a745' }}>
           <div className="stat-top">
-            <h3>Montant facturé</h3>
+            <h3>Montant facturÃ©</h3>
           </div>
           <strong>{totalAmount.toLocaleString()} Ar</strong>
-          <span className="stat-subtitle">Total des coûts</span>
+          <span className="stat-subtitle">Total des coÃ»ts</span>
         </article>
 
         <article className="stat-card" style={{ borderTop: '5px solid #f59f00' }}>
@@ -212,7 +212,7 @@ export default function DashboardPage() {
 
       {ageGroupSummary.length > 0 && (
         <div style={{ marginBottom: '24px' }}>
-          <strong>Patients par tranche d'âge</strong>
+          <strong>Patients par tranche d'Ã¢ge</strong>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px' }}>
             {ageGroupSummary.map(([group, count]) => (
               <span key={group} style={{ padding: '8px 12px', background: '#f4f9fd', border: '1px solid #dceaf2', borderRadius: '10px', color: '#184a6e' }}>
@@ -239,7 +239,7 @@ export default function DashboardPage() {
                     ))}
                   </div>
                 ) : (
-                  <span style={{ color: '#666' }}>Aucun diagnostic enregistré</span>
+                  <span style={{ color: '#666' }}>Aucun diagnostic enregistrÃ©</span>
                 )}
               </div>
             ))}
@@ -270,7 +270,7 @@ export default function DashboardPage() {
             <strong>{stats[cat.key] || 0}</strong>
 
             <span className="stat-subtitle">
-              Dossiers enregistrés
+              Dossiers enregistrÃ©s
             </span>
 
           </article>
@@ -290,3 +290,4 @@ export default function DashboardPage() {
     </section>
   );
 }
+
