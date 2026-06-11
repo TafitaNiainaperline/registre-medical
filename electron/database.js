@@ -40,7 +40,7 @@ async function getDB() {
   }
 
   initTables();
-  const schemaChanged = ensureMedicalRecordsSchema(db) || ensureMedicationsSchema(db);
+  const schemaChanged = ensureMedicalRecordsSchema(db) || ensureMedicationsSchema(db) || ensureDispensationsSchema(db);
   if (schemaChanged) {
     try { saveDB(); } catch { /* ignore */ }
   }
@@ -54,81 +54,91 @@ function saveDB() {
 }
 
 function initTables() {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT NOT NULL UNIQUE,
-      name TEXT NOT NULL,
-      password_hash TEXT NOT NULL,
-      role TEXT NOT NULL DEFAULT 'user',
-      is_active INTEGER NOT NULL DEFAULT 0,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
+   db.run(`
+     CREATE TABLE IF NOT EXISTS users (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       username TEXT NOT NULL UNIQUE,
+       name TEXT NOT NULL,
+       password_hash TEXT NOT NULL,
+       role TEXT NOT NULL DEFAULT 'user',
+       is_active INTEGER NOT NULL DEFAULT 0,
+       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+     );
 
-    CREATE TABLE IF NOT EXISTS medical_records (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      category TEXT NOT NULL,
-      dossier_id INTEGER,
-      patient_nom TEXT NOT NULL,
-      patient_prenom TEXT NOT NULL,
-      sexe TEXT,
-      age INTEGER NOT NULL,
-      age_type TEXT DEFAULT 'ans',
-      domicile TEXT NOT NULL,
-      diagnostic TEXT NOT NULL,
-      traitement TEXT NOT NULL,
-      observation TEXT,
-      cost REAL NOT NULL DEFAULT 0,
-      created_by INTEGER,
-      registry_number TEXT,
-      archive_year INTEGER,
-      archive_month INTEGER,
-      treatments_json TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
+     CREATE TABLE IF NOT EXISTS medical_records (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       category TEXT NOT NULL,
+       dossier_id INTEGER,
+       patient_nom TEXT NOT NULL,
+       patient_prenom TEXT NOT NULL,
+       sexe TEXT,
+       age INTEGER NOT NULL,
+       age_type TEXT DEFAULT 'ans',
+       domicile TEXT NOT NULL,
+       diagnostic TEXT NOT NULL,
+       traitement TEXT NOT NULL,
+       observation TEXT,
+       cost REAL NOT NULL DEFAULT 0,
+       created_by INTEGER,
+       registry_number TEXT,
+       archive_year INTEGER,
+       archive_month INTEGER,
+       treatments_json TEXT,
+       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+     );
 
-    CREATE TABLE IF NOT EXISTS dossiers (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      dossier_number TEXT,
-      patient_nom TEXT NOT NULL,
-      diagnostic TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
+     CREATE TABLE IF NOT EXISTS dossiers (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       dossier_number TEXT,
+       patient_nom TEXT NOT NULL,
+       diagnostic TEXT NOT NULL,
+       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+     );
 
-    CREATE TABLE IF NOT EXISTS medications (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL UNIQUE,
-      price INTEGER NOT NULL,
-      unit TEXT DEFAULT 'comprimé',
-      description TEXT,
-      stock INTEGER,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME
-    );
+     CREATE TABLE IF NOT EXISTS medications (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       name TEXT NOT NULL UNIQUE,
+       price INTEGER NOT NULL,
+       unit TEXT DEFAULT 'comprimé',
+       description TEXT,
+       stock INTEGER,
+       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+       updated_at DATETIME
+     );
 
-    CREATE TABLE IF NOT EXISTS record_medications (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      record_id INTEGER NOT NULL,
-      medication_id INTEGER,
-      medication_name TEXT NOT NULL,
-      medication_unit TEXT,
-      quantity INTEGER NOT NULL,
-      unit_price INTEGER NOT NULL,
-      total INTEGER NOT NULL
-    );
+     CREATE TABLE IF NOT EXISTS record_medications (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       record_id INTEGER NOT NULL,
+       medication_id INTEGER,
+       medication_name TEXT NOT NULL,
+       medication_unit TEXT,
+       quantity INTEGER NOT NULL,
+       unit_price INTEGER NOT NULL,
+       total INTEGER NOT NULL
+     );
 
-    CREATE TABLE IF NOT EXISTS medication_movements (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      medication_id INTEGER NOT NULL,
-      movement_type TEXT NOT NULL,
-      quantity INTEGER NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
+     CREATE TABLE IF NOT EXISTS medication_movements (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       medication_id INTEGER NOT NULL,
+       movement_type TEXT NOT NULL,
+       quantity INTEGER NOT NULL,
+       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+     );
 
-    CREATE INDEX IF NOT EXISTS idx_medical_records_archive ON medical_records(archive_year, archive_month);
-    CREATE INDEX IF NOT EXISTS idx_medical_records_category_archive ON medical_records(category, archive_year, archive_month);
-    CREATE INDEX IF NOT EXISTS idx_record_medications_record_id ON record_medications(record_id);
-  `);
+     CREATE TABLE IF NOT EXISTS dispensations (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       medication_id INTEGER NOT NULL,
+       medication_name TEXT NOT NULL,
+       unit TEXT,
+       quantity INTEGER NOT NULL,
+       unit_price INTEGER,
+       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+     );
+
+     CREATE INDEX IF NOT EXISTS idx_medical_records_archive ON medical_records(archive_year, archive_month);
+     CREATE INDEX IF NOT EXISTS idx_medical_records_category_archive ON medical_records(category, archive_year, archive_month);
+     CREATE INDEX IF NOT EXISTS idx_record_medications_record_id ON record_medications(record_id);
+   `);
 
   // Migration : ajouter colonnes manquantes si ancienne DB
   const migrations = [
@@ -531,6 +541,26 @@ function ensureMedicationsSchema(d) {
     };
 
     ensureCol('unit', "ALTER TABLE medications ADD COLUMN unit TEXT DEFAULT 'comprimé'");
+
+    return changed;
+  } catch {
+    return false;
+  }
+}
+
+function ensureDispensationsSchema(d) {
+  try {
+    const info = toObjects(d.exec('PRAGMA table_info(dispensations)'));
+    const cols = new Set(info.map((r) => r.name));
+    let changed = false;
+
+    const ensureCol = (name, ddl) => {
+      if (!cols.has(name)) {
+        try { d.run(ddl); changed = true; } catch { /* ignore */ }
+      }
+    };
+
+    ensureCol('unit_price', 'ALTER TABLE dispensations ADD COLUMN unit_price INTEGER');
 
     return changed;
   } catch {
@@ -1288,6 +1318,64 @@ async function getStockReport() {
   return toObjects(res);
 }
 
+async function createDispensation(data) {
+  const d = await getDB();
+  const medId = Number(data.medication_id);
+  const quantity = Number(data.quantity);
+
+  const medRows = toObjects(d.exec('SELECT name, unit, stock, price FROM medications WHERE id = ?', [medId]));
+  const med = medRows[0];
+  if (!med) throw new Error('Médicament introuvable');
+
+  if (med.stock !== null && med.stock !== undefined && quantity > Number(med.stock)) {
+    throw new Error(`Stock insuffisant. Disponible : ${med.stock}`);
+  }
+
+  d.run('BEGIN');
+  try {
+    d.run(
+      'INSERT INTO dispensations (medication_id, medication_name, unit, quantity, unit_price) VALUES (?, ?, ?, ?, ?)',
+      [medId, med.name, med.unit || 'comprimé', quantity, Number(med.price) || 0]
+    );
+
+    d.run(
+      `INSERT INTO medication_movements (medication_id, movement_type, quantity) VALUES (?, 'exit', ?)`,
+      [medId, quantity]
+    );
+
+    if (med.stock !== null && med.stock !== undefined) {
+      d.run(
+        'UPDATE medications SET stock = stock - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [quantity, medId]
+      );
+    }
+
+    d.run('COMMIT');
+    saveDB();
+    return true;
+  } catch (e) {
+    try { d.run('ROLLBACK'); } catch { /* ignore */ }
+    throw e;
+  }
+}
+
+async function getDispensations() {
+  const d = await getDB();
+  const res = d.exec(`
+    SELECT
+      d.id,
+      d.medication_id,
+      d.medication_name,
+      d.unit,
+      d.quantity,
+      d.unit_price,
+      d.created_at
+    FROM dispensations d
+    ORDER BY d.created_at DESC
+  `);
+  return toObjects(res);
+}
+
 async function ensureRegistryNumbers() {
   const d = await getDB();
   try {
@@ -1301,17 +1389,19 @@ async function ensureRegistryNumbers() {
 }
 
 module.exports = {
-  loginUser, registerUser,
-  getAllUsers, toggleUserActive, resetUserPassword, deleteUser,
-  fetchRecords, fetchRecordsByArchive, fetchRecordById, fetchRecordsByDossier, fetchStats, fetchStatsByArchive, createRecord, updateRecord, deleteRecord,
-  listArchives, getCurrentArchive,
-  listMedications, createMedication, updateMedication, deleteMedication,
-  addMedicationStock,
-  getMedicationMovements,
-  getTopSellingMedications,
-  getLowStockMedications,
-  ensureRegistryNumbers,
-  getStockReport,
-  listDossiers, getDossierById,
-  addTreatmentsToRecord
-};
+   loginUser, registerUser,
+   getAllUsers, toggleUserActive, resetUserPassword, deleteUser,
+   fetchRecords, fetchRecordsByArchive, fetchRecordById, fetchRecordsByDossier, fetchStats, fetchStatsByArchive, createRecord, updateRecord, deleteRecord,
+   listArchives, getCurrentArchive,
+   listMedications, createMedication, updateMedication, deleteMedication,
+   addMedicationStock,
+   getMedicationMovements,
+   getTopSellingMedications,
+   getLowStockMedications,
+   ensureRegistryNumbers,
+   getStockReport,
+   listDossiers, getDossierById,
+   addTreatmentsToRecord,
+   createDispensation,
+   getDispensations
+ };

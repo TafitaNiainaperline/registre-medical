@@ -281,44 +281,56 @@ ipcMain.handle('stock:excel', async () => {
 
 ipcMain.handle('stock:pdf', async () => {
 
-  const win = BrowserWindow.getFocusedWindow();
+   const win = BrowserWindow.getFocusedWindow();
 
-  const result = await dialog.showSaveDialog(win, {
-    title: 'Exporter PDF',
-    defaultPath: 'stock.pdf',
-    filters: [
-      {
-        name: 'PDF',
-        extensions: ['pdf']
-      }
-    ]
-  });
+   const result = await dialog.showSaveDialog(win, {
+     title: 'Exporter PDF',
+     defaultPath: 'stock.pdf',
+     filters: [
+       {
+         name: 'PDF',
+         extensions: ['pdf']
+       }
+     ]
+   });
 
-  if (result.canceled) {
-    return;
-  }
+   if (result.canceled) {
+     return;
+   }
 
-  const meds = await db.getStockReport();
+   const meds = await db.getStockReport();
 
-  const doc = new PDFDocument();
+   const doc = new PDFDocument();
 
-  doc.pipe(fs.createWriteStream(result.filePath));
+   doc.pipe(fs.createWriteStream(result.filePath));
 
-  doc.fontSize(18).text('Rapport du stock');
+   doc.fontSize(18).text('Rapport du stock');
 
-  doc.moveDown();
+   doc.moveDown();
 
-  meds.forEach((m) => {
+   meds.forEach((m) => {
 
-    doc.text(
-      `${m.name} | Stock : ${m.stock ?? '-'} | Prix : ${m.price} Ar`
-    );
+     doc.text(
+       `${m.name} | Stock : ${m.stock ?? '-'} | Prix : ${m.price} Ar`
+     );
 
-  });
+   });
 
-  doc.end();
+   doc.end();
 
-  return {
-    success: true
-  };
-});
+   return {
+     success: true
+   };
+ });
+
+ // ─────────────────────────────────────────────────────
+ // DISPENSATIONS
+ // ─────────────────────────────────────────────────────
+
+ ipcMain.handle('dispensations:list', () => {
+   return db.getDispensations();
+ });
+
+ ipcMain.handle('dispensations:create', (_, data) => {
+   return db.createDispensation(data);
+ });

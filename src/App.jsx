@@ -6,6 +6,7 @@ import RecordsPage from './pages/RecordsPage';
 import HelpPage from './pages/HelpPage';
 import AdminPage from './pages/AdminPage';
 import MedicamentsPage from './pages/MedicamentsPage';
+import DispensationPage from './pages/DispensationPage';
 import ArchivesPage from './pages/ArchivesPage';
 import { categories } from './constants';
 
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="aide" element={<HelpPage />} />
         <Route path="admin" element={<AdminPage />} />
         <Route path="medicaments" element={<MedicamentsPage />} />
+        <Route path="dispensation" element={<DispensationPage />} />
         <Route path="archives" element={<ArchivesPage />} />
       </Route>
     </Routes>

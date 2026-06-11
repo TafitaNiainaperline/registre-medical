@@ -69,7 +69,7 @@ contextBridge.exposeInMainWorld('api', {
   getCurrentArchive: () =>
     ipcRenderer.invoke('archives:current'),
 
-    // MEDICATIONS
+  // MEDICATIONS
   listMedications: () =>
     ipcRenderer.invoke('meds:list'),
 
@@ -93,7 +93,7 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.invoke('export:excelByArchive', filters),
 
   getTopSellingMedications: () =>
-  ipcRenderer.invoke('meds:topSelling'),
+    ipcRenderer.invoke('meds:topSelling'),
 
   getLowStockMedications: () =>
     ipcRenderer.invoke('meds:lowStock'),
@@ -106,4 +106,11 @@ contextBridge.exposeInMainWorld('api', {
 
   exportStockPdf: () =>
     ipcRenderer.invoke('stock:pdf'),
+
+  // DISPENSATIONS
+  getDispensations: () =>
+    ipcRenderer.invoke('dispensations:list'),
+
+  createDispensation: (data) =>
+    ipcRenderer.invoke('dispensations:create', data),
 });
