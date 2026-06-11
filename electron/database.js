@@ -1376,6 +1376,21 @@ async function getDispensations() {
   return toObjects(res);
 }
 
+async function getDispensationTotal({ year, month } = {}) {
+  const d = await getDB();
+  const where = [];
+  const params = [];
+  if (year) { where.push("CAST(strftime('%Y', created_at) AS INTEGER) = ?"); params.push(Number(year)); }
+  if (month) { where.push("CAST(strftime('%m', created_at) AS INTEGER) = ?"); params.push(Number(month)); }
+  const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
+  const res = d.exec(
+    `SELECT COALESCE(SUM(unit_price * quantity), 0) as total FROM dispensations ${whereClause}`,
+    params
+  );
+  const rows = toObjects(res);
+  return Number(rows[0]?.total || 0);
+}
+
 async function deleteDispensation(id) {
   const d = await getDB();
   const idNum = Number(id);
@@ -1501,81 +1516,6 @@ async function updateDispensation(id, data) {
   }
 }
 
-async function updateDispensation(id, data) {
-  const d = await getDB();
-  const idNum = Number(id);
-
-  if (!Number.isFinite(idNum) || idNum <= 0) throw new Error('ID invalide.');
-  const newMedicationId = Number(data?.medication_id);
-  const newQuantity = Number(data?.quantity);
-  if (!Number.isFinite(newMedicationId) || newMedicationId <= 0) throw new Error('Médicament invalide.');
-  if (!Number.isFinite(newQuantity) || newQuantity <= 0) throw new Error('Quantité invalide.');
-
-  const oldRows = toObjects(d.exec('SELECT * FROM dispensations WHERE id = ?', [idNum]));
-  const old = oldRows[0];
-  if (!old) throw new Error('Dispensation introuvable');
-
-  const oldMedicationId = Number(old.medication_id);
-  const oldQuantity = Number(old.quantity);
-
-  const medRows = toObjects(d.exec('SELECT name, unit, price, stock FROM medications WHERE id = ?', [newMedicationId]));
-  const med = medRows[0];
-  if (!med) throw new Error('Médicament introuvable');
-
-  let availableStock = Number(med.stock ?? 0);
-  if (oldMedicationId === newMedicationId) {
-    availableStock += Number(isFinite(oldQuantity) ? oldQuantity : 0);
-  }
-
-  if (newQuantity > availableStock) {
-    throw new Error(`Stock insuffisant pour "${med.name}". Disponible : ${availableStock}`);
-  }
-
-  d.run('BEGIN');
-  try {
-    if (oldMedicationId !== newMedicationId) {
-      const oldQty = Number(isFinite(oldQuantity) ? oldQuantity : 0);
-      if (oldQty > 0) {
-        d.run(
-          'UPDATE medications SET stock = COALESCE(stock, 0) + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-          [oldQty, oldMedicationId]
-        );
-        d.run(`INSERT INTO medication_movements (medication_id, movement_type, quantity) VALUES (?, 'entry', ?)`, [oldMedicationId, oldQty]);
-      }
-
-      d.run(
-        'UPDATE medications SET stock = stock - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [newQuantity, newMedicationId]
-      );
-      d.run(`INSERT INTO medication_movements (medication_id, movement_type, quantity) VALUES (?, 'exit', ?)`, [newMedicationId, newQuantity]);
-    } else {
-      const diff = newQuantity - oldQuantity;
-      if (diff !== 0) {
-        const moveType = diff > 0 ? 'exit' : 'entry';
-        d.run(
-          'UPDATE medications SET stock = stock - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-          [diff, newMedicationId]
-        );
-        d.run(`INSERT INTO medication_movements (medication_id, movement_type, quantity) VALUES (?, ?, ?)`, [newMedicationId, moveType, Math.abs(diff)]);
-      }
-    }
-
-    const unitPrice = Number((med.price ?? 0));
-    const safeQty = Number(isFinite(newQuantity) ? newQuantity : 0);
-    d.run(
-      'UPDATE dispensations SET medication_id = ?, medication_name = ?, unit = ?, quantity = ?, unit_price = ? WHERE id = ?',
-      [newMedicationId, String(med.name), String(med.unit || 'comprimé'), safeQty, unitPrice, idNum]
-    );
-
-    d.run('COMMIT');
-    saveDB();
-    return true;
-  } catch (e) {
-    try { d.run('ROLLBACK'); } catch { /* ignore */ }
-    throw e;
-  }
-}
-
 async function ensureRegistryNumbers() {
   const d = await getDB();
   try {
@@ -1604,6 +1544,7 @@ module.exports = {
    addTreatmentsToRecord,
    createDispensation,
    getDispensations,
+   getDispensationTotal,
    deleteDispensation,
    updateDispensation
  };

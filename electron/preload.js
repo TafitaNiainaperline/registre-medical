@@ -111,6 +111,9 @@ contextBridge.exposeInMainWorld('api', {
   getDispensations: () =>
     ipcRenderer.invoke('dispensations:list'),
 
+  getDispensationTotal: (filters) =>
+    ipcRenderer.invoke('dispensations:total', filters),
+
   createDispensation: (data) =>
     ipcRenderer.invoke('dispensations:create', data),
 

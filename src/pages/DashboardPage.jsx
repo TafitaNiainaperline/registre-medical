@@ -1,4 +1,4 @@
-Ôªøimport { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { categories } from '../constants';
 
 function parseAgeToYears(stored) {
@@ -22,7 +22,7 @@ function parseAgeToYears(stored) {
 }
 
 function getAgeGroup(years) {
-  if (years === null) return 'Non renseign√©';
+  if (years === null) return 'Non renseignÈ';
   if (years < 1) return '0-11 mois';
   if (years <= 5) return '1-5 ans';
   if (years <= 17) return '6-17 ans';
@@ -60,8 +60,10 @@ export default function DashboardPage() {
   const [stats, setStats] = useState({});
   const [archiveLabel, setArchiveLabel] = useState('');
   const [archiveDiagnostics, setArchiveDiagnostics] = useState([]);
+  const [dispensationTotal, setDispensationTotal] = useState(0);
+  const [dispensationCount, setDispensationCount] = useState(0);
 
-  useEffect(() => {
+   useEffect(() => {
     const load = async () => {
       try {
         const current = await window.api.getCurrentArchive?.();
@@ -80,6 +82,12 @@ export default function DashboardPage() {
         const statsWithSizes = {};
         Object.keys(nextStats).forEach(k => { statsWithSizes[k] = nextStats[k].size; });
         setStats(statsWithSizes);
+
+        const dispTotal = await window.api.getDispensationTotal?.({ year: current?.year, month: current?.month });
+        setDispensationTotal(Number(dispTotal || 0));
+
+        const dispCount = await window.api.getDispensations?.() || [];
+        setDispensationCount(dispCount.length);
 
         const archives = await window.api.listArchives?.() || [];
         const sortedArchives = [...archives].sort((a, b) => {
@@ -110,16 +118,17 @@ export default function DashboardPage() {
         setRecords([]);
         setStats({});
         setArchiveDiagnostics([]);
+        setDispensationTotal(0);
       }
     };
     load();
   }, []);
 
   const totalRecords = new Set(records.map(getDossierKey)).size;
-  const totalAmount = records.reduce((sum, row) => sum + sumNumber(row.cost), 0);
+  const totalAmount = records.reduce((sum, row) => sum + sumNumber(row.cost), 0) + (Number(dispensationTotal) || 0);
 
   const sexSummary = Object.entries(records.reduce((acc, row) => {
-    const sex = String(row.sexe || '').trim().toUpperCase() || 'Non renseign√©';
+    const sex = String(row.sexe || '').trim().toUpperCase() || 'Non renseignÈ';
     if (!acc[sex]) acc[sex] = new Set();
     acc[sex].add(getPatientId(row));
     return acc;
@@ -151,12 +160,12 @@ export default function DashboardPage() {
         <div>
           <h1>Tableau de bord</h1>
           <p>
-            Aper√ßu g√©n√©ral des registres{archiveLabel ? ` ‚Äî ${archiveLabel}` : ''}.
+            AperÁu gÈnÈral des registres{archiveLabel ? ` ó ${archiveLabel}` : ''}.
           </p>
         </div>
 
         <div className="dashboard-badge">
-          üè• Gestion Clinique
+          ?? Gestion Clinique
         </div>
       </div>
 
@@ -171,10 +180,10 @@ export default function DashboardPage() {
 
         <article className="stat-card" style={{ borderTop: '5px solid #28a745' }}>
           <div className="stat-top">
-            <h3>Montant factur√©</h3>
+            <h3>Montant facturÈ</h3>
           </div>
           <strong>{totalAmount.toLocaleString()} Ar</strong>
-          <span className="stat-subtitle">Total des co√ªts</span>
+          <span className="stat-subtitle">Total des co˚ts</span>
         </article>
 
         <article className="stat-card" style={{ borderTop: '5px solid #f59f00' }}>
@@ -203,7 +212,7 @@ export default function DashboardPage() {
 
       {ageGroupSummary.length > 0 && (
         <div style={{ marginBottom: '24px' }}>
-          <strong>Patients par tranche d'√¢ge</strong>
+          <strong>Patients par tranche d'‚ge</strong>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px' }}>
             {ageGroupSummary.map(([group, count]) => (
               <span key={group} style={{ padding: '8px 12px', background: '#f4f9fd', border: '1px solid #dceaf2', borderRadius: '10px', color: '#184a6e' }}>
@@ -230,13 +239,14 @@ export default function DashboardPage() {
                     ))}
                   </div>
                 ) : (
-                  <span style={{ color: '#666' }}>Aucun diagnostic enregistr√©</span>
+                  <span style={{ color: '#666' }}>Aucun diagnostic enregistrÈ</span>
                 )}
               </div>
             ))}
           </div>
         </div>
       )}
+
 
       <div className="cards-grid">
         {categories.map((cat) => (
@@ -260,11 +270,22 @@ export default function DashboardPage() {
             <strong>{stats[cat.key] || 0}</strong>
 
             <span className="stat-subtitle">
-              Dossiers enregistr√©s
+              Dossiers enregistrÈs
             </span>
 
           </article>
         ))}
+
+        <article className="stat-card" style={{ borderTop: '5px solid #4a90d9' }}>
+          <div className="stat-top">
+            <h3>Dispensations</h3>
+            <div className="stat-dot" style={{ background: '#4a90d9' }} />
+          </div>
+          <strong>{dispensationCount}</strong>
+          <span className="stat-subtitle">
+            Total : {Number(dispensationTotal || 0).toLocaleString()} Ar
+          </span>
+        </article>
       </div>
     </section>
   );

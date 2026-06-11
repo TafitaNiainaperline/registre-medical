@@ -327,9 +327,9 @@ ipcMain.handle('stock:pdf', async () => {
  // DISPENSATIONS
  // ─────────────────────────────────────────────────────
 
-ipcMain.handle('dispensations:list', () => {
-  return db.getDispensations();
-});
+ipcMain.handle('dispensations:list', () => db.getDispensations());
+
+ipcMain.handle('dispensations:total', (_, filters) => db.getDispensationTotal(filters));
 
 ipcMain.handle('dispensations:create', (_, data) => {
   return db.createDispensation(data);
