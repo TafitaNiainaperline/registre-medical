@@ -61,24 +61,22 @@ export default function AppLayout() {
 
           <NavLink to="/aide">Aide</NavLink>
           <NavLink to="/archives">Archives</NavLink>
-          <NavLink to="/dispensation">Dispensation</NavLink>
+<NavLink to="/dispensation">Dispensation</NavLink>
 
-          {currentUser.role === 'admin' && (
-            <NavLink to="/medicaments">Médicaments</NavLink>
-          )}
+          <NavLink to="/medicaments">Médicaments</NavLink>
 
-          {currentUser.role === 'admin' && (
-            <NavLink
-              to="/admin"
-              style={{
-                marginTop: '8px',
-                borderTop: '1px solid #d8e4e8',
-                paddingTop: '12px'
-              }}
-            >
-              ⚙ Gestion utilisateurs
-            </NavLink>
-          )}
+           {currentUser.role === 'admin' && (
+             <NavLink
+               to="/admin"
+               style={{
+                 marginTop: '8px',
+                 borderTop: '1px solid #d8e4e8',
+                 paddingTop: '12px'
+               }}
+             >
+               ⚙ Gestion utilisateurs
+             </NavLink>
+           )}
         </nav>
 
         {/* BAS SIDEBAR */}

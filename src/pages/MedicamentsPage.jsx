@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const emptyForm = { 
   name: '', 
@@ -14,7 +14,7 @@ function capitalizeWords(value, preserveTrailingSpace = false) {
   return input
     .trimStart()
     .toLowerCase()
-    .replace(/(^|\s|[-'’])(\p{L})/gu, (_, separator, char) => `${separator}${char.toUpperCase()}`)
+    .replace(/(^|\s|[-''])(\p{L})/gu, (_, separator, char) => `${separator}${char.toUpperCase()}`)
     + trailingSpace;
 }
 
@@ -35,9 +35,6 @@ function formatTextField(name, value) {
 }
 
 export default function MedicamentsPage() {
-  const currentUser = useMemo(() => JSON.parse(localStorage.getItem('user') || '{}'), []);
-  const isAdmin = currentUser.role === 'admin';
-
   const [rows, setRows] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
@@ -60,18 +57,18 @@ export default function MedicamentsPage() {
       .catch(() => setRows([]));
 
    useEffect(() => {
-     load();
- 
-     window.api.getMedicationMovements()
-       .then(setMovements);
- 
-     window.api.getTopSellingMedications()
-       .then(setTopSelling);
-   }, []);
+    load();
+  
+    window.api.getMedicationMovements()
+      .then(setMovements);
+  
+    window.api.getTopSellingMedications()
+      .then(setTopSelling);
+  }, []);
 
    useEffect(() => {
-     localStorage.setItem('medReserveThreshold', String(reserveThreshold));
-   }, [reserveThreshold]);
+    localStorage.setItem('medReserveThreshold', String(reserveThreshold));
+  }, [reserveThreshold]);
 
   const notify = (text, type = 'ok') => {
     setMsg({ text, type });
@@ -85,7 +82,6 @@ export default function MedicamentsPage() {
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!isAdmin) return;
     try {
       const payload = {
         name: capitalizeWords(form.name.trim()),
@@ -104,7 +100,7 @@ export default function MedicamentsPage() {
       notify(editingId ? 'Médicament mis à jour.' : 'Médicament ajouté.');
       load();
     } catch (err) {
-      notify(err.message || 'Erreur lors de l’enregistrement.', 'err');
+      notify(err.message || 'Erreur lors de l\'enregistrement.', 'err');
     }
   };
 
@@ -120,7 +116,6 @@ export default function MedicamentsPage() {
   };
 
   const remove = async (id) => {
-    if (!isAdmin) return;
     if (!window.confirm('Supprimer ce médicament ?')) return;
     await window.api.deleteMedication(id);
     notify('Médicament supprimé.');
@@ -155,7 +150,7 @@ export default function MedicamentsPage() {
 
       load();
     } catch (err) {
-      notify(err.message || 'Erreur lors de l’ajout du stock.', 'err');
+      notify(err.message || 'Erreur lors de l\'ajout du stock.', 'err');
     }
   };
 
@@ -164,15 +159,6 @@ export default function MedicamentsPage() {
     if (!q) return true;
     return String(r.name || '').toLowerCase().includes(q);
   });
-
-  if (!isAdmin) {
-    return (
-      <section>
-        <h1>Accès refusé</h1>
-        <p>Seul l’administrateur peut gérer les médicaments.</p>
-      </section>
-    );
-  }
 
   return (
     <>
@@ -387,15 +373,15 @@ export default function MedicamentsPage() {
                     </td>
                     <td>{r.description || '-'}</td>
                     <td>
-                    <button className="icon-btn" onClick={() => addStock(r)} title="Ajouter du stock">➕</button>
+                        <button className="icon-btn" onClick={() => addStock(r)} title="Ajouter du stock">➕</button>
 
-                    <button className="icon-btn" onClick={() => edit(r)} title="Modifier">✏️</button>
+                        <button className="icon-btn" onClick={() => edit(r)} title="Modifier">✏️</button>
 
-                    <button className="icon-btn danger" onClick={() => remove(r.id)} title="Supprimer">🗑️</button>
-                  </td>
-                </tr>
+                        <button className="icon-btn danger" onClick={() => remove(r.id)} title="Supprimer">🗑️</button>
+                      </td>
+                  </tr>
                 );
-             })}
+              })}
             </tbody>
           </table>
         </div>
