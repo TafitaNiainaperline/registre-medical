@@ -1275,10 +1275,13 @@ async function getTopSellingMedications() {
 
   const res = d.exec(`
     SELECT
-      medication_name,
-      SUM(quantity) as total_sold
-    FROM record_medications
-    GROUP BY medication_name
+      m.name as medication_name,
+      SUM(mm.quantity) as total_sold
+    FROM medication_movements mm
+    JOIN medications m
+      ON m.id = mm.medication_id
+    WHERE mm.movement_type = 'exit'
+    GROUP BY mm.medication_id, m.name
     ORDER BY total_sold DESC
     LIMIT 10
   `);
