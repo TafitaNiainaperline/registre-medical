@@ -124,7 +124,7 @@ export default function DashboardPage() {
     load();
   }, []);
 
-  const totalRecords = new Set(records.map(getDossierKey)).size;
+  const totalRecords = Object.values(stats).reduce((sum, count) => sum + count, 0);
   const totalAmount = records.reduce((sum, row) => sum + sumNumber(row.cost), 0) + (Number(dispensationTotal) || 0);
 
   const sexSummary = Object.entries(records.reduce((acc, row) => {
