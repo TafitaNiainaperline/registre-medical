@@ -1,11 +1,19 @@
 import { useEffect, useState } from 'react';
 
+function getToday() {
+  const today = new Date();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${today.getFullYear()}-${month}-${day}`;
+}
+
 const emptyForm = { 
   name: '', 
   price: '', 
   description: '', 
   stock: '', 
-  unit: 'comprimé' 
+  unit: 'comprimé',
+  date: getToday(),
 };
 
 function capitalizeWords(value, preserveTrailingSpace = false) {
@@ -89,8 +97,10 @@ export default function MedicamentsPage() {
         description: capitalizeWords(form.description || ''),
         stock: form.stock === '' ? null : Number(form.stock),
         unit: form.unit || 'comprimé',
+        date: form.date,
       };
       if (!payload.name) { notify('Nom du médicament requis.', 'err'); return; }
+      if (!editingId && !payload.date) { notify("Date d'ajout requise.", 'err'); return; }
       
       if (editingId) await window.api.updateMedication(editingId, payload);
       else await window.api.createMedication(payload);
@@ -112,6 +122,7 @@ export default function MedicamentsPage() {
       description: capitalizeWords(row.description || ''),
       stock: row.stock === null || row.stock === undefined ? '' : String(row.stock),
       unit: row.unit || 'comprimé',
+      date: row.created_at ? formatMadagascarDate(row.created_at) : getToday(),
     });
   };
 
@@ -264,6 +275,10 @@ export default function MedicamentsPage() {
             </select>
 
           <input name="stock" type="number" min="0" placeholder="Stock (optionnel)" value={form.stock} onChange={onChange} />
+
+          {!editingId && (
+            <input name="date" type="date" value={form.date} onChange={onChange} required />
+          )}
           
           <input name="description" placeholder="Description (optionnel)" value={form.description} onChange={onChange} />
 

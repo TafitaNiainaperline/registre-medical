@@ -1181,16 +1181,31 @@ async function createMedication(data) {
   if (ensureMedicationsSchema(d)) {
     try { saveDB(); } catch { /* ignore */ }
   }
+  const stock = data.stock === '' || data.stock === undefined ? null : Number(data.stock);
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(String(data.date || ''))
+    ? `${data.date} 00:00:00`
+    : null;
+
   d.run(
-    'INSERT INTO medications (name, price, unit, description, stock, updated_at) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)',
+    'INSERT INTO medications (name, price, unit, description, stock, created_at, updated_at) VALUES (?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP)',
     [
       String(data.name || '').trim(),
       Number(data.price) || 0,
       data.unit || 'comprimé',
       data.description || null,
-      data.stock === '' || data.stock === undefined ? null : Number(data.stock),
+      stock,
+      date,
     ]
   );
+
+  if (stock !== null && Number.isFinite(stock) && stock > 0) {
+    const medication = d.exec('SELECT id FROM medications WHERE name = ?', [String(data.name || '').trim()]);
+    const medicationId = medication[0]?.values?.[0]?.[0];
+    d.run(
+      'INSERT INTO medication_movements (medication_id, movement_type, quantity, created_at) VALUES (?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP))',
+      [medicationId, 'entry', stock, date]
+    );
+  }
   saveDB();
 }
 
