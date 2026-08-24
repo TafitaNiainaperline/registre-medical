@@ -35,24 +35,6 @@ function displayAge(stored) {
   return value;
 }
 
-function categoryLabel(category) {
-  const labels = {
-    consultation: 'Consultations',
-    cpn: 'Consultation Pre-Natale',
-    pf: 'Planification Familiale',
-    analyse: 'Analyses',
-    soin: 'Soins',
-  };
-  return labels[category] || category || '-';
-}
-
-function displayRegistryNumber(value) {
-  const match = String(value || '').match(/(\d+)$/);
-  if (!match) return value || '-';
-  const number = Number(match[1]) || 0;
-  return String(number).padStart(3, '0');
-}
-
 function formatMoney(value) {
   return `${Number(value || 0).toLocaleString('fr-FR')} Ar`;
 }
@@ -104,27 +86,27 @@ function buildReceiptHtml(record) {
   <html>
     <head>
       <meta charset="utf-8" />
-      <title>Recu ${escapeHtml(record.registry_number || record.id)}</title>
+      <title>Facture</title>
       <style>
         * { box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; color: #16323d; margin: 0; padding: 32px; }
-        .receipt { border: 1px solid #c8d9df; border-radius: 12px; padding: 28px; }
-        .top { display: flex; justify-content: space-between; gap: 24px; border-bottom: 3px solid #1c96a4; padding-bottom: 18px; margin-bottom: 22px; }
+        body { font-family: Arial, sans-serif; color: #16323d; margin: 0; padding: 28px; background: #f4f8f9; }
+        .receipt { background: #ffffff; border: 1px solid #c8d9df; border-top: 6px solid #1c96a4; border-radius: 4px; padding: 30px; }
+        .top { display: flex; justify-content: space-between; gap: 24px; border-bottom: 1px solid #c8d9df; padding-bottom: 22px; margin-bottom: 26px; }
         .identity { display: flex; align-items: center; gap: 16px; }
-        .receipt-logo { width: 150px; max-height: 88px; object-fit: contain; }
-        h1 { margin: 0; font-size: 28px; color: #0d7280; }
+        .receipt-logo { width: 140px; max-height: 76px; object-fit: contain; }
+        h1 { margin: 0; font-size: 32px; color: #0d7280; letter-spacing: .08em; text-transform: uppercase; }
         h2 { margin: 0 0 8px; font-size: 16px; color: #5f7b84; text-transform: uppercase; letter-spacing: .04em; }
         .badge { font-weight: 700; font-size: 18px; color: #16323d; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; margin-bottom: 22px; }
-        .field { border-bottom: 1px solid #e6eff2; padding-bottom: 8px; }
-        .label { color: #5f7b84; font-size: 12px; text-transform: uppercase; margin-bottom: 4px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 28px; margin-bottom: 28px; padding: 18px; background: #f7fbfc; border-left: 4px solid #1c96a4; }
+        .field { border-bottom: 1px solid #dbe8ec; padding-bottom: 9px; }
+        .label { color: #5f7b84; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 5px; }
         .value { font-weight: 700; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #dbe8ec; padding: 10px; text-align: left; vertical-align: top; }
-        th { background: #e2f4f7; color: #0d7280; font-size: 12px; text-transform: uppercase; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { border-bottom: 1px solid #dbe8ec; padding: 12px 10px; text-align: left; vertical-align: top; }
+        th { border-top: 2px solid #1c96a4; background: #f0f8fa; color: #0d7280; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
         .num { text-align: right; }
-        .total { margin-top: 18px; text-align: right; font-size: 22px; font-weight: 800; color: #0d7280; }
-        .note { margin-top: 24px; color: #5f7b84; font-size: 12px; }
+        .total { margin: 24px 0 0 auto; padding: 14px 18px; width: 280px; border-top: 3px solid #1c96a4; background: #f0f8fa; text-align: right; font-size: 20px; font-weight: 800; color: #0d7280; }
+        .note { margin-top: 28px; padding-top: 14px; border-top: 1px solid #dbe8ec; color: #5f7b84; font-size: 12px; }
         @page { margin: 16mm; }
       </style>
     </head>
@@ -134,13 +116,8 @@ function buildReceiptHtml(record) {
           <div class="identity">
             ${logoHtml}
             <div>
-              <h1>Recu de paiement</h1>
-              <div>${escapeHtml(categoryLabel(record.category))}</div>
+              <h1>Facture</h1>
             </div>
-          </div>
-          <div>
-            <h2>N° registre</h2>
-            <div class="badge">${escapeHtml(displayRegistryNumber(record.registry_number || record.id))}</div>
           </div>
         </div>
 
