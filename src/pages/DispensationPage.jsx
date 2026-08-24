@@ -29,7 +29,7 @@ export default function DispensationPage() {
 
   const load = () => {
     window.api.listMedications()
-      .then((r) => setMedications(r || []))
+      .then((r) => setMedications((r || []).filter((item) => item.item_type !== 'act')))
       .catch(() => setMedications([]));
 
     window.api.getDispensations()

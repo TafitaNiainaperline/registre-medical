@@ -98,6 +98,7 @@ function initTables() {
      CREATE TABLE IF NOT EXISTS medications (
        id INTEGER PRIMARY KEY AUTOINCREMENT,
        name TEXT NOT NULL UNIQUE,
+         item_type TEXT NOT NULL DEFAULT 'medication',
        price INTEGER NOT NULL,
        unit TEXT DEFAULT 'comprimé',
        description TEXT,
@@ -111,6 +112,7 @@ function initTables() {
        id INTEGER PRIMARY KEY AUTOINCREMENT,
        record_id INTEGER NOT NULL,
        medication_id INTEGER,
+      item_type TEXT NOT NULL DEFAULT 'medication',
        medication_name TEXT NOT NULL,
        medication_unit TEXT,
        quantity INTEGER NOT NULL,
@@ -154,6 +156,7 @@ function initTables() {
     `ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'`,
     `ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 0`,
     `ALTER TABLE record_medications ADD COLUMN medication_unit TEXT`,
+    `ALTER TABLE record_medications ADD COLUMN item_type TEXT NOT NULL DEFAULT 'medication'`,
   ];
   let schemaChanged = false;
   migrations.forEach(sql => {
@@ -281,6 +284,7 @@ async function fetchRecordsByDossier(dossierId) {
     if (!byRecord.has(m.record_id)) byRecord.set(m.record_id, []);
     byRecord.get(m.record_id).push({
       medication_id: m.medication_id ?? null,
+      item_type: m.item_type === 'act' ? 'act' : 'medication',
       name: m.medication_name,
       unit: m.medication_unit || null,
       quantity: Number(m.quantity) || 0,
@@ -543,6 +547,7 @@ function ensureMedicationsSchema(d) {
 
     ensureCol('unit', "ALTER TABLE medications ADD COLUMN unit TEXT DEFAULT 'comprimé'");
     ensureCol('stock_threshold', 'ALTER TABLE medications ADD COLUMN stock_threshold INTEGER DEFAULT 100');
+    ensureCol('item_type', "ALTER TABLE medications ADD COLUMN item_type TEXT NOT NULL DEFAULT 'medication'");
 
     return changed;
   } catch {
@@ -831,6 +836,7 @@ function normalizeTreatments(treatments) {
     .filter(t => t && typeof t.name === 'string')
     .map(t => ({
       medication_id: t.medication_id ?? null,
+      item_type: t.item_type === 'act' ? 'act' : 'medication',
       name: String(t.name).trim(),
       unit: t.unit ? String(t.unit).trim() : null,
       quantity: Math.max(0, parseInt(t.quantity, 10) || 0),
@@ -942,10 +948,10 @@ async function createRecord(data) {
       treatments.forEach((t) => {
         const total = t.unit_price * t.quantity;
         d.run(
-          'INSERT INTO record_medications (record_id, medication_id, medication_name, medication_unit, quantity, unit_price, total) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          [recordId, t.medication_id, t.name, t.unit || null, t.quantity, t.unit_price, total]
+          'INSERT INTO record_medications (record_id, medication_id, item_type, medication_name, medication_unit, quantity, unit_price, total) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          [recordId, t.medication_id, t.item_type, t.name, t.unit || null, t.quantity, t.unit_price, total]
         );
-        if (t.medication_id) {
+        if (t.medication_id && t.item_type === 'medication') {
           deltas.set(Number(t.medication_id), (deltas.get(Number(t.medication_id)) || 0) - Number(t.quantity || 0));
         }
       });
@@ -1019,10 +1025,10 @@ async function addTreatmentsToRecord(recordId, data) {
       treatments.forEach((t) => {
         const total = (t.unit_price || 0) * (t.quantity || 0);
         d.run(
-          'INSERT INTO record_medications (record_id, medication_id, medication_name, medication_unit, quantity, unit_price, total) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          [newRecordId, t.medication_id, t.name, t.unit || null, t.quantity, t.unit_price || 0, total]
+          'INSERT INTO record_medications (record_id, medication_id, item_type, medication_name, medication_unit, quantity, unit_price, total) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          [newRecordId, t.medication_id, t.item_type, t.name, t.unit || null, t.quantity, t.unit_price || 0, total]
         );
-        if (t.medication_id) {
+        if (t.medication_id && t.item_type === 'medication') {
           deltas.set(Number(t.medication_id), (deltas.get(Number(t.medication_id)) || 0) - Number(t.quantity || 0));
         }
       });
@@ -1083,7 +1089,7 @@ async function updateRecord(id, data) {
         stockDeltas.set(medId, (stockDeltas.get(medId) || 0) + qty); // restock old qty
       });
       treatments.forEach((t) => {
-        if (!t.medication_id) return;
+        if (!t.medication_id || t.item_type !== 'medication') return;
         const medId = Number(t.medication_id);
         const qty = Number(t.quantity) || 0;
         stockDeltas.set(medId, (stockDeltas.get(medId) || 0) - qty); // consume new qty
@@ -1116,8 +1122,8 @@ async function updateRecord(id, data) {
         treatments.forEach((t) => {
           const total = t.unit_price * t.quantity;
           d.run(
-            'INSERT INTO record_medications (record_id, medication_id, medication_name, medication_unit, quantity, unit_price, total) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [id, t.medication_id, t.name, t.unit || null, t.quantity, t.unit_price, total]
+            'INSERT INTO record_medications (record_id, medication_id, item_type, medication_name, medication_unit, quantity, unit_price, total) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [id, t.medication_id, t.item_type, t.name, t.unit || null, t.quantity, t.unit_price, total]
           );
         });
       }
@@ -1174,7 +1180,7 @@ async function getCurrentArchive() {
 // ── MEDICATIONS ───────────────────────────────────────
 async function listMedications() {
   const d = await getDB();
-  const res = d.exec('SELECT id, name, price, unit, description, stock, stock_threshold, created_at, updated_at FROM medications ORDER BY name ASC');
+  const res = d.exec('SELECT id, name, item_type, price, unit, description, stock, stock_threshold, created_at, updated_at FROM medications ORDER BY name ASC');
   return toObjects(res);
 }
 
@@ -1184,6 +1190,7 @@ async function createMedication(data) {
     try { saveDB(); } catch { /* ignore */ }
   }
   const stock = data.stock === '' || data.stock === undefined ? null : Number(data.stock);
+  const itemType = data.item_type === 'act' ? 'act' : 'medication';
   const stockThreshold = data.stock_threshold === '' || data.stock_threshold === undefined
     ? 100
     : Number(data.stock_threshold);
@@ -1192,19 +1199,20 @@ async function createMedication(data) {
     : null;
 
   d.run(
-    'INSERT INTO medications (name, price, unit, description, stock, stock_threshold, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP)',
+    'INSERT INTO medications (name, item_type, price, unit, description, stock, stock_threshold, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP)',
     [
       String(data.name || '').trim(),
+      itemType,
       Number(data.price) || 0,
-      data.unit || 'comprimé',
+      itemType === 'act' ? null : (data.unit || 'comprimé'),
       data.description || null,
-      stock,
+      itemType === 'act' ? null : stock,
       stockThreshold,
       date,
     ]
   );
 
-  if (stock !== null && Number.isFinite(stock) && stock > 0) {
+  if (itemType === 'medication' && stock !== null && Number.isFinite(stock) && stock > 0) {
     const medication = d.exec('SELECT id FROM medications WHERE name = ?', [String(data.name || '').trim()]);
     const medicationId = medication[0]?.values?.[0]?.[0];
     d.run(
@@ -1221,13 +1229,14 @@ async function updateMedication(id, data) {
     try { saveDB(); } catch { /* ignore */ }
   }
   d.run(
-    'UPDATE medications SET name=?, price=?, unit=?, description=?, stock=?, stock_threshold=?, updated_at=CURRENT_TIMESTAMP WHERE id=?',
+    'UPDATE medications SET name=?, item_type=?, price=?, unit=?, description=?, stock=?, stock_threshold=?, updated_at=CURRENT_TIMESTAMP WHERE id=?',
     [
       String(data.name || '').trim(),
+      data.item_type === 'act' ? 'act' : 'medication',
       Number(data.price) || 0,
-      data.unit || 'comprimé',
+      data.item_type === 'act' ? null : (data.unit || 'comprimé'),
       data.description || null,
-      data.stock === '' || data.stock === undefined ? null : Number(data.stock),
+      data.item_type === 'act' ? null : (data.stock === '' || data.stock === undefined ? null : Number(data.stock)),
       data.stock_threshold === '' || data.stock_threshold === undefined ? 100 : Number(data.stock_threshold),
       id,
     ]
@@ -1349,9 +1358,10 @@ async function createDispensation(data) {
   const medId = Number(data.medication_id);
   const quantity = Number(data.quantity);
 
-  const medRows = toObjects(d.exec('SELECT name, unit, stock, price FROM medications WHERE id = ?', [medId]));
+  const medRows = toObjects(d.exec('SELECT name, item_type, unit, stock, price FROM medications WHERE id = ?', [medId]));
   const med = medRows[0];
   if (!med) throw new Error('Médicament introuvable');
+  if (med.item_type === 'act') throw new Error('Un acte médical ne peut pas être dispensé comme un médicament.');
 
   if (med.stock !== null && med.stock !== undefined && quantity > Number(med.stock)) {
     throw new Error(`Stock insuffisant. Disponible : ${med.stock}`);

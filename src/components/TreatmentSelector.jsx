@@ -23,7 +23,7 @@ export default function TreatmentSelector({ medications, value, onChange }) {
     if (!med) return;
 
     // === VÉRIFICATION DU STOCK ===
-    if (med.stock !== null && med.stock !== undefined) {
+    if (med.item_type !== 'act' && med.stock !== null && med.stock !== undefined) {
       const currentQty = treatments
         .filter(t => String(t.medication_id) === String(med.id))
         .reduce((sum, t) => sum + toNumber(t.quantity), 0);
@@ -52,6 +52,7 @@ export default function TreatmentSelector({ medications, value, onChange }) {
           ...treatments,
           {
             medication_id: med.id,
+            item_type: med.item_type || 'medication',
             name: med.name,
             unit: med.unit || 'comprimé',
             unit_price: toNumber(med.price, 0),
@@ -69,7 +70,7 @@ export default function TreatmentSelector({ medications, value, onChange }) {
     
     // Vérification stock lors de la modification
     const med = byId.get(String(medicationId));
-    if (med && med.stock !== null && med.stock !== undefined) {
+    if (med && med.item_type !== 'act' && med.stock !== null && med.stock !== undefined) {
       const newTotal = treatments.reduce((sum, t) => {
         return String(t.medication_id) === String(medicationId) 
           ? sum + q 
@@ -103,10 +104,10 @@ export default function TreatmentSelector({ medications, value, onChange }) {
           value={selectedId} 
           onChange={(e) => setSelectedId(e.target.value)}
         >
-          <option value="">Sélectionner un médicament...</option>
+          <option value="">Sélectionner un médicament ou un acte...</option>
           {meds.map((m) => (
             <option key={m.id} value={String(m.id)}>
-              {m.name} — {m.price} Ar / {m.unit || 'comprimé'}
+              {m.item_type === 'act' ? 'Acte : ' : ''}{m.name} — {m.price} Ar{m.item_type !== 'act' && ` / ${m.unit || 'comprimé'}`}
               {m.stock !== null && m.stock !== undefined && ` (Stock: ${m.stock})`}
             </option>
           ))}
@@ -127,7 +128,7 @@ export default function TreatmentSelector({ medications, value, onChange }) {
           onClick={add} 
           disabled={!selectedId}
         >
-          + Ajouter médicament
+          + Ajouter élément
         </button>
 
         <div className="treatments-total">

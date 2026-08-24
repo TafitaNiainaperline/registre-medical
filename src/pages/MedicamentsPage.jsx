@@ -16,6 +16,8 @@ const emptyForm = {
   date: getToday(),
 };
 
+const emptyActForm = { name: '', price: '', date: getToday() };
+
 function capitalizeWords(value, preserveTrailingSpace = false) {
   const input = String(value || '');
   const trailingSpace = preserveTrailingSpace ? input.match(/\s*$/)?.[0] || '' : '';
@@ -51,6 +53,7 @@ export default function MedicamentsPage() {
   const isAdmin = currentUser.role === 'admin';
   const [rows, setRows] = useState([]);
   const [form, setForm] = useState(emptyForm);
+  const [actForm, setActForm] = useState(emptyActForm);
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState('');
   const [msg, setMsg] = useState({ type: 'ok', text: '' });
@@ -89,10 +92,15 @@ export default function MedicamentsPage() {
     setForm({ ...form, [e.target.name]: value });
   };
 
+  const onActChange = (e) => {
+    setActForm({ ...actForm, [e.target.name]: formatTextField(e.target.name, e.target.value) });
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     try {
       const payload = {
+        item_type: 'medication',
         name: capitalizeWords(form.name.trim()),
         price: Number(form.price) || 0,
         stock: form.stock === '' ? null : Number(form.stock),
@@ -117,6 +125,27 @@ export default function MedicamentsPage() {
     }
   };
 
+  const submitAct = async (e) => {
+    e.preventDefault();
+    const name = capitalizeWords(actForm.name.trim());
+    if (!name) { notify("Nom de l'acte requis.", 'err'); return; }
+    if (!actForm.date) { notify("Date de l'acte requise.", 'err'); return; }
+
+    try {
+      await window.api.createMedication({
+        item_type: 'act',
+        name,
+        price: Number(actForm.price) || 0,
+        date: actForm.date,
+      });
+      setActForm(emptyActForm);
+      notify(`Acte médical ajouté le ${actForm.date.split('-').reverse().join('/')}.`);
+      load();
+    } catch (err) {
+      notify(err.message || "Erreur lors de l'ajout de l'acte.", 'err');
+    }
+  };
+
   const edit = (row) => {
     setEditingId(row.id);
     setForm({
@@ -125,6 +154,7 @@ export default function MedicamentsPage() {
       stock: row.stock === null || row.stock === undefined ? '' : String(row.stock),
       stock_threshold: String(row.stock_threshold ?? 100),
       unit: row.unit || 'comprimé',
+      item_type: row.item_type || 'medication',
       date: row.created_at ? formatMadagascarDate(row.created_at) : getToday(),
     });
   };
@@ -258,7 +288,7 @@ export default function MedicamentsPage() {
           
           <input name="price" type="number" min="0" placeholder="Prix (Ar)" value={form.price} onChange={onChange} required />
           
-            <select name="unit" value={form.unit} onChange={onChange} className="select" required>
+          <select name="unit" value={form.unit} onChange={onChange} className="select" required>
               <option value="comprimé">Comprimé</option>
               <option value="gélule">Gélule</option>
               <option value="sachet">Sachet</option>
@@ -311,6 +341,19 @@ export default function MedicamentsPage() {
           </div>
         </form>
 
+        <h2 style={{ marginTop: '24px' }}>Ajouter un acte médical</h2>
+        <form className="record-form" onSubmit={submitAct}>
+          <input name="name" placeholder="Nom de l’acte (ex. Échographie)" value={actForm.name} onChange={onActChange} required />
+          <input name="price" type="number" min="0" placeholder="Prix (Ar)" value={actForm.price} onChange={onActChange} required />
+          <label className="medication-date-field">
+            <span>Date de l’acte</span>
+            <input name="date" type="date" value={actForm.date} onChange={onActChange} required />
+          </label>
+          <div className="actions-row">
+            <button type="submit">Ajouter l’acte</button>
+          </div>
+        </form>
+
         {/* Barre de recherche */}
         <div className="search-bar" style={{ margin: '20px 0' }}>
           <input
@@ -343,24 +386,19 @@ export default function MedicamentsPage() {
             <thead>
               <tr>
                 <th>Nom</th>
-                      {isAdmin ? (
-                        <>
+                <th>Type</th>
                 <th>Prix (Ar)</th>
                 <th>Unité</th>
                 <th>Stock</th>
                 <th>Seuil</th>
                 <th>Date</th>
                 <th>Actions</th>
-                        </>
-                      ) : (
-                        <span style={{ color: '#888' }}>Consultation</span>
-                      )}
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: '20px', color: '#5f7b84' }}>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: '20px', color: '#5f7b84' }}>
                     Aucun médicament trouvé.
                   </td>
                 </tr>
@@ -373,12 +411,14 @@ export default function MedicamentsPage() {
                     style={isLowStock ? { background: '#fff7ea' } : undefined}
                   >
                     <td><strong>{r.name}</strong></td>
+                    <td>{r.item_type === 'act' ? 'Acte médical' : 'Médicament'}</td>
                     <td>{Number(r.price).toLocaleString()} Ar</td>
                     <td>
-                      <span className="unit-badge">{r.unit || 'comprimé'}</span>
+                      {r.item_type === 'act' ? '-' : <span className="unit-badge">{r.unit || 'comprimé'}</span>}
                     </td>
                     <td>
-                      {r.stock !== null && r.stock !== undefined
+                      {r.item_type === 'act' ? '-'
+                        : r.stock !== null && r.stock !== undefined
                         ? (
                           <>
                             <strong>{r.stock}</strong>
@@ -399,14 +439,20 @@ export default function MedicamentsPage() {
                         )
                         : <span style={{ color: '#888' }}>Non suivi</span>}
                     </td>
-                    <td>{r.stock_threshold ?? 100}</td>
+                    <td>{r.item_type === 'act' ? '-' : (r.stock_threshold ?? 100)}</td>
                       <td>{formatMadagascarDate(r.created_at)}</td>
                     <td>
-                        <button className="icon-btn" onClick={() => addStock(r)} title="Ajouter du stock">➕</button>
+                      {isAdmin ? (
+                        <>
+                        {r.item_type !== 'act' && (
+                          <button className="icon-btn" onClick={() => addStock(r)} title="Ajouter du stock">➕</button>
+                        )}
 
                         <button className="icon-btn" onClick={() => edit(r)} title="Modifier">✏️</button>
 
                         <button className="icon-btn danger" onClick={() => remove(r.id)} title="Supprimer">🗑️</button>
+                        </>
+                      ) : <span style={{ color: '#888' }}>Consultation</span>}
                       </td>
                   </tr>
                 );

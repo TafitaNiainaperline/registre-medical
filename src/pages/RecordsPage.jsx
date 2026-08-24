@@ -594,7 +594,7 @@ export default function RecordsPage({ category }) {
       <div className="page-header">
         <div>
           <h1>Registre {category.label}</h1>
-          <p>Gestion complète des dossiers médicaux et des informations des patients.</p>
+          <p>Médicaments et actes médicaux.</p>
         </div>
         <div className="dashboard-badge" style={{ background: category.color }}>
           📁 {category.label}

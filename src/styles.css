@@ -83,6 +83,12 @@ p { margin: 0 0 18px; color: var(--soft); }
   font: inherit;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
+.record-form input::placeholder,
+.record-form textarea::placeholder {
+  color: #68818a;
+  font: inherit;
+  opacity: 1;
+}
 .record-form input:focus, .record-form textarea:focus,
 .auth-card input:focus {
   outline: none;
