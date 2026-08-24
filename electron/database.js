@@ -102,6 +102,7 @@ function initTables() {
        unit TEXT DEFAULT 'comprimé',
        description TEXT,
        stock INTEGER,
+      stock_threshold INTEGER DEFAULT 100,
        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
        updated_at DATETIME
      );
@@ -541,6 +542,7 @@ function ensureMedicationsSchema(d) {
     };
 
     ensureCol('unit', "ALTER TABLE medications ADD COLUMN unit TEXT DEFAULT 'comprimé'");
+    ensureCol('stock_threshold', 'ALTER TABLE medications ADD COLUMN stock_threshold INTEGER DEFAULT 100');
 
     return changed;
   } catch {
@@ -1172,7 +1174,7 @@ async function getCurrentArchive() {
 // ── MEDICATIONS ───────────────────────────────────────
 async function listMedications() {
   const d = await getDB();
-  const res = d.exec('SELECT id, name, price, unit, description, stock, created_at, updated_at FROM medications ORDER BY name ASC');
+  const res = d.exec('SELECT id, name, price, unit, description, stock, stock_threshold, created_at, updated_at FROM medications ORDER BY name ASC');
   return toObjects(res);
 }
 
@@ -1182,18 +1184,22 @@ async function createMedication(data) {
     try { saveDB(); } catch { /* ignore */ }
   }
   const stock = data.stock === '' || data.stock === undefined ? null : Number(data.stock);
+  const stockThreshold = data.stock_threshold === '' || data.stock_threshold === undefined
+    ? 100
+    : Number(data.stock_threshold);
   const date = /^\d{4}-\d{2}-\d{2}$/.test(String(data.date || ''))
     ? `${data.date} 00:00:00`
     : null;
 
   d.run(
-    'INSERT INTO medications (name, price, unit, description, stock, created_at, updated_at) VALUES (?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP)',
+    'INSERT INTO medications (name, price, unit, description, stock, stock_threshold, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP)',
     [
       String(data.name || '').trim(),
       Number(data.price) || 0,
       data.unit || 'comprimé',
       data.description || null,
       stock,
+      stockThreshold,
       date,
     ]
   );
@@ -1215,13 +1221,14 @@ async function updateMedication(id, data) {
     try { saveDB(); } catch { /* ignore */ }
   }
   d.run(
-    'UPDATE medications SET name=?, price=?, unit=?, description=?, stock=?, updated_at=CURRENT_TIMESTAMP WHERE id=?',
+    'UPDATE medications SET name=?, price=?, unit=?, description=?, stock=?, stock_threshold=?, updated_at=CURRENT_TIMESTAMP WHERE id=?',
     [
       String(data.name || '').trim(),
       Number(data.price) || 0,
       data.unit || 'comprimé',
       data.description || null,
       data.stock === '' || data.stock === undefined ? null : Number(data.stock),
+      data.stock_threshold === '' || data.stock_threshold === undefined ? 100 : Number(data.stock_threshold),
       id,
     ]
   );
@@ -1311,7 +1318,7 @@ async function getLowStockMedications(limit = 10) {
     SELECT *
     FROM medications
     WHERE stock IS NOT NULL
-      AND stock < ?
+      AND stock <= COALESCE(stock_threshold, ?)
     ORDER BY stock ASC
   `, [limit]);
 
@@ -1328,6 +1335,7 @@ async function getStockReport() {
       price,
       unit,
       stock,
+      stock_threshold,
       description
     FROM medications
     ORDER BY name ASC

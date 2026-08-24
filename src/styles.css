@@ -310,6 +310,34 @@ button:hover { opacity: 0.88; }
   margin: 0;
   font-size: 0.9rem;
 }
+.stock-threshold-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #33475b;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.stock-threshold-field input {
+  width: 100%;
+}
+.stock-threshold-field small {
+  color: #68818a;
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+.medication-date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #33475b;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.medication-date-field input[type='date'] {
+  min-height: 42px;
+  font-size: 0.9rem;
+}
 .toast {
   position: fixed;
   top: 20px;

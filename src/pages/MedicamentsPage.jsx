@@ -11,6 +11,7 @@ const emptyForm = {
   name: '', 
   price: '', 
   stock: '', 
+  stock_threshold: '100',
   unit: 'comprimé',
   date: getToday(),
 };
@@ -46,6 +47,8 @@ function normalizeSearch(value) {
 }
 
 export default function MedicamentsPage() {
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const isAdmin = currentUser.role === 'admin';
   const [rows, setRows] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
@@ -57,10 +60,6 @@ export default function MedicamentsPage() {
   const [stockQuantity, setStockQuantity] = useState('');
   const [movements, setMovements] = useState([]);
   const [topSelling, setTopSelling] = useState([]);
-  const [reserveThreshold, setReserveThreshold] = useState(() => {
-    const stored = localStorage.getItem('medReserveThreshold');
-    return stored !== null ? stored : '5';
-  });
   
 
   const load = () =>
@@ -77,10 +76,6 @@ export default function MedicamentsPage() {
     window.api.getTopSellingMedications()
       .then(setTopSelling);
   }, []);
-
-   useEffect(() => {
-    localStorage.setItem('medReserveThreshold', String(reserveThreshold));
-  }, [reserveThreshold]);
 
   const notify = (text, type = 'ok') => {
     setMsg({ text, type });
@@ -101,6 +96,7 @@ export default function MedicamentsPage() {
         name: capitalizeWords(form.name.trim()),
         price: Number(form.price) || 0,
         stock: form.stock === '' ? null : Number(form.stock),
+        stock_threshold: form.stock_threshold === '' ? 100 : Number(form.stock_threshold),
         unit: form.unit || 'comprimé',
         date: form.date,
       };
@@ -114,7 +110,7 @@ export default function MedicamentsPage() {
       setEditingId(null);
       notify(editingId
         ? 'Médicament mis à jour.'
-        : `Médicament ajouté le ${payload.date.split('-').reverse().join('/')}.${payload.stock > 100 ? ' Attention : stock supérieur à 100.' : ''}`);
+        : `Médicament ajouté le ${payload.date.split('-').reverse().join('/')}.${payload.stock !== null && payload.stock <= payload.stock_threshold ? ` Attention : stock atteint le seuil de ${payload.stock_threshold}.` : ''}`);
       load();
     } catch (err) {
       notify(err.message || 'Erreur lors de l\'enregistrement.', 'err');
@@ -127,6 +123,7 @@ export default function MedicamentsPage() {
       name: capitalizeWords(row.name || ''),
       price: String(row.price ?? ''),
       stock: row.stock === null || row.stock === undefined ? '' : String(row.stock),
+      stock_threshold: String(row.stock_threshold ?? 100),
       unit: row.unit || 'comprimé',
       date: row.created_at ? formatMadagascarDate(row.created_at) : getToday(),
     });
@@ -159,7 +156,10 @@ export default function MedicamentsPage() {
         quantity
       );
 
-      notify(`Stock ajouté : +${quantity}`);
+      const newStock = (Number(selectedMedication.stock) || 0) + quantity;
+      notify(newStock <= Number(selectedMedication.stock_threshold ?? 100)
+        ? `Stock ajouté : +${quantity}. Attention : stock atteint le seuil de ${selectedMedication.stock_threshold ?? 100}.`
+        : `Stock ajouté : +${quantity}`);
 
       setShowStockModal(false);
       setSelectedMedication(null);
@@ -247,9 +247,9 @@ export default function MedicamentsPage() {
           </div>
         )}
 
-        {rows.filter((r) => r.stock !== null && r.stock !== undefined && Number(r.stock) <= Number(reserveThreshold)).length > 0 && (
+        {rows.filter((r) => r.stock !== null && r.stock !== undefined && Number(r.stock) <= Number(r.stock_threshold ?? 100)).length > 0 && (
           <div style={{ marginBottom: '14px', padding: '12px 14px', borderRadius: '12px', background: '#fff4e5', border: '1px solid #f5d1a3', color: '#7f4a00' }}>
-            ⚠️ {rows.filter((r) => r.stock !== null && r.stock !== undefined && Number(r.stock) <= Number(reserveThreshold)).length} médicament(s) en stock faible ou au-dessous du seuil de réserve ({reserveThreshold}).
+            ⚠️ {rows.filter((r) => r.stock !== null && r.stock !== undefined && Number(r.stock) <= Number(r.stock_threshold ?? 100)).length} médicament(s) ont atteint leur seuil d'alerte.
           </div>
         )}
 
@@ -287,8 +287,17 @@ export default function MedicamentsPage() {
 
           <input name="stock" type="number" min="0" placeholder="Stock (optionnel)" value={form.stock} onChange={onChange} />
 
+          <label className="stock-threshold-field">
+            <span>Seuil d’alerte du stock</span>
+            <input name="stock_threshold" type="number" min="0" value={form.stock_threshold} onChange={onChange} required />
+            <small>Alerte lorsque le stock atteint ou descend sous cette valeur.</small>
+          </label>
+
           {!editingId && (
-            <input name="date" type="date" value={form.date} onChange={onChange} required />
+            <label className="medication-date-field">
+              <span>Date d’ajout</span>
+              <input name="date" type="date" value={form.date} onChange={onChange} required />
+            </label>
           )}
           
           <div className="actions-row">
@@ -312,18 +321,6 @@ export default function MedicamentsPage() {
             style={{ flex: 1, minWidth: '220px' }}
           />
 
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#33475b' }}>
-              Seuil réserve
-              <input
-                type="number"
-                min="0"
-                value={reserveThreshold}
-                onChange={(e) => setReserveThreshold(e.target.value)}
-                style={{ width: '90px' }}
-              />
-            </label>
-          </div>
         </div>
 
         <div className="archive-grid" style={{ marginBottom: '20px' }}>
@@ -346,23 +343,30 @@ export default function MedicamentsPage() {
             <thead>
               <tr>
                 <th>Nom</th>
+                      {isAdmin ? (
+                        <>
                 <th>Prix (Ar)</th>
                 <th>Unité</th>
                 <th>Stock</th>
+                <th>Seuil</th>
                 <th>Date</th>
                 <th>Actions</th>
+                        </>
+                      ) : (
+                        <span style={{ color: '#888' }}>Consultation</span>
+                      )}
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '20px', color: '#5f7b84' }}>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: '20px', color: '#5f7b84' }}>
                     Aucun médicament trouvé.
                   </td>
                 </tr>
               )}
               {filtered.map((r) => {
-                const isLowStock = r.stock !== null && r.stock !== undefined && Number(r.stock) <= Number(reserveThreshold);
+                const isLowStock = r.stock !== null && r.stock !== undefined && Number(r.stock) <= Number(r.stock_threshold ?? 100);
                 return (
                   <tr
                     key={r.id}
@@ -395,6 +399,7 @@ export default function MedicamentsPage() {
                         )
                         : <span style={{ color: '#888' }}>Non suivi</span>}
                     </td>
+                    <td>{r.stock_threshold ?? 100}</td>
                       <td>{formatMadagascarDate(r.created_at)}</td>
                     <td>
                         <button className="icon-btn" onClick={() => addStock(r)} title="Ajouter du stock">➕</button>

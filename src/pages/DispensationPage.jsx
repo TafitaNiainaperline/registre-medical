@@ -69,7 +69,12 @@ export default function DispensationPage() {
       });
 
       const total = Number(med.price) * qty;
-      notify(`Dispensation enregistrée. Total : ${total.toLocaleString()} Ar`);
+      const remainingStock = med.stock === null || med.stock === undefined
+        ? null
+        : Number(med.stock) - qty;
+      notify(remainingStock !== null && remainingStock <= Number(med.stock_threshold ?? 100)
+        ? `Dispensation enregistrée. Total : ${total.toLocaleString()} Ar. Attention : stock atteint le seuil de ${med.stock_threshold ?? 100}.`
+        : `Dispensation enregistrée. Total : ${total.toLocaleString()} Ar`);
       setSelectedMedicationId('');
       setQuantity('');
       load();
