@@ -10,7 +10,6 @@ function getToday() {
 const emptyForm = { 
   name: '', 
   price: '', 
-  description: '', 
   stock: '', 
   unit: 'comprimé',
   date: getToday(),
@@ -38,7 +37,7 @@ function formatMadagascarDate(utcString) {
 }
 
 function formatTextField(name, value) {
-  const textFields = new Set(['name', 'description']);
+  const textFields = new Set(['name']);
   return textFields.has(name) ? capitalizeWords(value, true) : value;
 }
 
@@ -94,7 +93,6 @@ export default function MedicamentsPage() {
       const payload = {
         name: capitalizeWords(form.name.trim()),
         price: Number(form.price) || 0,
-        description: capitalizeWords(form.description || ''),
         stock: form.stock === '' ? null : Number(form.stock),
         unit: form.unit || 'comprimé',
         date: form.date,
@@ -119,7 +117,6 @@ export default function MedicamentsPage() {
     setForm({
       name: capitalizeWords(row.name || ''),
       price: String(row.price ?? ''),
-      description: capitalizeWords(row.description || ''),
       stock: row.stock === null || row.stock === undefined ? '' : String(row.stock),
       unit: row.unit || 'comprimé',
       date: row.created_at ? formatMadagascarDate(row.created_at) : getToday(),
@@ -280,8 +277,6 @@ export default function MedicamentsPage() {
             <input name="date" type="date" value={form.date} onChange={onChange} required />
           )}
           
-          <input name="description" placeholder="Description (optionnel)" value={form.description} onChange={onChange} />
-
           <div className="actions-row">
             <button type="submit">{editingId ? 'Modifier' : 'Ajouter'}</button>
             {editingId && (
@@ -340,14 +335,13 @@ export default function MedicamentsPage() {
                 <th>Prix (Ar)</th>
                 <th>Unité</th>
                 <th>Stock</th>
-                <th>Description</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '20px', color: '#5f7b84' }}>
+                  <td colSpan="5" style={{ textAlign: 'center', padding: '20px', color: '#5f7b84' }}>
                     Aucun médicament trouvé.
                   </td>
                 </tr>
@@ -386,7 +380,6 @@ export default function MedicamentsPage() {
                         )
                         : <span style={{ color: '#888' }}>Non suivi</span>}
                     </td>
-                    <td>{r.description || '-'}</td>
                     <td>
                         <button className="icon-btn" onClick={() => addStock(r)} title="Ajouter du stock">➕</button>
 
