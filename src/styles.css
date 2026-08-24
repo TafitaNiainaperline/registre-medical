@@ -344,6 +344,17 @@ button:hover { opacity: 0.88; }
   min-height: 42px;
   font-size: 0.9rem;
 }
+.appointment-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #33475b;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.appointment-field input[type='date'] {
+  width: 100%;
+}
 .toast {
   position: fixed;
   top: 20px;

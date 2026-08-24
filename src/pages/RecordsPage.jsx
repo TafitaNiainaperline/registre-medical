@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import TreatmentSelector from '../components/TreatmentSelector';
 import MonthlyArchiveBanner from '../components/MonthlyArchiveBanner';
 
@@ -13,12 +13,26 @@ const emptyForm = {
   diagnostic: '',
   traitement: '',
   observation: '',
+  appointment_date: '',
   cost: '',
   treatments: [],
 };
 
 function normalizeSearch(value) {
   return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+function getTodayDate() {
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+}
+
+function getAppointmentStatus(date) {
+  if (!date) return '';
+  const today = getTodayDate();
+  if (date < today) return 'Rendez-vous passé';
+  if (date === today) return 'Rendez-vous aujourd’hui';
+  return 'Rendez-vous à venir';
 }
 
 function formatAge(age, age_type, age_mois, age_jours) {
@@ -302,6 +316,8 @@ export default function RecordsPage({ category }) {
   const [selectedHistoryRow, setSelectedHistoryRow] = useState(null);
   const [dossierHistory, setDossierHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [toast, setToast] = useState('');
+  const notifiedAppointments = useRef(new Set());
 
   const diagnosticOptions = useMemo(() => {
     const counts = records.reduce((acc, row) => {
@@ -392,6 +408,22 @@ export default function RecordsPage({ category }) {
     setActionOk('');
   }, [category.key]);
 
+  useEffect(() => {
+    const checkAppointments = () => {
+      const appointment = records.find((row) => (
+        row.appointment_date === getTodayDate()
+        && !notifiedAppointments.current.has(row.id)
+      ));
+      if (!appointment) return;
+      notifiedAppointments.current.add(appointment.id);
+      setToast(`Rendez-vous aujourd’hui pour ${appointment.patient_nom || 'ce patient'}.`);
+      setTimeout(() => setToast(''), 5000);
+    };
+    checkAppointments();
+    const timer = setInterval(checkAppointments, 60000);
+    return () => clearInterval(timer);
+  }, [records]);
+
   const onChange = (e) => {
     const value = formatTextField(e.target.name, e.target.value);
     setForm({ ...form, [e.target.name]: value });
@@ -454,6 +486,7 @@ export default function RecordsPage({ category }) {
       age_type:       form.age_type,
       domicile:       capitalizeWords(form.domicile),
       diagnostic:     capitalizeWords(form.diagnostic),
+      appointment_date: form.appointment_date || null,
       traitement:     capitalizeWords(form.traitement),
       treatments,
       observation:    capitalizeWords(form.observation),
@@ -495,6 +528,7 @@ export default function RecordsPage({ category }) {
       age_jours:      parsed.age_jours,
       domicile:       capitalizeWords(row.domicile || ''),
       diagnostic:     capitalizeWords(row.diagnostic || ''),
+      appointment_date: row.appointment_date || '',
       traitement:     capitalizeWords(row.traitement || ''),
       observation:    capitalizeWords(row.observation || ''),
       cost:           row.cost        || '',
@@ -601,6 +635,7 @@ export default function RecordsPage({ category }) {
           ✓ {actionOk}
         </p>
       )}
+      {toast && <div className="toast" role="status">🔔 {toast}</div>}
 
       {duplicateCase && (
         <div className="info-msg" style={{ marginBottom: '12px', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -611,7 +646,7 @@ export default function RecordsPage({ category }) {
           <button type="button" onClick={async () => {
             setActionError(''); setActionOk('');
             try {
-              await window.api.continueRecord(duplicateCase.id, { treatments: form.treatments, traitement: form.traitement, observation: form.observation, cost: form.cost });
+              await window.api.continueRecord(duplicateCase.id, { treatments: form.treatments, traitement: form.traitement, observation: form.observation, appointment_date: form.appointment_date, cost: form.cost });
               setActionOk('Traitement ajouté au dossier existant.');
               setForm(emptyForm);
               setDuplicateCase(null);
@@ -746,6 +781,10 @@ export default function RecordsPage({ category }) {
 
         <input name="domicile"   placeholder="Domicile"   value={form.domicile}   onChange={onChange} required />
         <input name="diagnostic" placeholder="Diagnostic" value={form.diagnostic} onChange={onChange} required />
+        <label className="appointment-field" htmlFor="appointment-date">
+          <span>Rendez-vous</span>
+          <input id="appointment-date" name="appointment_date" type="date" value={form.appointment_date} onChange={onChange} required />
+        </label>
 
         <div className="treatments-wrap">
           <TreatmentSelector
@@ -788,13 +827,14 @@ export default function RecordsPage({ category }) {
               <th>Observation</th>
               <th>Coût</th>
               <th>Date</th>
+              <th>Rendez-vous</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredRecords.length === 0 && (
               <tr>
-                <td colSpan="11" style={{ textAlign: 'center', color: '#5f7b84', padding: '24px' }}>
+                <td colSpan="12" style={{ textAlign: 'center', color: '#5f7b84', padding: '24px' }}>
                   Aucune donnée enregistrée.
                 </td>
               </tr>
@@ -820,6 +860,16 @@ export default function RecordsPage({ category }) {
 <td>{row.cost} Ar</td>
                  <td style={{ fontSize: '0.85rem', color: '#5f7b84' }}>
                    {row.created_at ? formatMadagascarDateTime(row.created_at).slice(0, 10) : '-'}
+                 </td>
+                 <td style={{ fontSize: '0.85rem', color: '#5f7b84' }}>
+                   {row.appointment_date ? (
+                     <>
+                       <strong>{row.appointment_date}</strong>
+                       <span style={{ display: 'block', fontSize: '0.75rem', color: row.appointment_date <= getTodayDate() ? '#a0522d' : '#1c96a4' }}>
+                         {getAppointmentStatus(row.appointment_date)}
+                       </span>
+                     </>
+                   ) : '-'}
                  </td>
                  <td>
                   {/* Editer : visible pour tous */}

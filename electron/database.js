@@ -84,6 +84,7 @@ function initTables() {
        archive_year INTEGER,
        archive_month INTEGER,
        treatments_json TEXT,
+      appointment_date TEXT,
        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
      );
 
@@ -157,6 +158,7 @@ function initTables() {
     `ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 0`,
     `ALTER TABLE record_medications ADD COLUMN medication_unit TEXT`,
     `ALTER TABLE record_medications ADD COLUMN item_type TEXT NOT NULL DEFAULT 'medication'`,
+    `ALTER TABLE medical_records ADD COLUMN appointment_date TEXT`,
   ];
   let schemaChanged = false;
   migrations.forEach(sql => {
@@ -890,8 +892,8 @@ async function createRecord(data) {
   try {
     try {
       d.run(`INSERT INTO medical_records
-        (category, dossier_id, patient_nom, patient_prenom, sexe, age, age_type, domicile, diagnostic, traitement, observation, cost, created_by, registry_number, archive_year, archive_month, treatments_json)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (category, dossier_id, patient_nom, patient_prenom, sexe, age, age_type, domicile, diagnostic, traitement, observation, cost, created_by, registry_number, archive_year, archive_month, treatments_json, appointment_date)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           data.category,
           data.dossier_id || null,
@@ -910,6 +912,7 @@ async function createRecord(data) {
           year,
           month,
           hasTreatments ? JSON.stringify(treatments) : null,
+          data.appointment_date || null,
         ]);
     } catch (err) {
       // Retry once after auto-migration (handles "no column named sexe")
@@ -918,8 +921,8 @@ async function createRecord(data) {
           try { saveDB(); } catch { /* ignore */ }
         }
         d.run(`INSERT INTO medical_records
-          (category, patient_nom, patient_prenom, sexe, age, age_type, domicile, diagnostic, traitement, observation, cost, created_by, registry_number, archive_year, archive_month, treatments_json)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (category, patient_nom, patient_prenom, sexe, age, age_type, domicile, diagnostic, traitement, observation, cost, created_by, registry_number, archive_year, archive_month, treatments_json, appointment_date)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             data.category,
             data.patient_nom,
@@ -937,6 +940,7 @@ async function createRecord(data) {
             year,
             month,
             hasTreatments ? JSON.stringify(treatments) : null,
+            data.appointment_date || null,
           ]);
       } else {
         throw err;
@@ -998,8 +1002,8 @@ async function addTreatmentsToRecord(recordId, data) {
   d.run('BEGIN');
   try {
     d.run(`INSERT INTO medical_records
-      (category, dossier_id, patient_nom, patient_prenom, sexe, age, age_type, domicile, diagnostic, traitement, observation, cost, created_by, registry_number, archive_year, archive_month, treatments_json)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (category, dossier_id, patient_nom, patient_prenom, sexe, age, age_type, domicile, diagnostic, traitement, observation, cost, created_by, registry_number, archive_year, archive_month, treatments_json, appointment_date)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         existing.category,
         dossierId,
@@ -1018,6 +1022,7 @@ async function addTreatmentsToRecord(recordId, data) {
         Number(existing.archive_year) || getArchiveFromDate(new Date()).year,
         Number(existing.archive_month) || getArchiveFromDate(new Date()).month,
         hasTreatments ? JSON.stringify(treatments) : null,
+        existing.appointment_date || null,
       ]);
 
     const idRes = toObjects(d.exec('SELECT last_insert_rowid() as id'))[0];
@@ -1101,7 +1106,7 @@ async function updateRecord(id, data) {
 
     d.run(`UPDATE medical_records SET
       patient_nom=?, patient_prenom=?, sexe=?, age=?, age_type=?, domicile=?,
-      diagnostic=?, traitement=?, observation=?, cost=?, registry_number=?, treatments_json=? WHERE id=?`,
+      diagnostic=?, traitement=?, observation=?, cost=?, registry_number=?, treatments_json=?, appointment_date=? WHERE id=?`,
       [
         data.patient_nom,
         data.patient_prenom,
@@ -1115,6 +1120,7 @@ async function updateRecord(id, data) {
         computedCost,
         registryNumber,
         hasTreatments ? JSON.stringify(treatments) : null,
+        data.appointment_date || null,
         id
       ]);
 

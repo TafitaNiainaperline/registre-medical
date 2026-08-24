@@ -154,6 +154,21 @@ export default function DashboardPage() {
     .map(([diag, set]) => [diag, set.size])
     .sort((a, b) => b[1] - a[1]);
 
+  const diagnosticsByCategory = categories.map((category) => {
+    const diagnostics = Object.entries(records
+      .filter((row) => row.category === category.key)
+      .reduce((acc, row) => {
+        const diagnostic = String(row.diagnostic || '').trim();
+        if (!diagnostic) return acc;
+        if (!acc[diagnostic]) acc[diagnostic] = new Set();
+        acc[diagnostic].add(getPatientId(row));
+        return acc;
+      }, {}))
+      .map(([diagnostic, patients]) => [diagnostic, patients.size])
+      .sort((a, b) => b[1] - a[1]);
+    return { ...category, diagnostics };
+  });
+
   return (
     <section>
       <div className="page-header">
@@ -246,6 +261,24 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      <div style={{ marginBottom: '24px' }}>
+        <strong>Diagnostics par registre</strong>
+        <div className="cards-grid" style={{ marginTop: '10px' }}>
+          {diagnosticsByCategory.map((category) => (
+            <article key={category.key} className="stat-card" style={{ borderTop: `4px solid ${category.color}` }}>
+              <h3>{category.label}</h3>
+              <div style={{ display: 'grid', gap: '4px', marginTop: '10px' }}>
+                {category.diagnostics.length > 0
+                  ? category.diagnostics.map(([diagnostic, count]) => (
+                    <span key={diagnostic} style={{ fontSize: '0.92rem' }}>{diagnostic} : {count}</span>
+                  ))
+                  : <span style={{ color: '#68818a', fontSize: '0.92rem' }}>Aucun diagnostic</span>}
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
 
 
       <div className="cards-grid">
