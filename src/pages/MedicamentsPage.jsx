@@ -105,7 +105,9 @@ export default function MedicamentsPage() {
       
       setForm(emptyForm);
       setEditingId(null);
-      notify(editingId ? 'Médicament mis à jour.' : 'Médicament ajouté.');
+      notify(editingId
+        ? 'Médicament mis à jour.'
+        : `Médicament ajouté le ${payload.date.split('-').reverse().join('/')}.`);
       load();
     } catch (err) {
       notify(err.message || 'Erreur lors de l\'enregistrement.', 'err');
