@@ -908,18 +908,6 @@ table td strong{
   position:relative;
 }
 
-.record-form::before{
-  content:"Informations du patient";
-  position:absolute;
-  top:-12px;
-  left:18px;
-  background:white;
-  padding:0 10px;
-  font-size:0.82rem;
-  font-weight:700;
-  color:#1c96a4;
-}
-
 /* ─────────────────────────────
    TABLE SCROLL
 ───────────────────────────── */

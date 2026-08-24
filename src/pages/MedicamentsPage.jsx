@@ -345,10 +345,7 @@ export default function MedicamentsPage() {
         <form className="record-form" onSubmit={submitAct}>
           <input name="name" placeholder="Nom de l’acte (ex. Échographie)" value={actForm.name} onChange={onActChange} required />
           <input name="price" type="number" min="0" placeholder="Prix (Ar)" value={actForm.price} onChange={onActChange} required />
-          <label className="medication-date-field">
-            <span>Date de l’acte</span>
-            <input name="date" type="date" value={actForm.date} onChange={onActChange} required />
-          </label>
+          <input name="date" type="date" value={actForm.date} onChange={onActChange} required aria-label="Date de l’acte" />
           <div className="actions-row">
             <button type="submit">Ajouter l’acte</button>
           </div>

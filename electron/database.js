@@ -716,7 +716,9 @@ function buildTraitementText(treatments) {
   if (!Array.isArray(treatments) || treatments.length === 0) return '';
   return treatments
     .filter(t => t && t.name && Number(t.quantity) > 0)
-    .map(t => `${t.name} x${Number(t.quantity)}${t.unit ? ` ${t.unit}` : ''}`)
+    .map(t => t.item_type === 'act'
+      ? t.name
+      : `${t.name} x${Number(t.quantity)}${t.unit ? ` ${t.unit}` : ''}`)
     .join(', ');
 }
 
@@ -786,7 +788,7 @@ function treatmentsFromFreeText(d, text) {
 
   if (!parts.length) return [];
 
-  const medications = toObjects(d.exec('SELECT id, name, price, unit, stock FROM medications ORDER BY name ASC'));
+  const medications = toObjects(d.exec('SELECT id, name, item_type, price, unit, stock FROM medications ORDER BY name ASC'));
   const byMedicationId = new Map();
   const unknown = [];
   const wrongUnits = [];
@@ -811,8 +813,9 @@ function treatmentsFromFreeText(d, text) {
     } else {
       byMedicationId.set(id, {
         medication_id: med.id,
+        item_type: med.item_type === 'act' ? 'act' : 'medication',
         name: med.name,
-        unit: med.unit || null,
+        unit: med.item_type === 'act' ? null : (med.unit || null),
         quantity,
         unit_price: Number(med.price) || 0,
       });

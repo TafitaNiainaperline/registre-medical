@@ -119,51 +119,6 @@ function formatMadagascarDateTime(utcString) {
   return `${y}-${m}-${day} ${h}:${min}`;
 }
 
-function getTreatmentQuery(text) {
-  const raw = String(text || '').split(/[,;\n]+/).pop() || '';
-  const trimmed = raw.trim();
-  if (!trimmed) return '';
-  const match = trimmed.match(/^(.+?)(\s+(?:x\s*)?\d+.*|$)/i);
-  return match ? match[1].trim() : trimmed;
-}
-
-function getTreatmentSuggestions(text, medications) {
-  const query = normalizeMedicationName(getTreatmentQuery(text));
-  if (!query) return [];
-
-  return (Array.isArray(medications) ? medications : [])
-    .map((med) => ({ med, normalized: normalizeMedicationName(med.name) }))
-    .filter(({ normalized }) => normalized.includes(query))
-    .sort((a, b) => {
-      const aStarts = a.normalized.startsWith(query);
-      const bStarts = b.normalized.startsWith(query);
-      if (aStarts !== bStarts) return aStarts ? -1 : 1;
-      return a.normalized.localeCompare(b.normalized);
-    })
-    .slice(0, 6)
-    .map(({ med }) => med);
-}
-
-function replaceLastTreatmentEntry(text, medName) {
-  const match = String(text || '').match(/([\s\S]*?)([^,;\n]*)$/);
-  const prefix = match ? match[1] : '';
-  const last = match ? match[2].trim() : '';
-  if (!last) return `${prefix}${medName}`;
-  const tokens = last.split(/\s+/);
-  const suffix = tokens.length > 1 ? tokens.slice(1).join(' ') : '';
-  return `${prefix}${medName}${suffix ? ` ${suffix}` : ''}`;
-}
-
-function correctLastTreatmentEntry(text, medications) {
-  const query = getTreatmentQuery(text);
-  if (!query) return String(text || '');
-  const normalizedQuery = normalizeMedicationName(query);
-  const med = (Array.isArray(medications) ? medications : [])
-    .find((m) => normalizeMedicationName(m.name) === normalizedQuery);
-  if (!med) return String(text || '');
-  return replaceLastTreatmentEntry(text, med.name);
-}
-
 function mergeRecords(records) {
   const normalize = (value) => String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
   const grouped = {};
@@ -348,11 +303,6 @@ export default function RecordsPage({ category }) {
   const [dossierHistory, setDossierHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
-  const treatmentSuggestions = useMemo(
-    () => getTreatmentSuggestions(form.traitement, medications),
-    [form.traitement, medications]
-  );
-
   const diagnosticOptions = useMemo(() => {
     const counts = records.reduce((acc, row) => {
       const diagnostic = String(row.diagnostic || '').trim();
@@ -489,6 +439,10 @@ export default function RecordsPage({ category }) {
       }
     } catch (err) {
       setActionError(err?.message || 'Traitement invalide.');
+      return;
+    }
+    if (!treatments.length) {
+      setActionError('Veuillez sélectionner au moins un médicament ou un acte médical.');
       return;
     }
     const computedCost = treatments.reduce((sum, t) => sum + (Number(t.unit_price) * Number(t.quantity)), 0);
@@ -701,7 +655,7 @@ export default function RecordsPage({ category }) {
                       <td style={{ padding: '6px 8px' }}>{formatMadagascarDateTime(historyRow.created_at)}</td>
                       <td style={{ padding: '6px 8px' }}>
                         {Array.isArray(historyRow.treatments) && historyRow.treatments.length > 0
-                          ? historyRow.treatments.map((t) => `${t.name} x${t.quantity}${t.unit ? ` ${t.unit}` : ''}`).join(', ')
+                          ? historyRow.treatments.map((t) => t.item_type === 'act' ? t.name : `${t.name} x${t.quantity}${t.unit ? ` ${t.unit}` : ''}`).join(', ')
                           : historyRow.traitement || '-'}
                       </td>
                       <td style={{ padding: '6px 8px' }}>{historyRow.observation || '-'}</td>
@@ -800,60 +754,6 @@ export default function RecordsPage({ category }) {
             onChange={(next) => setForm({ ...form, treatments: next })}
           />
 
-          {(!Array.isArray(form.treatments) || form.treatments.length === 0) && (
-            <>
-              <input
-                name="traitement"
-                placeholder="Traitement : ex. Cerum x2 sachet, Paracetamol x1 boîte"
-                value={form.traitement}
-                onChange={onChange}
-                onBlur={() => setForm({
-                  ...form,
-                  traitement: correctLastTreatmentEntry(form.traitement, medications),
-                })}
-                required
-                autoComplete="off"
-              />
-
-              {treatmentSuggestions.length > 0 && (
-                <div
-                  style={{
-                    marginTop: 6,
-                    padding: 8,
-                    border: '1px solid #ccc',
-                    borderRadius: 6,
-                    background: '#fff',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                    maxHeight: 180,
-                    overflowY: 'auto',
-                    zIndex: 20,
-                  }}
-                >
-                  {treatmentSuggestions.map((med) => (
-                    <button
-                      key={med.id}
-                      type="button"
-                      style={{
-                        display: 'block',
-                        width: '100%',
-                        textAlign: 'left',
-                        padding: '6px 8px',
-                        border: 'none',
-                        background: 'transparent',
-                        cursor: 'pointer',
-                      }}
-                      onClick={() => setForm({
-                        ...form,
-                        traitement: replaceLastTreatmentEntry(form.traitement, med.name),
-                      })}
-                    >
-                      {med.name} {med.unit ? `(${med.unit})` : ''}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
         </div>
 
         <div className="dashboard-badge" style={{ justifySelf: 'start' }}>
@@ -913,7 +813,7 @@ export default function RecordsPage({ category }) {
                 <td>{row.diagnostic}</td>
                 <td>
                   {Array.isArray(row.treatments) && row.treatments.length > 0
-                    ? row.treatments.map((t) => `${t.name} x${t.quantity}${t.unit ? ` ${t.unit}` : ''}`).join(', ')
+                    ? row.treatments.map((t) => t.item_type === 'act' ? t.name : `${t.name} x${t.quantity}${t.unit ? ` ${t.unit}` : ''}`).join(', ')
                     : row.traitement}
                 </td>
                 <td>{row.observation || '-'}</td>

@@ -17,6 +17,7 @@ export default function TreatmentSelector({ medications, value, onChange }) {
     meds.forEach((x) => m.set(String(x.id), x));
     return m;
   }, [meds]);
+  const selectedItem = byId.get(String(selectedId));
 
   const add = () => {
     const med = byId.get(String(selectedId));
@@ -44,7 +45,7 @@ export default function TreatmentSelector({ medications, value, onChange }) {
             ? { 
                 ...t, 
                 quantity: toNumber(t.quantity, 0) + toNumber(qty, 1),
-                unit: med.unit || t.unit || 'comprimé'
+                unit: med.item_type === 'act' ? null : (med.unit || t.unit || 'comprimé')
               }
             : t
         )
@@ -54,7 +55,7 @@ export default function TreatmentSelector({ medications, value, onChange }) {
             medication_id: med.id,
             item_type: med.item_type || 'medication',
             name: med.name,
-            unit: med.unit || 'comprimé',
+            unit: med.item_type === 'act' ? null : (med.unit || 'comprimé'),
             unit_price: toNumber(med.price, 0),
             quantity: Math.max(1, toNumber(qty, 1)),
           }
@@ -113,14 +114,16 @@ export default function TreatmentSelector({ medications, value, onChange }) {
           ))}
         </select>
 
-        <input
-          type="number"
-          min="1"
-          value={qty}
-          onChange={(e) => setQty(e.target.value)}
-          className="qty-input"
-          placeholder="Qté"
-        />
+        {selectedItem?.item_type !== 'act' && (
+          <input
+            type="number"
+            min="1"
+            value={qty}
+            onChange={(e) => setQty(e.target.value)}
+            className="qty-input"
+            placeholder="Qté"
+          />
+        )}
 
         <button 
           type="button" 
@@ -145,18 +148,20 @@ export default function TreatmentSelector({ medications, value, onChange }) {
                 <div className="treatment-name">
                   <strong>{t.name}</strong>
                   <span style={{ color: '#5f7b84', marginLeft: 8 }}>
-                    {toNumber(t.unit_price)} Ar / {t.unit || med?.unit || 'unité'}
+                    {toNumber(t.unit_price)} Ar{(t.item_type !== 'act' && med?.item_type !== 'act') ? ` / ${t.unit || med?.unit || 'unité'}` : ''}
                   </span>
                 </div>
 
                 <div className="treatment-controls">
-                  <input
-                    className="qty-input"
-                    type="number"
-                    min="1"
-                    value={t.quantity}
-                    onChange={(e) => updateQty(t.medication_id, e.target.value)}
-                  />
+                  {t.item_type !== 'act' && (
+                    <input
+                      className="qty-input"
+                      type="number"
+                      min="1"
+                      value={t.quantity}
+                      onChange={(e) => updateQty(t.medication_id, e.target.value)}
+                    />
+                  )}
                   <span style={{ minWidth: 92, textAlign: 'right' }}>
                     <strong>{toNumber(t.unit_price) * toNumber(t.quantity)} Ar</strong>
                   </span>
