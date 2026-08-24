@@ -335,13 +335,14 @@ export default function MedicamentsPage() {
                 <th>Prix (Ar)</th>
                 <th>Unité</th>
                 <th>Stock</th>
+                <th>Date</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '20px', color: '#5f7b84' }}>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '20px', color: '#5f7b84' }}>
                     Aucun médicament trouvé.
                   </td>
                 </tr>
@@ -380,6 +381,7 @@ export default function MedicamentsPage() {
                         )
                         : <span style={{ color: '#888' }}>Non suivi</span>}
                     </td>
+                      <td>{formatMadagascarDate(r.created_at)}</td>
                     <td>
                         <button className="icon-btn" onClick={() => addStock(r)} title="Ajouter du stock">➕</button>
 
