@@ -47,6 +47,7 @@ export default function MedicamentsPage() {
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState('');
   const [msg, setMsg] = useState({ type: 'ok', text: '' });
+  const [toast, setToast] = useState({ type: 'ok', text: '' });
   const [showStockModal, setShowStockModal] = useState(false);
   const [selectedMedication, setSelectedMedication] = useState(null);
   const [stockQuantity, setStockQuantity] = useState('');
@@ -79,7 +80,9 @@ export default function MedicamentsPage() {
 
   const notify = (text, type = 'ok') => {
     setMsg({ text, type });
+    setToast({ text, type });
     setTimeout(() => setMsg({ text: '', type: 'ok' }), 2500);
+    setTimeout(() => setToast({ text: '', type: 'ok' }), 3500);
   };
 
   const onChange = (e) => {
@@ -107,7 +110,7 @@ export default function MedicamentsPage() {
       setEditingId(null);
       notify(editingId
         ? 'Médicament mis à jour.'
-        : `Médicament ajouté le ${payload.date.split('-').reverse().join('/')}.`);
+        : `Médicament ajouté le ${payload.date.split('-').reverse().join('/')}.${payload.stock > 100 ? ' Attention : stock supérieur à 100.' : ''}`);
       load();
     } catch (err) {
       notify(err.message || 'Erreur lors de l\'enregistrement.', 'err');
@@ -172,6 +175,11 @@ export default function MedicamentsPage() {
 
   return (
     <>
+      {toast.text && (
+        <div className={`toast ${toast.type === 'err' ? 'toast-error' : ''}`} role="status">
+          {toast.type === 'err' ? '⚠ ' : '✓ '}{toast.text}
+        </div>
+      )}
       {showStockModal && (
         <div className="modal-overlay">
 
