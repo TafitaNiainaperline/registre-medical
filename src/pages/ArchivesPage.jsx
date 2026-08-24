@@ -6,6 +6,10 @@ function formatArchiveKey(a) {
   return `${a.year}-${String(a.month).padStart(2, '0')}`;
 }
 
+function normalizeSearch(value) {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
 function renderTreatments(row) {
   const t = Array.isArray(row.treatments) ? row.treatments : null;
   if (!t || t.length === 0) return row.traitement || '-';
@@ -65,9 +69,14 @@ export default function ArchivesPage() {
         year: opts.year,
         month: opts.month,
         category: category || undefined,
-        search: search || undefined,
       });
-      setRows(data || []);
+      const query = normalizeSearch(search);
+      setRows((data || []).filter((row) => !query || [
+        row.patient_nom,
+        row.patient_prenom,
+        row.diagnostic,
+        row.registry_number,
+      ].some((value) => normalizeSearch(value).includes(query))));
     } catch (e) {
       setRows([]);
       setMsg(e.message || 'Erreur de chargement.');
@@ -77,7 +86,7 @@ export default function ArchivesPage() {
   };
 
   useEffect(() => { loadArchives(); }, []);
-  useEffect(() => { loadRows(selected); }, [selected, category]);
+  useEffect(() => { loadRows(selected); }, [selected, category, search]);
 
   const exportExcel = async () => {
     if (!selected?.year || !selected?.month) return;

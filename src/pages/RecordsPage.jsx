@@ -17,6 +17,10 @@ const emptyForm = {
   treatments: [],
 };
 
+function normalizeSearch(value) {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
 function formatAge(age, age_type, age_mois, age_jours) {
   if (age_type === 'ans')        return `${age}|ans||`;
   if (age_type === 'mois')       return `${age}|mois||`;
@@ -558,15 +562,15 @@ export default function RecordsPage({ category }) {
   };
 
   const filteredRecords = records.filter((row) => {
-    const q = search.toLowerCase().trim();
-    const registry = displayRegistryNumber(row.registry_number).toLowerCase();
-    const fullRegistry = String(row.registry_number || '').toLowerCase();
-    const fullName    = `${row.patient_nom || ''} ${row.patient_prenom || ''}`.toLowerCase();
-    const diagnostic = String(row.diagnostic || '').toLowerCase();
-    const diagnosticQuery = diagnosticFilter.toLowerCase().trim();
+    const q = normalizeSearch(search);
+    const registry = normalizeSearch(displayRegistryNumber(row.registry_number));
+    const fullRegistry = normalizeSearch(row.registry_number);
+    const fullName    = normalizeSearch(`${row.patient_nom || ''} ${row.patient_prenom || ''}`);
+    const diagnostic = normalizeSearch(row.diagnostic);
+    const diagnosticQuery = normalizeSearch(diagnosticFilter);
     const matchesSearch = !q || fullName.includes(q) || diagnostic.includes(q) || registry.includes(q) || fullRegistry.includes(q);
     const matchesDiagnostic = !diagnosticQuery || diagnostic.includes(diagnosticQuery);
-    const matchesAge    = !ageFilter || displayAge(row.age).toLowerCase().includes(ageFilter.toLowerCase());
+    const matchesAge    = !ageFilter || normalizeSearch(displayAge(row.age)).includes(normalizeSearch(ageFilter));
     const matchesDate   = !dateFilter || (row.created_at && row.created_at.slice(0, 10) === dateFilter);
     return matchesSearch && matchesDiagnostic && matchesAge && matchesDate;
   });

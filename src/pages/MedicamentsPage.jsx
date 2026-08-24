@@ -41,6 +41,10 @@ function formatTextField(name, value) {
   return textFields.has(name) ? capitalizeWords(value, true) : value;
 }
 
+function normalizeSearch(value) {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
 export default function MedicamentsPage() {
   const [rows, setRows] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -168,9 +172,9 @@ export default function MedicamentsPage() {
   };
 
   const filtered = rows.filter((r) => {
-    const q = search.trim().toLowerCase();
+    const q = normalizeSearch(search);
     if (!q) return true;
-    return String(r.name || '').toLowerCase().includes(q);
+    return normalizeSearch(r.name).includes(q);
   });
 
   return (

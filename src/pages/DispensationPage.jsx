@@ -13,11 +13,16 @@ function formatMadagascarDateTime(utcString) {
   return `${y}-${m}-${day} ${h}:${min}`;
 }
 
+function normalizeSearch(value) {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
 export default function DispensationPage() {
   const [medications, setMedications] = useState([]);
   const [dispensations, setDispensations] = useState([]);
   const [selectedMedicationId, setSelectedMedicationId] = useState('');
   const [quantity, setQuantity] = useState('');
+  const [search, setSearch] = useState('');
   const [msg, setMsg] = useState({ type: 'ok', text: '' });
   const [editingDisp, setEditingDisp] = useState(null);
   const [editDispForm, setEditDispForm] = useState({ medication_id: '', quantity: '' });
@@ -108,6 +113,11 @@ export default function DispensationPage() {
   const selectedMedication = medications.find((m) => Number(m.id) === Number(selectedMedicationId));
   const unit = selectedMedication?.unit || 'comprimé';
   const totalPrice = selectedMedication ? Number(selectedMedication.price) * Number(quantity || 0) : 0;
+  const filteredDispensations = dispensations.filter((dispensation) => {
+    const query = normalizeSearch(search);
+    return !query || [dispensation.medication_name, dispensation.unit, dispensation.quantity]
+      .some((value) => normalizeSearch(value).includes(query));
+  });
 
   return (
     <section>
@@ -162,6 +172,14 @@ export default function DispensationPage() {
 
       <div className="table-wrap" style={{ marginTop: '30px' }}>
         <h2>Historique des dispensations</h2>
+        <div className="search-bar" style={{ margin: '12px 0' }}>
+          <input
+            type="search"
+            placeholder="Rechercher une dispensation..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
         <table>
           <thead>
             <tr>
@@ -174,14 +192,14 @@ export default function DispensationPage() {
             </tr>
           </thead>
           <tbody>
-            {dispensations.length === 0 && (
+            {filteredDispensations.length === 0 && (
               <tr>
                 <td colSpan="6" style={{ textAlign: 'center', padding: '20px', color: '#5f7b84' }}>
                   Aucune dispensation enregistrée.
                 </td>
               </tr>
             )}
-            {dispensations.map((d) => {
+            {filteredDispensations.map((d) => {
               const editing = editingDisp === Number(d.id);
               const itemTotal = (Number(d.unit_price || 0) * Number(d.quantity)).toLocaleString();
               return (
