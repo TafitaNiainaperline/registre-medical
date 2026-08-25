@@ -66,8 +66,6 @@ function buildReceiptHtml(record) {
         return `
           <tr>
             <td>${escapeHtml(t.name)}</td>
-            <td>${escapeHtml(t.unit || '-')}</td>
-            <td class="num">${escapeHtml(t.quantity)}</td>
             <td class="num">${escapeHtml(formatMoney(t.unit_price))}</td>
             <td class="num">${escapeHtml(formatMoney(total))}</td>
           </tr>
@@ -75,7 +73,8 @@ function buildReceiptHtml(record) {
       }).join('')
     : `
       <tr>
-        <td colspan="4">${escapeHtml(record.traitement || 'Traitement')}</td>
+        <td>${escapeHtml(record.traitement || 'Traitement')}</td>
+        <td class="num">${escapeHtml(formatMoney(record.cost))}</td>
         <td class="num">${escapeHtml(formatMoney(record.cost))}</td>
       </tr>
     `;
@@ -125,26 +124,21 @@ function buildReceiptHtml(record) {
           <div class="field"><div class="label">Patient</div><div class="value">${escapeHtml(record.patient_nom)} ${escapeHtml(record.patient_prenom)}</div></div>
           <div class="field"><div class="label">Date</div><div class="value">${escapeHtml(date)}</div></div>
           <div class="field"><div class="label">Sexe</div><div class="value">${escapeHtml(record.sexe || '-')}</div></div>
-          <div class="field"><div class="label">Age</div><div class="value">${escapeHtml(displayAge(record.age))}</div></div>
           <div class="field"><div class="label">Domicile</div><div class="value">${escapeHtml(record.domicile || '-')}</div></div>
         </section>
 
-        <h2>Details du traitement</h2>
         <table>
           <thead>
             <tr>
-              <th>Medicament / soin</th>
-              <th>Unite</th>
-              <th class="num">Quantite</th>
+              <th>Désignation</th>
               <th class="num">Prix unitaire</th>
-              <th class="num">Total</th>
+              <th class="num">Montant</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
         </table>
 
-        <div class="total">Total paye : ${escapeHtml(formatMoney(record.cost))}</div>
-        <div class="note">Observation : ${escapeHtml(record.observation || '-')}</div>
+        <div class="total">Total payé : ${escapeHtml(formatMoney(record.cost))}</div>
       </main>
     </body>
   </html>`;
