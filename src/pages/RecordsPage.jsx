@@ -13,7 +13,7 @@ const emptyForm = {
   diagnostic: '',
   traitement: '',
   observation: '',
-  appointment_date: '',
+  appointment_date: getTodayDate(),
   tdr_result: '',
   cost: '',
   treatments: [],
