@@ -88,6 +88,10 @@ export default function MedicamentsPage() {
   };
 
   const onChange = (e) => {
+    if (e.target.name === 'stock' && !isAdmin) {
+      notify('Le stock est réservé à l’administrateur.', 'err');
+      return;
+    }
     const value = formatTextField(e.target.name, e.target.value);
     setForm({ ...form, [e.target.name]: value });
   };
@@ -103,7 +107,7 @@ export default function MedicamentsPage() {
         item_type: 'medication',
         name: capitalizeWords(form.name.trim()),
         price: Number(form.price) || 0,
-        stock: form.stock === '' ? null : Number(form.stock),
+        stock: isAdmin && form.stock !== '' ? Number(form.stock) : null,
         stock_threshold: form.stock_threshold === '' ? 100 : Number(form.stock_threshold),
         unit: form.unit || 'comprimé',
         date: form.date,
@@ -315,7 +319,17 @@ export default function MedicamentsPage() {
               <option value="sachet individuel">Sachet individuel</option>
             </select>
 
-          <input name="stock" type="number" min="0" placeholder="Stock (optionnel)" value={form.stock} onChange={onChange} />
+          <input
+            name="stock"
+            type="number"
+            min="0"
+            placeholder="Stock (réservé à l’administrateur)"
+            value={form.stock}
+            onChange={onChange}
+            onClick={() => { if (!isAdmin) notify('Le stock est réservé à l’administrateur.', 'err'); }}
+            readOnly={!isAdmin}
+            aria-readonly={!isAdmin}
+          />
 
           <label className="stock-threshold-field">
             <span>Seuil d’alerte du stock</span>
