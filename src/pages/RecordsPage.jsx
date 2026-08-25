@@ -302,6 +302,7 @@ function previewTreatmentsTotal(text, selectedTreatments, medications) {
 
 export default function RecordsPage({ category }) {
   const [records, setRecords]     = useState([]);
+  const [suggestionRecords, setSuggestionRecords] = useState([]);
   const [form, setForm]           = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch]       = useState('');
@@ -321,7 +322,7 @@ export default function RecordsPage({ category }) {
   const notifiedAppointments = useRef(new Set());
 
   const diagnosticOptions = useMemo(() => {
-    const counts = records.reduce((acc, row) => {
+    const counts = suggestionRecords.reduce((acc, row) => {
       const diagnostic = String(row.diagnostic || '').trim();
       if (!diagnostic) return acc;
       acc[diagnostic] = (acc[diagnostic] || 0) + 1;
@@ -330,15 +331,15 @@ export default function RecordsPage({ category }) {
     return Object.entries(counts)
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'fr', { sensitivity: 'base' }))
       .map(([diagnostic]) => diagnostic);
-  }, [records]);
+  }, [suggestionRecords]);
 
   const patientNameOptions = useMemo(
-    () => [...new Set(records.map((row) => String(row.patient_nom || '').trim()).filter(Boolean))],
-    [records]
+    () => [...new Set(suggestionRecords.map((row) => String(row.patient_nom || '').trim()).filter(Boolean))],
+    [suggestionRecords]
   );
   const domicileOptions = useMemo(
-    () => [...new Set(records.map((row) => String(row.domicile || '').trim()).filter(Boolean))],
-    [records]
+    () => [...new Set(suggestionRecords.map((row) => String(row.domicile || '').trim()).filter(Boolean))],
+    [suggestionRecords]
   );
 
   // ── Rôle de l'utilisateur connecté ──────────────────
@@ -350,14 +351,19 @@ export default function RecordsPage({ category }) {
     const fetcher = hasArchive
       ? window.api.fetchRecordsByArchive({ category: category.key, year: archive.year, month: archive.month })
       : window.api.fetchRecords(category.key);
+    const suggestionsFetcher = hasArchive
+      ? window.api.fetchRecordsByArchive({ year: archive.year, month: archive.month })
+      : Promise.all(categories.map((item) => window.api.fetchRecords(item.key))).then((results) => results.flat());
 
-    return fetcher
-      .then(result => {
+    return Promise.all([fetcher, suggestionsFetcher])
+      .then(([result, suggestions]) => {
         setRecords(mergeRecords(result || []));
+        setSuggestionRecords(mergeRecords(suggestions || []));
       })
       .catch((err) => {
         console.error('fetchRecords failed:', err);
         setRecords([]);
+        setSuggestionRecords([]);
       });
   };
 
