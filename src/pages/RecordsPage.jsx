@@ -14,6 +14,7 @@ const emptyForm = {
   traitement: '',
   observation: '',
   appointment_date: '',
+  tdr_result: '',
   cost: '',
   treatments: [],
 };
@@ -497,6 +498,7 @@ export default function RecordsPage({ category }) {
       domicile:       capitalizeWords(form.domicile),
       diagnostic:     capitalizeWords(form.diagnostic),
       appointment_date: form.appointment_date || null,
+      tdr_result: category.key === 'consultation' ? (form.tdr_result || null) : null,
       traitement:     capitalizeWords(form.traitement),
       treatments,
       observation:    capitalizeWords(form.observation),
@@ -539,6 +541,7 @@ export default function RecordsPage({ category }) {
       domicile:       capitalizeWords(row.domicile || ''),
       diagnostic:     capitalizeWords(row.diagnostic || ''),
       appointment_date: row.appointment_date || '',
+      tdr_result: row.tdr_result || '',
       traitement:     capitalizeWords(row.traitement || ''),
       observation:    capitalizeWords(row.observation || ''),
       cost:           row.cost        || '',
@@ -656,7 +659,7 @@ export default function RecordsPage({ category }) {
           <button type="button" onClick={async () => {
             setActionError(''); setActionOk('');
             try {
-              await window.api.continueRecord(duplicateCase.id, { treatments: form.treatments, traitement: form.traitement, observation: form.observation, appointment_date: form.appointment_date, cost: form.cost });
+              await window.api.continueRecord(duplicateCase.id, { treatments: form.treatments, traitement: form.traitement, observation: form.observation, appointment_date: form.appointment_date, tdr_result: form.tdr_result, cost: form.cost });
               setActionOk('Traitement ajouté au dossier existant.');
               setForm(emptyForm);
               setDuplicateCase(null);
@@ -804,6 +807,13 @@ export default function RecordsPage({ category }) {
           <span>Rendez-vous</span>
           <input id="appointment-date" name="appointment_date" type="date" value={form.appointment_date} onChange={onChange} required />
         </label>
+        {category.key === 'consultation' && (
+          <select name="tdr_result" value={form.tdr_result} onChange={onChange} className="select">
+            <option value="">TDR (optionnel)</option>
+            <option value="positif">Positif</option>
+            <option value="negatif">Négatif</option>
+          </select>
+        )}
 
         <div className="treatments-wrap">
           <TreatmentSelector

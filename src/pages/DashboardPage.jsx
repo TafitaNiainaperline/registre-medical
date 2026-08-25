@@ -154,6 +154,14 @@ export default function DashboardPage() {
     .map(([diag, set]) => [diag, set.size])
     .sort((a, b) => b[1] - a[1]);
 
+  const tdrSummary = records
+    .filter((row) => row.category === 'consultation' && row.tdr_result)
+    .reduce((summary, row) => {
+      const result = row.tdr_result.toLowerCase();
+      summary[result] = (summary[result] || 0) + 1;
+      return summary;
+    }, {});
+
   const diagnosticsByCategory = categories.map((category) => {
     const diagnostics = Object.entries(records
       .filter((row) => row.category === category.key)
@@ -221,6 +229,14 @@ export default function DashboardPage() {
               <span key={diagnostic} style={{ fontSize: '0.95rem' }}>{diagnostic} : {count}</span>
             ))}
             {diagnosticSummary.length === 0 && <span style={{ fontSize: '0.95rem' }}>Aucun diagnostic</span>}
+          </div>
+        </article>
+
+        <article className="stat-card" style={{ borderTop: '5px solid #d81b83' }}>
+          <div className="stat-top"><h3>TDR Consultation externe</h3></div>
+          <div style={{ display: 'grid', gap: '4px', marginTop: '10px' }}>
+            <span>Positif : {tdrSummary.positif || 0}</span>
+            <span>Négatif : {tdrSummary.negatif || 0}</span>
           </div>
         </article>
       </div>

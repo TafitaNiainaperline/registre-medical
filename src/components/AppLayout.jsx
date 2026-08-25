@@ -61,6 +61,7 @@ export default function AppLayout() {
 
           <NavLink to="/aide">Aide</NavLink>
           <NavLink to="/archives">Archives</NavLink>
+          <NavLink to="/rendez-vous">Rendez-vous</NavLink>
 <NavLink to="/dispensation">Dispensation</NavLink>
 
           <NavLink to="/medicaments">Médicaments</NavLink>

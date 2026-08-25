@@ -31,6 +31,9 @@ contextBridge.exposeInMainWorld('api', {
   fetchRecordsByArchive: (filters) =>
     ipcRenderer.invoke('records:fetchByArchive', filters),
 
+  fetchAppointments: () =>
+    ipcRenderer.invoke('records:appointments'),
+
   fetchStats: () =>
     ipcRenderer.invoke('records:stats'),
 

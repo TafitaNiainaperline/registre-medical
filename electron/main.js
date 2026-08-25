@@ -96,6 +96,10 @@ ipcMain.handle('records:fetchByArchive', (_, filters) => {
   return db.fetchRecordsByArchive(filters || {});
 });
 
+ipcMain.handle('records:appointments', () => {
+  return db.fetchAppointments();
+});
+
 ipcMain.handle('records:stats', () => {
   return db.fetchStats();
 });
