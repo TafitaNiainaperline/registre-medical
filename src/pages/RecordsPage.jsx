@@ -331,6 +331,15 @@ export default function RecordsPage({ category }) {
       .map(([diagnostic]) => diagnostic);
   }, [records]);
 
+  const patientNameOptions = useMemo(
+    () => [...new Set(records.map((row) => String(row.patient_nom || '').trim()).filter(Boolean))],
+    [records]
+  );
+  const domicileOptions = useMemo(
+    () => [...new Set(records.map((row) => String(row.domicile || '').trim()).filter(Boolean))],
+    [records]
+  );
+
   // ── Rôle de l'utilisateur connecté ──────────────────
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = currentUser.role === 'admin';
@@ -739,7 +748,10 @@ export default function RecordsPage({ category }) {
 
       {/* FORMULAIRE */}
       <form className="record-form" onSubmit={submit} style={{ borderColor: category.color }}>
-        <input name="patient_nom" placeholder="Nom et prénom" value={form.patient_nom} onChange={onChange} required />
+        <input name="patient_nom" list="patient-name-options" placeholder="Nom et prénom" value={form.patient_nom} onChange={onChange} required />
+        <datalist id="patient-name-options">
+          {patientNameOptions.map((name) => <option key={name} value={name} />)}
+        </datalist>
 
         {/* CHAMP ÂGE */}
         <div className="age-group">
@@ -780,8 +792,14 @@ export default function RecordsPage({ category }) {
           <option value="F">Féminin</option>
         </select>
 
-        <input name="domicile"   placeholder="Domicile"   value={form.domicile}   onChange={onChange} required />
-        <input name="diagnostic" placeholder="Diagnostic" value={form.diagnostic} onChange={onChange} required />
+        <input name="domicile" list="domicile-options" placeholder="Domicile" value={form.domicile} onChange={onChange} required />
+        <datalist id="domicile-options">
+          {domicileOptions.map((domicile) => <option key={domicile} value={domicile} />)}
+        </datalist>
+        <input name="diagnostic" list="diagnostic-options" placeholder="Diagnostic" value={form.diagnostic} onChange={onChange} required />
+        <datalist id="diagnostic-options">
+          {diagnosticOptions.map((diagnostic) => <option key={diagnostic} value={diagnostic} />)}
+        </datalist>
         <label className="appointment-field" htmlFor="appointment-date">
           <span>Rendez-vous</span>
           <input id="appointment-date" name="appointment_date" type="date" value={form.appointment_date} onChange={onChange} required />

@@ -5,11 +5,16 @@ function toNumber(v, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
+function normalizeName(value) {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
 export default function TreatmentSelector({ medications, value, onChange }) {
   const meds = useMemo(() => (Array.isArray(medications) ? medications : []), [medications]);
   const treatments = Array.isArray(value) ? value : [];
 
   const [selectedId, setSelectedId] = useState('');
+  const [searchName, setSearchName] = useState('');
   const [qty, setQty] = useState(1);
 
   const byId = useMemo(() => {
@@ -63,6 +68,7 @@ export default function TreatmentSelector({ medications, value, onChange }) {
 
     onChange?.(next);
     setSelectedId('');
+    setSearchName('');
     setQty(1);
   };
 
@@ -100,19 +106,23 @@ export default function TreatmentSelector({ medications, value, onChange }) {
   return (
     <div className="treatments">
       <div className="treatments-top">
-        <select 
-          className="select" 
-          value={selectedId} 
-          onChange={(e) => setSelectedId(e.target.value)}
-        >
-          <option value="">Sélectionner un médicament ou un acte...</option>
+        <input
+          className="select treatment-search"
+          list="treatment-options"
+          value={searchName}
+          placeholder="Rechercher un médicament ou un acte..."
+          onChange={(e) => {
+            const value = e.target.value;
+            const selected = meds.find((item) => normalizeName(item.name) === normalizeName(value));
+            setSearchName(value);
+            setSelectedId(selected ? String(selected.id) : '');
+          }}
+        />
+        <datalist id="treatment-options">
           {meds.map((m) => (
-            <option key={m.id} value={String(m.id)}>
-              {m.item_type === 'act' ? 'Acte : ' : ''}{m.name} — {m.price} Ar{m.item_type !== 'act' && ` / ${m.unit || 'comprimé'}`}
-              {m.stock !== null && m.stock !== undefined && ` (Stock: ${m.stock})`}
-            </option>
+            <option key={m.id} value={m.name} />
           ))}
-        </select>
+        </datalist>
 
         {selectedItem?.item_type !== 'act' && (
           <input
