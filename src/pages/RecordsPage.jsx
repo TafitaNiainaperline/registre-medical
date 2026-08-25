@@ -811,7 +811,7 @@ export default function RecordsPage({ category }) {
         </datalist>
         <label className="appointment-field" htmlFor="appointment-date">
           <span>Rendez-vous</span>
-          <input id="appointment-date" name="appointment_date" type="date" value={form.appointment_date} onChange={onChange} required />
+          <input id="appointment-date" name="appointment_date" type="date" value={form.appointment_date} onChange={onChange} />
         </label>
         {category.key === 'consultation' && (
           <select name="tdr_result" value={form.tdr_result} onChange={onChange} className="select">
