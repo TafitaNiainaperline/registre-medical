@@ -479,6 +479,7 @@ export default function RecordsPage({ category }) {
     }
     const computedCost = treatments.reduce((sum, t) => sum + (Number(t.unit_price) * Number(t.quantity)), 0);
     const payload = {
+      created_by: currentUser.id || null,
       patient_nom:    capitalizeWords(form.patient_nom),
       patient_prenom: '',
       sexe:           form.sexe,

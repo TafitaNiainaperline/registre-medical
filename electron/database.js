@@ -667,7 +667,12 @@ async function fetchRecordsByArchive({ category, year, month, search }) {
 
 async function fetchRecordById(id) {
   const d = await getDB();
-  const records = toObjects(d.exec('SELECT * FROM medical_records WHERE id = ?', [id]));
+  const records = toObjects(d.exec(`
+    SELECT mr.*, u.name AS responsible_name
+    FROM medical_records mr
+    LEFT JOIN users u ON u.id = mr.created_by
+    WHERE mr.id = ?
+  `, [id]));
   const record = records[0];
   if (!record) return null;
 

@@ -39,6 +39,34 @@ function formatMoney(value) {
   return `${Number(value || 0).toLocaleString('fr-FR')} Ar`;
 }
 
+function numberToFrenchWords(value) {
+  const units = ['zéro', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf', 'dix', 'onze', 'douze', 'treize', 'quatorze', 'quinze', 'seize'];
+  const underHundred = (number) => {
+    if (number < 17) return units[number];
+    if (number < 20) return `dix-${units[number - 10]}`;
+    if (number < 70) {
+      const tens = ['vingt', 'trente', 'quarante', 'cinquante', 'soixante'][Math.floor(number / 10) - 2];
+      const remainder = number % 10;
+      return remainder ? `${tens}${remainder === 1 ? ' et un' : `-${units[remainder]}`}` : tens;
+    }
+    if (number < 80) return number === 71 ? 'soixante et onze' : `soixante-${underHundred(number - 60)}`;
+    return number === 80 ? 'quatre-vingts' : `quatre-vingt-${underHundred(number - 80)}`;
+  };
+  const underThousand = (number) => {
+    if (number < 100) return underHundred(number);
+    const hundreds = Math.floor(number / 100);
+    const remainder = number % 100;
+    const prefix = hundreds === 1 ? 'cent' : `${units[hundreds]} cent`;
+    return remainder ? `${prefix} ${underHundred(remainder)}` : `${prefix}${hundreds > 1 ? 's' : ''}`;
+  };
+  const integer = Math.max(0, Math.round(Number(value) || 0));
+  if (integer < 1000) return underThousand(integer);
+  const thousands = Math.floor(integer / 1000);
+  const remainder = integer % 1000;
+  const prefix = thousands === 1 ? 'mille' : `${underThousand(thousands)} mille`;
+  return remainder ? `${prefix} ${underThousand(remainder)}` : prefix;
+}
+
 function getLogoDataUri() {
   const candidates = [
     path.join(__dirname, '../public/Logo.png'),
@@ -80,6 +108,8 @@ function buildReceiptHtml(record) {
     `;
 
   const date = record.created_at ? formatMadagascarDateTime(record.created_at).slice(0, 10) : formatMadagascarDateTime(new Date()).slice(0, 10);
+  const amount = Number(record.cost) || 0;
+  const amountInWords = numberToFrenchWords(amount);
 
   return `<!doctype html>
   <html>
@@ -105,6 +135,11 @@ function buildReceiptHtml(record) {
         th { border-top: 2px solid #1c96a4; background: #f0f8fa; color: #0d7280; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
         .num { text-align: right; }
         .total { margin: 24px 0 0 auto; padding: 14px 18px; width: 280px; border-top: 3px solid #1c96a4; background: #f0f8fa; text-align: right; font-size: 20px; font-weight: 800; color: #0d7280; }
+        .amount-words { margin-top: 18px; padding: 12px 14px; border: 1px solid #dbe8ec; font-size: 13px; font-style: italic; }
+        .responsible-signature { width: 280px; margin: 18px 0 0 auto; text-align: center; color: #16323d; }
+        .responsible-signature strong { display: block; width: max-content; margin: 0 auto 28px; padding-bottom: 3px; border-bottom: 1px solid #16323d; }
+        .responsible-signature span { display: block; min-height: 20px; border-bottom: 1px solid #16323d; }
+        .footer { margin-top: 34px; padding-top: 16px; border-top: 1px solid #c8d9df; text-align: center; color: #5f7b84; font-size: 12px; line-height: 1.5; }
         .note { margin-top: 28px; padding-top: 14px; border-top: 1px solid #dbe8ec; color: #5f7b84; font-size: 12px; }
         @page { margin: 16mm; }
       </style>
@@ -138,7 +173,10 @@ function buildReceiptHtml(record) {
           <tbody>${rows}</tbody>
         </table>
 
-        <div class="total">Total payé : ${escapeHtml(formatMoney(record.cost))}</div>
+        <div class="total">Total : ${escapeHtml(formatMoney(amount))}</div>
+        <div class="amount-words">Arrêtée à la somme de : <strong>${escapeHtml(amountInWords)} ariary</strong></div>
+        <div class="responsible-signature"><strong>Responsable</strong><span>${escapeHtml(record.responsible_name || '')}</span></div>
+        <div class="footer">Mba hambinina sy ho salama amin'ny zavatra rehetra anie ianao,tahaka izay anambinana ny fanahinao ihany.<br />III Jon 1:2</div>
       </main>
     </body>
   </html>`;
