@@ -756,10 +756,10 @@ export default function RecordsPage({ category }) {
         {/* CHAMP ÂGE */}
         <div className="age-group">
           <select name="age_type" value={form.age_type || 'ans'} onChange={onChange}>
-            <option value="ans">Ans</option>
-            <option value="mois">Mois</option>
-            <option value="mois_jours">Mois + Jours</option>
-            <option value="jours">Jours seulement</option>
+            <option value="ans">Années (à partir de 5 ans)</option>
+            <option value="mois">Mois (moins de 5 ans)</option>
+            <option value="mois_jours">Mois + jours</option>
+            <option value="jours">Jours (moins d’un mois)</option>
           </select>
 
           {form.age_type === 'ans' && (
@@ -767,12 +767,12 @@ export default function RecordsPage({ category }) {
               value={form.age} onChange={onChange} required />
           )}
           {form.age_type === 'mois' && (
-            <input name="age" type="number" min="0" max="23" placeholder="Mois"
+            <input name="age" type="number" min="0" max="59" placeholder="Mois"
               value={form.age} onChange={onChange} required />
           )}
           {form.age_type === 'mois_jours' && (
             <>
-              <input name="age_mois" type="number" min="0" max="23" placeholder="Mois"
+              <input name="age_mois" type="number" min="0" max="59" placeholder="Mois"
                 value={form.age_mois} onChange={onChange} required style={{ maxWidth: '120px' }} />
               <span style={{ color: '#5f7b84', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>mois</span>
               <input name="age_jours" type="number" min="0" max="30" placeholder="Jours"
