@@ -175,7 +175,7 @@ function buildReceiptHtml(record) {
 
         <div class="total">Total : ${escapeHtml(formatMoney(amount))}</div>
         <div class="amount-words">Arrêtée à la somme de : <strong>${escapeHtml(amountInWords)} ariary</strong></div>
-        <div class="responsible-signature"><strong>Responsable</strong><span>${escapeHtml(record.responsible_name || '')}</span></div>
+        <div class="responsible-signature"><strong>Responsable</strong><span></span></div>
         <div class="footer">Mba hambinina sy ho salama amin'ny zavatra rehetra anie ianao,tahaka izay anambinana ny fanahinao ihany.<br />III Jon 1:2</div>
       </main>
     </body>
