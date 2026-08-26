@@ -7,9 +7,9 @@ function getTodayDate() {
 
 function getStatus(date) {
   const today = getTodayDate();
-  if (date < today) return 'Passé';
-  if (date === today) return "Aujourd'hui";
-  return 'À venir';
+  if (date < today) return { text: 'Passé', color: '#dc3545' };
+  if (date === today) return { text: "Aujourd'hui", color: '#28a745' };
+  return { text: 'À venir', color: '#007bff' };
 }
 
 export default function AppointmentsPage() {
@@ -65,16 +65,19 @@ export default function AppointmentsPage() {
             {filtered.length === 0 && (
               <tr><td colSpan="6" style={{ textAlign: 'center', padding: '24px' }}>Aucun rendez-vous.</td></tr>
             )}
-            {filtered.map((appointment) => (
-              <tr key={appointment.id}>
-                <td>{appointment.appointment_date}</td>
-                <td>{getStatus(appointment.appointment_date)}</td>
-                <td><strong>{appointment.patient_nom}</strong> {appointment.patient_prenom}</td>
-                <td>{appointment.registry_number || '-'}</td>
-                <td>{appointment.diagnostic || '-'}</td>
-                <td>{appointment.tdr_result || '-'}</td>
-              </tr>
-            ))}
+            {filtered.map((appointment) => {
+              const status = getStatus(appointment.appointment_date);
+              return (
+                <tr key={appointment.id}>
+                  <td style={{ color: status.color, fontWeight: 600 }}>{appointment.appointment_date}</td>
+                  <td style={{ color: status.color, fontWeight: 600 }}>{status.text}</td>
+                  <td><strong>{appointment.patient_nom}</strong> {appointment.patient_prenom}</td>
+                  <td>{appointment.registry_number || '-'}</td>
+                  <td>{appointment.diagnostic || '-'}</td>
+                  <td>{appointment.tdr_result || '-'}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
