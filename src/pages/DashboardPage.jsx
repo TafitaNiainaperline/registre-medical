@@ -1,34 +1,48 @@
 ﻿import { useEffect, useState } from 'react';
 import { categories } from '../constants';
 
-function parseAgeToYears(stored) {
+function parseAgeToMonths(stored) {
   const value = String(stored || '');
   if (!value) return null;
+
   if (!value.includes('|')) {
     const [amount, unit] = value.split(' ');
     const num = Number(amount);
     if (Number.isNaN(num)) return null;
-    return unit === 'mois' ? num / 12 : num;
+    if (unit === 'ans') return num * 12;
+    if (unit === 'mois') return num;
+    if (unit === 'jours') return num / 30;
+    return null;
   }
 
-  const [amount, type] = value.split('|');
-  const num = Number(amount);
+  const parts = value.split('|');
+  const num = Number(parts[0]);
   if (Number.isNaN(num)) return null;
 
-  if (type === 'mois' || type === 'mois_jours') return num / 12;
-  if (type === 'jours') return 0;
-  if (type === 'ans') return num;
+  if (parts[1] === 'mois_jours') {
+    const days = parts[2] ? Number(parts[2]) : 0;
+    return num + days / 30;
+  }
+
+  if (parts[1] === 'ans') return num * 12;
+  if (parts[1] === 'mois') return num;
+  if (parts[1] === 'jours') return num / 30;
+
   return null;
 }
 
-function getAgeGroup(years) {
-  if (years === null) return 'Non renseigné';
-  if (years < 1) return '0-11 mois';
-  if (years <= 5) return '1-5 ans';
-  if (years <= 17) return '6-17 ans';
-  if (years <= 30) return '18-30 ans';
-  if (years <= 50) return '31-50 ans';
-  return '51+ ans';
+function getAgeGroup(stored) {
+  const months = parseAgeToMonths(stored);
+  if (months === null) return 'Non renseigné';
+
+  if (months <= 0.93) return '0-28j';
+  if (months <= 11) return '29j-11mois';
+  if (months <= 48) return '1-4 ans';
+  if (months <= 168) return '5-14 ans';
+  if (months <= 204) return '15-17 ans';
+  if (months <= 288) return '18-24 ans';
+  if (months <= 708) return '25-59 ans';
+  return '60 ans et plus';
 }
 
 function sumNumber(value) {
@@ -135,8 +149,7 @@ export default function DashboardPage() {
   }, {})).map(([sex, set]) => [sex, set.size]);
 
   const ageGroupSummary = Object.entries(records.reduce((acc, row) => {
-    const years = parseAgeToYears(row.age);
-    const group = getAgeGroup(years);
+    const group = getAgeGroup(row.age);
     if (!acc[group]) acc[group] = new Set();
     acc[group].add(getPatientId(row));
     return acc;
