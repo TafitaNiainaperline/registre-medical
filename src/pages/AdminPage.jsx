@@ -6,7 +6,6 @@ export default function AdminPage() {
   const [showPwd, setShowPwd] = useState({});
   const [msg, setMsg] = useState({ text: '', type: 'ok' });
   const [meds, setMeds] = useState([]);
-  const [medsError, setMedsError] = useState('');
   const [dispensations, setDispensations] = useState([]);
   const [dispError, setDispError] = useState('');
   const [editingDisp, setEditingDisp] = useState(null);
@@ -17,8 +16,8 @@ export default function AdminPage() {
   const load = () => window.api.getAllUsers().then(setUsers).catch(() => {});
   const loadMeds = () =>
     window.api.listMedications()
-      .then((r) => { setMeds(r || []); setMedsError(''); })
-      .catch((e) => { setMeds([]); setMedsError(e?.message || 'Impossible de charger les médicaments.'); });
+      .then((r) => setMeds(r || []))
+      .catch(() => setMeds([]));
 
   const loadDispensations = () =>
     window.api.getDispensations()
@@ -312,98 +311,6 @@ export default function AdminPage() {
             </tbody>
           </table>
         </div>
-      )}
-
-      <div style={{ height: '16px' }} />
-
-      <div className="page-header" style={{ marginTop: '4px' }}>
-        <div>
-          <h1 style={{ fontSize: '1.35rem' }}>Stock médicaments</h1>
-          <p>Surveillance rapide pour éviter les ruptures de stock.</p>
-        </div>
-
-        <div className="dashboard-badge" style={{ background: '#8f60d0' }}>
-          💊 Stock
-        </div>
-      </div>
-
-      {medsError && (
-        <p className="error-msg">⚠ {medsError}</p>
-      )}
-
-      {!medsError && (
-        <>
-        <div className="cards-grid" style={{ marginBottom: '14px' }}>
-          {(() => {
-            const tracked = meds.filter((m) => m.stock !== null && m.stock !== undefined).map((m) => ({ ...m, stock: Number(m.stock) }));
-            const notTracked = meds.length - tracked.length;
-            const out = tracked.filter((m) => (Number.isFinite(m.stock) ? m.stock : 0) <= 0).length;
-            const low = tracked.filter((m) => (Number.isFinite(m.stock) ? m.stock : 0) > 0 && m.stock <= 5).length;
-            const ok = tracked.length - out - low;
-            const cards = [
-              { title: 'Rupture', value: out, color: '#d34a65' },
-              { title: 'Stock faible', value: low, color: '#e39d1f' },
-              { title: 'Stock OK', value: ok, color: '#1c96a4' },
-              { title: 'Non suivi', value: notTracked, color: '#8b9aa3' },
-            ];
-            return cards.map((c) => (
-              <article key={c.title} className="stat-card" style={{ borderTop: `5px solid ${c.color}` }}>
-                <h3>{c.title}</h3>
-                <strong>{c.value}</strong>
-              </article>
-            ));
-          })()}
-        </div>
-
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Médicament</th>
-                <th>Prix</th>
-                <th>Stock</th>
-                <th>Statut</th>
-              </tr>
-            </thead>
-            <tbody>
-              {meds.length === 0 && (
-                <tr><td colSpan="4" style={{ textAlign: 'center', color: '#5f7b84', padding: '24px' }}>
-                  Aucun médicament.
-                </td></tr>
-              )}
-              {meds.map((m) => {
-                const stock = (m.stock === null || m.stock === undefined) ? null : Number(m.stock);
-                const isOut = stock !== null && stock <= 0;
-                const isLow = stock !== null && stock > 0 && stock <= 5;
-                const badge = isOut ? { bg: '#fee2e2', fg: '#991b1b', text: 'Rupture' }
-                  : isLow ? { bg: '#ffedd5', fg: '#9a3412', text: 'Faible' }
-                  : stock === null ? { bg: '#e5e7eb', fg: '#374151', text: 'Non suivi' }
-                  : { bg: '#d1fae5', fg: '#065f46', text: 'OK' };
-
-                return (
-                  <tr key={m.id}>
-                    <td><strong>{m.name}</strong></td>
-                    <td>{m.price} Ar</td>
-                    <td>{stock === null ? '-' : stock}</td>
-                    <td>
-                      <span style={{
-                        background: badge.bg,
-                        color: badge.fg,
-                        borderRadius: '20px',
-                        padding: '3px 10px',
-                        fontSize: '0.82rem',
-                        fontWeight: 700
-                      }}>
-                        {badge.text}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        </>
       )}
     </section>
   );
