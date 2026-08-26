@@ -500,6 +500,7 @@ async function fetchRecords(category) {
     if (!byRecord.has(m.record_id)) byRecord.set(m.record_id, []);
     byRecord.get(m.record_id).push({
       medication_id: m.medication_id ?? null,
+      item_type: m.item_type === 'act' ? 'act' : 'medication',
       name: m.medication_name,
       unit: m.medication_unit || null,
       quantity: Number(m.quantity) || 0,
@@ -658,6 +659,7 @@ async function fetchRecordsByArchive({ category, year, month, search }) {
     if (!byRecord.has(m.record_id)) byRecord.set(m.record_id, []);
     byRecord.get(m.record_id).push({
       medication_id: m.medication_id ?? null,
+      item_type: m.item_type === 'act' ? 'act' : 'medication',
       name: m.medication_name,
       unit: m.medication_unit || null,
       quantity: Number(m.quantity) || 0,
@@ -689,6 +691,7 @@ async function fetchRecordById(id) {
 
   const treatments = medsRows.map((m) => ({
     medication_id: m.medication_id ?? null,
+    item_type: m.item_type === 'act' ? 'act' : 'medication',
     name: m.medication_name,
     unit: m.medication_unit || null,
     quantity: Number(m.quantity) || 0,

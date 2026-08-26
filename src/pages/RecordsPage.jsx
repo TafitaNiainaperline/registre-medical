@@ -13,7 +13,7 @@ const emptyForm = {
   diagnostic: '',
   traitement: '',
   observation: '',
-  appointment_date: getTodayDate(),
+  appointment_date: '',
   tdr_result: '',
   cost: '',
   treatments: [],
@@ -260,6 +260,7 @@ function buildTreatmentsFromText(text, medications) {
     } else {
       byMedicationId.set(id, {
         medication_id: med.id,
+        item_type: med.item_type || 'medication',
         name: med.name,
         unit: med.unit || 'unité',
         unit_price: Number(med.price) || 0,
