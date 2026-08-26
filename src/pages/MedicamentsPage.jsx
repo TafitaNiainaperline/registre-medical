@@ -452,9 +452,7 @@ export default function MedicamentsPage() {
                     </td>
                     <td>{r.item_type === 'act' ? '-' : (r.stock_threshold ?? 100)}</td>
                       <td>{formatMadagascarDate(r.created_at)}</td>
-                    <td>
-                      {isAdmin ? (
-                        <>
+                     <td>
                         {r.item_type !== 'act' && (
                           <button className="icon-btn" onClick={() => addStock(r)} title="Ajouter du stock">➕</button>
                         )}
@@ -462,8 +460,6 @@ export default function MedicamentsPage() {
                         <button className="icon-btn" onClick={() => edit(r)} title="Modifier">✏️</button>
 
                         <button className="icon-btn danger" onClick={() => remove(r.id)} title="Supprimer">🗑️</button>
-                        </>
-                      ) : <span style={{ color: '#888' }}>Consultation</span>}
                       </td>
                   </tr>
                 );
