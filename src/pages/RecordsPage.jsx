@@ -861,6 +861,7 @@ export default function RecordsPage({ category }) {
               <th>Diagnostic</th>
               <th>Traitement</th>
               <th>Observation</th>
+              <th>TDR</th>
               <th>Coût</th>
               <th>Date</th>
               <th>Rendez-vous</th>
@@ -870,7 +871,7 @@ export default function RecordsPage({ category }) {
           <tbody>
             {filteredRecords.length === 0 && (
               <tr>
-                <td colSpan="12" style={{ textAlign: 'center', color: '#5f7b84', padding: '24px' }}>
+                <td colSpan="13" style={{ textAlign: 'center', color: '#5f7b84', padding: '24px' }}>
                   Aucune donnée enregistrée.
                 </td>
               </tr>
@@ -893,7 +894,8 @@ export default function RecordsPage({ category }) {
                     : row.traitement}
                 </td>
                 <td>{row.observation || '-'}</td>
-<td>{row.cost} Ar</td>
+                <td>{row.tdr_result ? (row.tdr_result === 'positif' ? '🟠 Positif' : '🟢 Négatif') : '-'}</td>
+                <td>{row.cost} Ar</td>
                  <td style={{ fontSize: '0.85rem', color: '#5f7b84' }}>
                    {row.created_at ? formatMadagascarDateTime(row.created_at).slice(0, 10) : '-'}
                  </td>
