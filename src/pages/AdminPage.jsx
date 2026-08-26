@@ -5,35 +5,12 @@ export default function AdminPage() {
   const [newPwd, setNewPwd] = useState({});
   const [showPwd, setShowPwd] = useState({});
   const [msg, setMsg] = useState({ text: '', type: 'ok' });
-  const [meds, setMeds] = useState([]);
-  const [userActivity, setUserActivity] = useState([]);
-  const [topMedsByUser, setTopMedsByUser] = useState({});
 
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
   const load = () => window.api.getAllUsers().then(setUsers).catch(() => {});
-  const loadMeds = () =>
-    window.api.listMedications()
-      .then((r) => setMeds(r || []))
-      .catch(() => setMeds([]));
 
-  const loadUserActivity = async () => {
-    try {
-      const activity = await window.api.getUserMedicationActivity();
-      setUserActivity(activity || []);
-      const topMeds = {};
-      for (const u of activity || []) {
-        if (u.created_by) {
-          topMeds[u.created_by] = await window.api.getTopMedicationsByUser(u.created_by);
-        }
-      }
-      setTopMedsByUser(topMeds);
-    } catch {
-      setUserActivity([]);
-    }
-  };
-
-  useEffect(() => { load(); loadMeds(); loadUserActivity(); }, []);
+  useEffect(() => { load(); }, []);
 
   const notify = (text, type = 'ok') => {
     setMsg({ text, type });
@@ -192,58 +169,6 @@ export default function AdminPage() {
           </tbody>
         </table>
       </div>
-
-      <div style={{ height: '16px' }} />
-
-      <div className="page-header" style={{ marginTop: '4px' }}>
-        <div>
-          <h1 style={{ fontSize: '1.35rem' }}>Activité par utilisateur</h1>
-          <p>Vue rapide des médicaments prescrits par chaque utilisateur.</p>
-        </div>
-        <div className="dashboard-badge" style={{ background: '#1c96a4' }}>
-          📊 Activité
-        </div>
-      </div>
-
-      {userActivity.length === 0 && (
-        <p style={{ color: '#5f7b84', textAlign: 'center', padding: '24px' }}>Aucune activité enregistrée.</p>
-      )}
-
-      {userActivity.length > 0 && (
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Utilisateur</th>
-                <th>Dossiers créés</th>
-                <th>Top médicaments prescrits</th>
-              </tr>
-            </thead>
-            <tbody>
-              {userActivity.map((u) => {
-                const top = topMedsByUser[u.created_by] || [];
-                return (
-                  <tr key={u.created_by}>
-                    <td><strong>{u.user_name || `Utilisateur #${u.created_by}`}</strong></td>
-                    <td>{u.record_count}</td>
-                    <td>
-                      {top.length === 0 ? (
-                        <span style={{ color: '#888' }}>Aucun médicament</span>
-                      ) : (
-                        top.map((m, idx) => (
-                          <span key={idx} style={{ marginRight: '12px', fontSize: '0.92rem' }}>
-                            {m.medication_name} ({m.count})
-                          </span>
-                        ))
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
     </section>
   );
 }
