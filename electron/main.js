@@ -100,6 +100,10 @@ ipcMain.handle('records:appointments', () => {
   return db.fetchAppointments();
 });
 
+ipcMain.handle('records:clearAppointment', (_, id) => {
+  return db.clearAppointment(id);
+});
+
 ipcMain.handle('records:stats', () => {
   return db.fetchStats();
 });

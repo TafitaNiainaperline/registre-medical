@@ -16,6 +16,12 @@ export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState([]);
   const [search, setSearch] = useState('');
 
+  const remove = async (id) => {
+    if (!window.confirm('Supprimer ce rendez-vous ?')) return;
+    await window.api.clearAppointment(id);
+    setAppointments((prev) => prev.filter((a) => a.id !== id));
+  };
+
   useEffect(() => {
     window.api.fetchAppointments()
       .then((rows) => setAppointments(rows || []))
@@ -52,18 +58,19 @@ export default function AppointmentsPage() {
       <div className="table-wrap">
         <table>
           <thead>
-            <tr>
-              <th>Date</th>
-              <th>Statut</th>
-              <th>Patient</th>
-              <th>Registre</th>
-              <th>Diagnostic</th>
-              <th>TDR</th>
-            </tr>
+              <tr>
+                <th>Date</th>
+                <th>Statut</th>
+                <th>Patient</th>
+                <th>Registre</th>
+                <th>Diagnostic</th>
+                <th>TDR</th>
+                <th></th>
+              </tr>
           </thead>
           <tbody>
             {filtered.length === 0 && (
-              <tr><td colSpan="6" style={{ textAlign: 'center', padding: '24px' }}>Aucun rendez-vous.</td></tr>
+              <tr><td colSpan="7" style={{ textAlign: 'center', padding: '24px' }}>Aucun rendez-vous.</td></tr>
             )}
             {filtered.map((appointment) => {
               const status = getStatus(appointment.appointment_date);
@@ -75,6 +82,11 @@ export default function AppointmentsPage() {
                   <td>{appointment.registry_number || '-'}</td>
                   <td>{appointment.diagnostic || '-'}</td>
                   <td>{appointment.tdr_result || '-'}</td>
+                  <td>
+                    <button className="icon-btn" title="Supprimer le rendez-vous" aria-label="Supprimer" onClick={() => remove(appointment.id)}>
+                      🗑️
+                    </button>
+                  </td>
                 </tr>
               );
             })}

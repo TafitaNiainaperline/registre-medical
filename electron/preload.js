@@ -34,6 +34,9 @@ contextBridge.exposeInMainWorld('api', {
   fetchAppointments: () =>
     ipcRenderer.invoke('records:appointments'),
 
+  clearAppointment: (id) =>
+    ipcRenderer.invoke('records:clearAppointment', id),
+
   fetchStats: () =>
     ipcRenderer.invoke('records:stats'),
 

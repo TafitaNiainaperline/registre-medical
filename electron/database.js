@@ -1179,6 +1179,12 @@ async function deleteRecord(id) {
   }
 }
 
+async function clearAppointment(id) {
+  const d = await getDB();
+  d.run('UPDATE medical_records SET appointment_date = NULL WHERE id = ?', [id]);
+  saveDB();
+}
+
 // ── ARCHIVES ──────────────────────────────────────────
 async function listArchives() {
   const d = await getDB();
@@ -1602,7 +1608,7 @@ async function ensureRegistryNumbers() {
 module.exports = {
    loginUser, registerUser,
    getAllUsers, toggleUserActive, resetUserPassword, deleteUser,
-  fetchRecords, fetchRecordsByArchive, fetchRecordById, fetchRecordsByDossier, fetchAppointments, fetchStats, fetchStatsByArchive, createRecord, updateRecord, deleteRecord,
+  fetchRecords, fetchRecordsByArchive, fetchRecordById, fetchRecordsByDossier, fetchAppointments, fetchStats, fetchStatsByArchive, createRecord, updateRecord, deleteRecord, clearAppointment,
    listArchives, getCurrentArchive,
    listMedications, createMedication, updateMedication, deleteMedication,
    addMedicationStock,
