@@ -6,10 +6,8 @@ export default function AdminPage() {
   const [showPwd, setShowPwd] = useState({});
   const [msg, setMsg] = useState({ text: '', type: 'ok' });
   const [meds, setMeds] = useState([]);
-  const [dispensations, setDispensations] = useState([]);
-  const [dispError, setDispError] = useState('');
-  const [editingDisp, setEditingDisp] = useState(null);
-  const [editDispForm, setEditDispForm] = useState({ medication_id: '', quantity: '' });
+  const [userActivity, setUserActivity] = useState([]);
+  const [topMedsByUser, setTopMedsByUser] = useState({});
 
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
@@ -19,12 +17,23 @@ export default function AdminPage() {
       .then((r) => setMeds(r || []))
       .catch(() => setMeds([]));
 
-  const loadDispensations = () =>
-    window.api.getDispensations()
-      .then((r) => { setDispensations(r || []); setDispError(''); })
-      .catch((e) => { setDispensations([]); setDispError(e?.message || 'Impossible de charger les dispensations.'); });
+  const loadUserActivity = async () => {
+    try {
+      const activity = await window.api.getUserMedicationActivity();
+      setUserActivity(activity || []);
+      const topMeds = {};
+      for (const u of activity || []) {
+        if (u.created_by) {
+          topMeds[u.created_by] = await window.api.getTopMedicationsByUser(u.created_by);
+        }
+      }
+      setTopMedsByUser(topMeds);
+    } catch {
+      setUserActivity([]);
+    }
+  };
 
-  useEffect(() => { load(); loadMeds(); loadDispensations(); }, []);
+  useEffect(() => { load(); loadMeds(); loadUserActivity(); }, []);
 
   const notify = (text, type = 'ok') => {
     setMsg({ text, type });
@@ -50,40 +59,6 @@ export default function AdminPage() {
     await window.api.deleteUser(id);
     notify('Utilisateur supprimé.');
     load();
-  };
-
-  const deleteDispensation = async (id) => {
-    if (!window.confirm('Supprimer cette dispensation ? Le stock sera recrédité.')) return;
-    try {
-      await window.api.deleteDispensation(id);
-      notify('Dispensation supprimée, stock recrédité.');
-      loadDispensations();
-      loadMeds();
-    } catch (err) {
-      notify(err?.message || 'Erreur lors de la suppression.', 'err');
-    }
-  };
-
-  const startEditDisp = (d) => {
-    setEditingDisp(Number(d.id));
-    setEditDispForm({ medication_id: String(d.medication_id), quantity: String(d.quantity) });
-  };
-
-  const saveEditDisp = async () => {
-    try {
-      await window.api.updateDispensation({
-        id: editingDisp,
-        medication_id: Number(editDispForm.medication_id),
-        quantity: Number(editDispForm.quantity),
-      });
-      notify('Dispensation modifiée.');
-      setEditingDisp(null);
-      setEditDispForm({ medication_id: '', quantity: '' });
-      loadDispensations();
-      loadMeds();
-    } catch (err) {
-      notify(err?.message || 'Erreur lors de la modification.', 'err');
-    }
   };
 
   if (currentUser.role !== 'admin') {
@@ -222,89 +197,46 @@ export default function AdminPage() {
 
       <div className="page-header" style={{ marginTop: '4px' }}>
         <div>
-          <h1 style={{ fontSize: '1.35rem' }}>Dispensations</h1>
-          <p>Historique et gestion des dispensations de médicaments.</p>
+          <h1 style={{ fontSize: '1.35rem' }}>Activité par utilisateur</h1>
+          <p>Vue rapide des médicaments prescrits par chaque utilisateur.</p>
         </div>
-        <div className="dashboard-badge" style={{ background: '#4a90d9' }}>
-          💊 Dispensations
+        <div className="dashboard-badge" style={{ background: '#1c96a4' }}>
+          📊 Activité
         </div>
       </div>
 
-      {dispError && <p className="error-msg">⚠ {dispError}</p>}
+      {userActivity.length === 0 && (
+        <p style={{ color: '#5f7b84', textAlign: 'center', padding: '24px' }}>Aucune activité enregistrée.</p>
+      )}
 
-      {!dispError && (
+      {userActivity.length > 0 && (
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Médicament</th>
-                <th>Unité</th>
-                <th>Quantité</th>
-                <th>Prix unitaire</th>
-                <th>Total</th>
-                <th>Actions</th>
+                <th>Utilisateur</th>
+                <th>Dossiers créés</th>
+                <th>Top médicaments prescrits</th>
               </tr>
             </thead>
             <tbody>
-              {dispensations.length === 0 && (
-                <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', color: '#5f7b84', padding: '24px' }}>
-                    Aucune dispensation enregistrée.
-                  </td>
-                </tr>
-              )}
-              {dispensations.map((d) => {
-                const editing = editingDisp === d.id;
+              {userActivity.map((u) => {
+                const top = topMedsByUser[u.created_by] || [];
                 return (
-                  <tr key={d.id}>
-                    <td style={{ fontSize: '0.85rem', color: '#5f7b84' }}>
-                      {new Date(d.created_at).toLocaleString('fr-FR', { timeZone: 'Indian/Antananarivo' })}
+                  <tr key={u.created_by}>
+                    <td><strong>{u.user_name || `Utilisateur #${u.created_by}`}</strong></td>
+                    <td>{u.record_count}</td>
+                    <td>
+                      {top.length === 0 ? (
+                        <span style={{ color: '#888' }}>Aucun médicament</span>
+                      ) : (
+                        top.map((m, idx) => (
+                          <span key={idx} style={{ marginRight: '12px', fontSize: '0.92rem' }}>
+                            {m.medication_name} ({m.count})
+                          </span>
+                        ))
+                      )}
                     </td>
-                    {editing ? (
-                      <>
-                        <td>
-                          <select
-                            style={{ width: '100%', padding: '7px', border: '1px solid #c8d9df', borderRadius: '8px', font: 'inherit' }}
-                            value={editDispForm.medication_id}
-                            onChange={(e) => setEditDispForm({ ...editDispForm, medication_id: e.target.value })}
-                          >
-                            <option value="">--</option>
-                            {meds.map((m) => (
-                              <option key={m.id} value={String(m.id)}>{m.name} ({m.unit || 'comprimé'})</option>
-                            ))}
-                          </select>
-                        </td>
-                        <td>{meds.find((m) => Number(m.id) === Number(editDispForm.medication_id))?.unit || 'comprimé'}</td>
-                        <td>
-                          <input type="number" min="1" value={editDispForm.quantity}
-                            onChange={(e) => setEditDispForm({ ...editDispForm, quantity: e.target.value })}
-                            style={{ width: '80px', padding: '7px', border: '1px solid #c8d9df', borderRadius: '8px', font: 'inherit' }} />
-                        </td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>
-                          <div style={{ display: 'flex', gap: '6px' }}>
-                            <button onClick={saveEditDisp} style={{ background: '#1c96a4' }}>✓</button>
-                            <button className="btn-light" onClick={() => setEditingDisp(null)}>✕</button>
-                          </div>
-                        </td>
-                      </>
-                    ) : (
-                      <>
-                        <td><strong>{d.medication_name}</strong></td>
-                        <td>{d.unit || 'comprimé'}</td>
-                        <td>{d.quantity}</td>
-                        <td>{Number(d.unit_price || 0).toLocaleString()} Ar</td>
-                        <td>{(Number(d.unit_price || 0) * Number(d.quantity)).toLocaleString()} Ar</td>
-                        <td>
-                          <div style={{ display: 'flex', gap: '6px' }}>
-                            <button className="icon-btn" onClick={() => startEditDisp(d)} title="Modifier">✏️</button>
-                            <button className="icon-btn danger" onClick={() => deleteDispensation(d.id)} title="Supprimer">🗑️</button>
-                          </div>
-                        </td>
-                      </>
-                    )}
                   </tr>
                 );
               })}
