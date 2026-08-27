@@ -259,6 +259,74 @@ p { margin: 0 0 18px; color: var(--soft); }
   background: #ffffff;
   border: 1px solid #e6eff2;
 }
+
+.treatment-search {
+  flex: 1;
+  border: 1px solid #c8d9df;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  background: #fff;
+  min-width: 220px;
+}
+.treatment-search:focus {
+  outline: none;
+  border-color: #1c96a4;
+  box-shadow: 0 0 0 3px rgba(28, 150, 164, 0.12);
+}
+
+.treatment-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #dbe8ec;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(15, 35, 45, 0.12);
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 20;
+}
+.treatment-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f7f9;
+}
+.treatment-option:last-child {
+  border-bottom: none;
+}
+.treatment-option:hover,
+.treatment-option:focus {
+  background: #f2f8fa;
+}
+.treatment-option-act {
+  border-left: 3px solid #8f60d0;
+}
+.treatment-option-med {
+  border-left: 3px solid #1c96a4;
+}
+.treatment-option-name {
+  font-weight: 600;
+  color: #0d2f3a;
+}
+.treatment-option-meta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #5f7b84;
+}
+.treatment-option-stock {
+  background: #f2f8fa;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  color: #0d7280;
+}
 .treatment-controls { display: flex; align-items: center; gap: 10px; }
 
 /* ── BOUTONS ── */
@@ -1141,6 +1209,32 @@ body.dark-mode .treatments-total{
   background:#1b2a34;
   border:1px solid #243542;
   color:#e6f3f6;
+}
+body.dark-mode .treatment-search{
+  background:#0f1920;
+  color:#ecf3f6;
+  border:1px solid #304554;
+}
+body.dark-mode .treatment-dropdown{
+  background:#0f1920;
+  border:1px solid #243542;
+}
+body.dark-mode .treatment-option{
+  border-bottom-color:#243542;
+}
+body.dark-mode .treatment-option:hover,
+body.dark-mode .treatment-option:focus{
+  background:#1b2a34;
+}
+body.dark-mode .treatment-option-name{
+  color:#e6f3f6;
+}
+body.dark-mode .treatment-option-meta{
+  color:#7f98a1;
+}
+body.dark-mode .treatment-option-stock{
+  background:#1b2a34;
+  color:#1c96a4;
 }
 body.dark-mode .qty-input{
   background:#0f1920;

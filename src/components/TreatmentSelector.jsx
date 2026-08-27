@@ -16,6 +16,7 @@ export default function TreatmentSelector({ medications, value, onChange }) {
   const [selectedId, setSelectedId] = useState('');
   const [searchName, setSearchName] = useState('');
   const [qty, setQty] = useState(1);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const byId = useMemo(() => {
     const m = new Map();
@@ -24,11 +25,16 @@ export default function TreatmentSelector({ medications, value, onChange }) {
   }, [meds]);
   const selectedItem = byId.get(String(selectedId));
 
+  const filteredMeds = useMemo(() => {
+    if (!searchName.trim()) return meds;
+    const q = normalizeName(searchName);
+    return meds.filter((m) => normalizeName(m.name).includes(q));
+  }, [meds, searchName]);
+
   const add = () => {
     const med = byId.get(String(selectedId));
     if (!med) return;
 
-    // === VÉRIFICATION DU STOCK ===
     if (med.item_type !== 'act' && med.stock !== null && med.stock !== undefined) {
       const currentQty = treatments
         .filter(t => String(t.medication_id) === String(med.id))
@@ -70,12 +76,12 @@ export default function TreatmentSelector({ medications, value, onChange }) {
     setSelectedId('');
     setSearchName('');
     setQty(1);
+    setIsDropdownOpen(false);
   };
 
   const updateQty = (medicationId, nextQty) => {
     const q = Math.max(1, toNumber(nextQty, 1));
     
-    // Vérification stock lors de la modification
     const med = byId.get(String(medicationId));
     if (med && med.item_type !== 'act' && med.stock !== null && med.stock !== undefined) {
       const newTotal = treatments.reduce((sum, t) => {
@@ -106,23 +112,46 @@ export default function TreatmentSelector({ medications, value, onChange }) {
   return (
     <div className="treatments">
       <div className="treatments-top">
-        <input
-          className="select treatment-search"
-          list="treatment-options"
-          value={searchName}
-          placeholder="Rechercher un médicament ou un acte..."
-          onChange={(e) => {
-            const value = e.target.value;
-            const selected = meds.find((item) => normalizeName(item.name) === normalizeName(value));
-            setSearchName(value);
-            setSelectedId(selected ? String(selected.id) : '');
-          }}
-        />
-        <datalist id="treatment-options">
-          {meds.map((m) => (
-            <option key={m.id} value={m.name} />
-          ))}
-        </datalist>
+        <div style={{ position: 'relative', flex: 1 }}>
+          <input
+            className="treatment-search"
+            value={searchName}
+            placeholder="Rechercher un médicament ou un acte..."
+            onChange={(e) => {
+              setSearchName(e.target.value);
+              setIsDropdownOpen(true);
+            }}
+            onFocus={() => setIsDropdownOpen(true)}
+            onBlur={() => {
+              setTimeout(() => setIsDropdownOpen(false), 150);
+            }}
+            autoComplete="off"
+          />
+          {isDropdownOpen && filteredMeds.length > 0 && (
+            <div className="treatment-dropdown">
+              {filteredMeds.map((m) => (
+                <div
+                  key={m.id}
+                  className={`treatment-option ${m.item_type === 'act' ? 'treatment-option-act' : 'treatment-option-med'}`}
+                  onMouseDown={() => {
+                    setSelectedId(String(m.id));
+                    setSearchName(m.name);
+                    setIsDropdownOpen(false);
+                    setQty(1);
+                  }}
+                >
+                  <span className="treatment-option-name">{m.name}</span>
+                  <span className="treatment-option-meta">
+                    {m.item_type === 'act' ? 'Acte' : `${m.unit || 'unité'}`}
+                    {m.item_type !== 'act' && m.stock !== null && m.stock !== undefined && (
+                      <span className="treatment-option-stock">Stock: {m.stock}</span>
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {selectedItem?.item_type !== 'act' && (
           <input
@@ -141,7 +170,7 @@ export default function TreatmentSelector({ medications, value, onChange }) {
           onClick={add} 
           disabled={!selectedId}
         >
-          + Ajouter élément
+          + Ajouter
         </button>
 
         <div className="treatments-total">
