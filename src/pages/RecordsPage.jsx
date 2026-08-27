@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import TreatmentSelector from '../components/TreatmentSelector';
 import MonthlyArchiveBanner from '../components/MonthlyArchiveBanner';
+import SuggestionInput from '../components/SuggestionInput';
 
 const emptyForm = {
   patient_nom: '',
@@ -758,10 +759,13 @@ export default function RecordsPage({ category }) {
 
       {/* FORMULAIRE */}
       <form className="record-form" onSubmit={submit} style={{ borderColor: category.color }}>
-        <input name="patient_nom" list="patient-name-options" placeholder="Nom et prénom" value={form.patient_nom} onChange={onChange} required />
-        <datalist id="patient-name-options">
-          {patientNameOptions.map((name) => <option key={name} value={name} />)}
-        </datalist>
+        <SuggestionInput
+          value={form.patient_nom}
+          onChange={(val) => setForm({ ...form, patient_nom: val })}
+          suggestions={patientNameOptions}
+          placeholder="Nom et prénom"
+          id="patient-nom"
+        />
 
         {/* CHAMP ÂGE */}
         <div className="age-group">
@@ -802,14 +806,20 @@ export default function RecordsPage({ category }) {
           <option value="F">Féminin</option>
         </select>
 
-        <input name="domicile" list="domicile-options" placeholder="Domicile" value={form.domicile} onChange={onChange} required />
-        <datalist id="domicile-options">
-          {domicileOptions.map((domicile) => <option key={domicile} value={domicile} />)}
-        </datalist>
-        <input name="diagnostic" list="diagnostic-options" placeholder="Diagnostic" value={form.diagnostic} onChange={onChange} required />
-        <datalist id="diagnostic-options">
-          {diagnosticOptions.map((diagnostic) => <option key={diagnostic} value={diagnostic} />)}
-        </datalist>
+        <SuggestionInput
+          value={form.domicile}
+          onChange={(val) => setForm({ ...form, domicile: val })}
+          suggestions={domicileOptions}
+          placeholder="Domicile"
+          id="domicile"
+        />
+        <SuggestionInput
+          value={form.diagnostic}
+          onChange={(val) => setForm({ ...form, diagnostic: val })}
+          suggestions={diagnosticOptions}
+          placeholder="Diagnostic"
+          id="diagnostic"
+        />
         <label className="appointment-field" htmlFor="appointment-date">
           <span>Rendez-vous</span>
           <input id="appointment-date" name="appointment_date" type="date" value={form.appointment_date} onChange={onChange} />
