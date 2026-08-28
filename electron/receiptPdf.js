@@ -139,7 +139,7 @@ function buildReceiptHtml(record) {
         .responsible-signature { width: 280px; margin: 18px 0 0 auto; text-align: center; color: #16323d; }
         .responsible-signature strong { display: block; width: max-content; margin: 0 auto 28px; padding-bottom: 3px; border-bottom: 1px solid #16323d; }
         .responsible-signature span { display: block; min-height: 20px; }
-        .footer { margin-top: 34px; padding-top: 16px; border-top: 1px solid #c8d9df; text-align: center; color: #5f7b84; font-size: 12px; line-height: 1.5; }
+        .footer { margin-top: 34px; padding-top: 16px; border-top: 1px solid #c8d9df; text-align: center; color: #5f7b84; font-size: 7px; line-height: 1.5; }
         .note { margin-top: 28px; padding-top: 14px; border-top: 1px solid #dbe8ec; color: #5f7b84; font-size: 12px; }
         @page { margin: 16mm; }
       </style>
