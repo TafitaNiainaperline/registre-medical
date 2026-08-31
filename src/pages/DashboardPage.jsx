@@ -246,7 +246,7 @@ export default function DashboardPage() {
         </article>
 
         <article className="stat-card" style={{ borderTop: '5px solid #d81b83' }}>
-          <div className="stat-top"><h3>TDR Consultation externe</h3></div>
+          <div className="stat-top"><h3>TDR Paludisme</h3></div>
           <div style={{ display: 'grid', gap: '4px', marginTop: '10px' }}>
             <span>Positif : {tdrSummary.positif || 0}</span>
             <span>Négatif : {tdrSummary.negatif || 0}</span>
