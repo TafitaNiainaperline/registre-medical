@@ -1,5 +1,18 @@
 import { useEffect, useState } from 'react';
 
+function formatMadagascarDateTime(utcString) {
+  if (!utcString) return '-';
+  const d = new Date(utcString);
+  const offset = 3 * 60;
+  const local = new Date(d.getTime() + offset * 60 * 1000);
+  const y = local.getFullYear();
+  const m = String(local.getMonth() + 1).padStart(2, '0');
+  const day = String(local.getDate()).padStart(2, '0');
+  const h = String(local.getHours()).padStart(2, '0');
+  const min = String(local.getMinutes()).padStart(2, '0');
+  return `${day}/${m}/${y} ${h}:${min}`;
+}
+
 export default function AdminPage() {
   const [users, setUsers] = useState([]);
   const [newPwd, setNewPwd] = useState({});
@@ -206,7 +219,7 @@ export default function AdminPage() {
             {medHistory.map((m) => (
               <tr key={m.id}>
                 <td style={{ fontSize: '0.85rem', color: '#5f7b84' }}>
-                  {m.created_at ? new Date(m.created_at).toLocaleString('fr-FR', { timeZone: 'Indian/Antananarivo' }) : '-'}
+                  {formatMadagascarDateTime(m.created_at)}
                 </td>
                 <td><strong>{m.name}</strong></td>
                 <td>{Number(m.price).toLocaleString()} Ar</td>
@@ -249,7 +262,7 @@ export default function AdminPage() {
             {stockHistory.map((s) => (
               <tr key={s.id}>
                 <td style={{ fontSize: '0.85rem', color: '#5f7b84' }}>
-                  {s.created_at ? new Date(s.created_at).toLocaleString('fr-FR', { timeZone: 'Indian/Antananarivo' }) : '-'}
+                  {formatMadagascarDateTime(s.created_at)}
                 </td>
                 <td><strong>{s.medication_name}</strong></td>
                 <td>+{s.quantity}</td>
