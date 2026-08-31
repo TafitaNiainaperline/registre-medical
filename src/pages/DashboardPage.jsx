@@ -175,6 +175,22 @@ export default function DashboardPage() {
       return summary;
     }, {});
 
+  const actSummary = Object.entries(records.reduce((acc, row) => {
+    const treatments = Array.isArray(row.treatments) ? row.treatments : [];
+    treatments.forEach((t) => {
+      if (t.item_type === 'act') {
+        const name = String(t.name || '').trim();
+        if (!name) return;
+        if (!acc[name]) acc[name] = { count: 0, total: 0 };
+        acc[name].count += 1;
+        acc[name].total += (Number(t.unit_price) || 0) * (Number(t.quantity) || 1);
+      }
+    });
+    return acc;
+  }, {}))
+    .map(([name, data]) => ({ name, ...data }))
+    .sort((a, b) => b.count - a.count);
+
   const diagnosticsByCategory = categories.map((category) => {
     const diagnostics = Object.entries(records
       .filter((row) => row.category === category.key)
@@ -252,6 +268,19 @@ export default function DashboardPage() {
             <span>Négatif : {tdrSummary.negatif || 0}</span>
           </div>
         </article>
+
+        {actSummary.length > 0 && (
+          <article className="stat-card" style={{ borderTop: '5px solid #8f60d0' }}>
+            <div className="stat-top"><h3>Actes médicaux</h3></div>
+            <div style={{ display: 'grid', gap: '4px', marginTop: '10px' }}>
+              {actSummary.slice(0, 5).map((act) => (
+                <span key={act.name} style={{ fontSize: '0.92rem' }}>
+                  <strong>{act.name}</strong> : {act.count} fois — {act.total.toLocaleString()} Ar
+                </span>
+              ))}
+            </div>
+          </article>
+        )}
       </div>
 
       {ageGroupSummary.length > 0 && (
