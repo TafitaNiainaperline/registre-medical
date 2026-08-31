@@ -88,8 +88,14 @@ contextBridge.exposeInMainWorld('api', {
   deleteMedication: (id) =>
     ipcRenderer.invoke('meds:delete', id),
 
-  addMedicationStock: (id, quantity) =>
-    ipcRenderer.invoke('meds:addStock', id, quantity),
+  getMedicationHistory: () =>
+    ipcRenderer.invoke('meds:history'),
+
+  getMedicationStockHistory: () =>
+    ipcRenderer.invoke('meds:stockHistory'),
+
+  addMedicationStock: (id, quantity, createdBy) =>
+    ipcRenderer.invoke('meds:addStock', id, quantity, createdBy),
 
   getMedicationMovements: () =>
     ipcRenderer.invoke('meds:movements'),

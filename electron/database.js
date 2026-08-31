@@ -555,8 +555,19 @@ function ensureMedicationsSchema(d) {
     ensureCol('unit', "ALTER TABLE medications ADD COLUMN unit TEXT DEFAULT 'comprimé'");
     ensureCol('stock_threshold', 'ALTER TABLE medications ADD COLUMN stock_threshold INTEGER DEFAULT 100');
     ensureCol('item_type', "ALTER TABLE medications ADD COLUMN item_type TEXT NOT NULL DEFAULT 'medication'");
+    ensureCol('created_by', 'ALTER TABLE medications ADD COLUMN created_by INTEGER');
 
-    return changed;
+    let medsChanged = changed;
+    try {
+      const info2 = toObjects(d.exec('PRAGMA table_info(medication_movements)'));
+      const cols2 = new Set(info2.map((r) => r.name));
+      if (!cols2.has('created_by')) {
+        d.run('ALTER TABLE medication_movements ADD COLUMN created_by INTEGER');
+        medsChanged = true;
+      }
+    } catch { /* ignore */ }
+
+    return changed || medsChanged;
   } catch {
     return false;
   }
@@ -1221,7 +1232,7 @@ async function fetchAppointments() {
 // ── MEDICATIONS ───────────────────────────────────────
 async function listMedications() {
   const d = await getDB();
-  const res = d.exec('SELECT id, name, item_type, price, unit, description, stock, stock_threshold, created_at, updated_at FROM medications ORDER BY name ASC');
+  const res = d.exec('SELECT id, name, item_type, price, unit, description, stock, stock_threshold, created_by, created_at, updated_at FROM medications ORDER BY name ASC');
   return toObjects(res);
 }
 
@@ -1240,7 +1251,7 @@ async function createMedication(data) {
     : null;
 
   d.run(
-    'INSERT INTO medications (name, item_type, price, unit, description, stock, stock_threshold, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP)',
+    'INSERT INTO medications (name, item_type, price, unit, description, stock, stock_threshold, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP)',
     [
       String(data.name || '').trim(),
       itemType,
@@ -1249,6 +1260,7 @@ async function createMedication(data) {
       data.description || null,
       itemType === 'act' ? null : stock,
       stockThreshold,
+      data.created_by || null,
       date,
     ]
   );
@@ -1291,7 +1303,28 @@ async function deleteMedication(id) {
   saveDB();
 }
 
-async function addMedicationStock(id, quantity) {
+async function getMedicationHistory() {
+  const d = await getDB();
+  const res = d.exec(`SELECT m.id, m.name, m.price, m.unit, m.stock, m.created_at, u.name AS created_by_name
+    FROM medications m
+    LEFT JOIN users u ON u.id = m.created_by
+    WHERE m.created_by IS NOT NULL
+    ORDER BY m.created_at DESC`);
+  return toObjects(res);
+}
+
+async function getMedicationStockHistory() {
+  const d = await getDB();
+  const res = d.exec(`SELECT mm.id, mm.quantity, mm.created_at, m.name AS medication_name, u.name AS created_by_name
+    FROM medication_movements mm
+    JOIN medications m ON m.id = mm.medication_id
+    LEFT JOIN users u ON u.id = mm.created_by
+    WHERE mm.movement_type = 'entry' AND mm.created_by IS NOT NULL
+    ORDER BY mm.created_at DESC`);
+  return toObjects(res);
+}
+
+async function addMedicationStock(id, quantity, createdBy) {
   const d = await getDB();
 
   const qty = Number(quantity);
@@ -1316,11 +1349,12 @@ async function addMedicationStock(id, quantity) {
     (
       medication_id,
       movement_type,
-      quantity
+      quantity,
+      created_by
     )
-    VALUES (?, ?, ?)
+    VALUES (?, ?, ?, ?)
     `,
-    [id, 'entry', qty]
+    [id, 'entry', qty, createdBy || null]
   );
 
   saveDB();
@@ -1610,8 +1644,8 @@ module.exports = {
    getAllUsers, toggleUserActive, resetUserPassword, deleteUser,
   fetchRecords, fetchRecordsByArchive, fetchRecordById, fetchRecordsByDossier, fetchAppointments, fetchStats, fetchStatsByArchive, createRecord, updateRecord, deleteRecord, clearAppointment,
    listArchives, getCurrentArchive,
-   listMedications, createMedication, updateMedication, deleteMedication,
-   addMedicationStock,
+     listMedications, createMedication, updateMedication, deleteMedication, getMedicationHistory, getMedicationStockHistory,
+     addMedicationStock,
    getMedicationMovements,
    getTopSellingMedications,
    getLowStockMedications,

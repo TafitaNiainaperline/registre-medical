@@ -111,6 +111,7 @@ export default function MedicamentsPage() {
         stock_threshold: form.stock_threshold === '' ? 100 : Number(form.stock_threshold),
         unit: form.unit || 'comprimé',
         date: form.date,
+        created_by: currentUser.id || null,
       };
       if (!payload.name) { notify('Nom du médicament requis.', 'err'); return; }
       if (!editingId && !payload.date) { notify("Date d'ajout requise.", 'err'); return; }
@@ -141,6 +142,7 @@ export default function MedicamentsPage() {
         name,
         price: Number(actForm.price) || 0,
         date: actForm.date,
+        created_by: currentUser.id || null,
       });
       setActForm(emptyActForm);
       notify(`Acte médical ajouté le ${actForm.date.split('-').reverse().join('/')}.`);
@@ -187,7 +189,8 @@ export default function MedicamentsPage() {
     try {
       await window.api.addMedicationStock(
         selectedMedication.id,
-        quantity
+        quantity,
+        currentUser.id || null
       );
 
       const newStock = (Number(selectedMedication.stock) || 0) + quantity;

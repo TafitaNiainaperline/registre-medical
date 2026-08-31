@@ -208,8 +208,16 @@ ipcMain.handle('meds:delete', (_, id) => {
   return db.deleteMedication(id);
 });
 
-ipcMain.handle('meds:addStock', (_, id, quantity) => {
-  return db.addMedicationStock(id, quantity);
+ipcMain.handle('meds:history', () => {
+  return db.getMedicationHistory();
+});
+
+ipcMain.handle('meds:stockHistory', () => {
+  return db.getMedicationStockHistory();
+});
+
+ipcMain.handle('meds:addStock', (_, id, quantity, createdBy) => {
+  return db.addMedicationStock(id, quantity, createdBy);
 });
 
 ipcMain.handle('meds:movements', () => {
