@@ -508,7 +508,7 @@ export default function RecordsPage({ category }) {
       diagnostic:     capitalizeWords(form.diagnostic),
       appointment_date: form.appointment_date || null,
       tdr_result: category.key === 'consultation' ? (form.tdr_result || null) : null,
-      pf_method: category.key === 'planning-familial' ? (form.pf_method || null) : null,
+      pf_method: category.key === 'pf' ? (form.pf_method || null) : null,
       traitement:     capitalizeWords(form.traitement),
       treatments,
       observation:    capitalizeWords(form.observation),
@@ -836,7 +836,7 @@ export default function RecordsPage({ category }) {
           </select>
         )}
 
-        {category.key === 'planning-familial' && (
+        {category.key === 'pf' && (
           <select name="pf_method" value={form.pf_method} onChange={onChange} className="select">
             <option value="">Méthode PF (optionnel)</option>
             <option value="Préservatif">Préservatif</option>

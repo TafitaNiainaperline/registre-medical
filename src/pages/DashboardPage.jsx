@@ -194,7 +194,7 @@ export default function DashboardPage() {
     .sort((a, b) => b.count - a.count);
 
   const pfSummary = Object.entries(records.reduce((acc, row) => {
-    if (row.category === 'planning-familial') {
+    if (row.category === 'pf') {
       const method = String(row.pf_method || '').trim();
       if (!method) return acc;
       if (!acc[method]) acc[method] = new Set();
