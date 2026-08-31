@@ -162,6 +162,7 @@ function initTables() {
     `ALTER TABLE medical_records ADD COLUMN appointment_date TEXT`,
     `ALTER TABLE medical_records ADD COLUMN tdr_result TEXT`,
     `ALTER TABLE medical_records ADD COLUMN pf_method TEXT`,
+    `ALTER TABLE medical_records ADD COLUMN cpn_type TEXT`,
   ];
   let schemaChanged = false;
   migrations.forEach(sql => {
@@ -536,6 +537,7 @@ function ensureMedicalRecordsSchema(d) {
     ensureCol('appointment_date', 'ALTER TABLE medical_records ADD COLUMN appointment_date TEXT');
     ensureCol('tdr_result', 'ALTER TABLE medical_records ADD COLUMN tdr_result TEXT');
     ensureCol('pf_method', 'ALTER TABLE medical_records ADD COLUMN pf_method TEXT');
+    ensureCol('cpn_type', 'ALTER TABLE medical_records ADD COLUMN cpn_type TEXT');
 
     return changed;
   } catch {
@@ -918,8 +920,8 @@ async function createRecord(data) {
   try {
     try {
       d.run(`INSERT INTO medical_records
-        (category, dossier_id, patient_nom, patient_prenom, sexe, age, age_type, domicile, diagnostic, traitement, observation, cost, created_by, registry_number, archive_year, archive_month, treatments_json, appointment_date, tdr_result, pf_method)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (category, dossier_id, patient_nom, patient_prenom, sexe, age, age_type, domicile, diagnostic, traitement, observation, cost, created_by, registry_number, archive_year, archive_month, treatments_json, appointment_date, tdr_result, pf_method, cpn_type)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           data.category,
           data.dossier_id || null,
@@ -941,6 +943,7 @@ async function createRecord(data) {
           data.appointment_date || null,
           data.tdr_result || null,
           data.pf_method || null,
+          data.cpn_type || null,
         ]);
     } catch (err) {
       // Retry once after auto-migration (handles "no column named sexe")
@@ -949,8 +952,8 @@ async function createRecord(data) {
           try { saveDB(); } catch { /* ignore */ }
         }
         d.run(`INSERT INTO medical_records
-          (category, patient_nom, patient_prenom, sexe, age, age_type, domicile, diagnostic, traitement, observation, cost, created_by, registry_number, archive_year, archive_month, treatments_json, appointment_date, tdr_result, pf_method)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (category, patient_nom, patient_prenom, sexe, age, age_type, domicile, diagnostic, traitement, observation, cost, created_by, registry_number, archive_year, archive_month, treatments_json, appointment_date, tdr_result, pf_method, cpn_type)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             data.category,
             data.patient_nom,
@@ -971,6 +974,7 @@ async function createRecord(data) {
             data.appointment_date || null,
             data.tdr_result || null,
             data.pf_method || null,
+            data.cpn_type || null,
           ]);
       } else {
         throw err;
@@ -1032,8 +1036,8 @@ async function addTreatmentsToRecord(recordId, data) {
   d.run('BEGIN');
   try {
     d.run(`INSERT INTO medical_records
-      (category, dossier_id, patient_nom, patient_prenom, sexe, age, age_type, domicile, diagnostic, traitement, observation, cost, created_by, registry_number, archive_year, archive_month, treatments_json, appointment_date, tdr_result, pf_method)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (category, dossier_id, patient_nom, patient_prenom, sexe, age, age_type, domicile, diagnostic, traitement, observation, cost, created_by, registry_number, archive_year, archive_month, treatments_json, appointment_date, tdr_result, pf_method, cpn_type)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         existing.category,
         dossierId,
@@ -1055,6 +1059,7 @@ async function addTreatmentsToRecord(recordId, data) {
         existing.appointment_date || null,
         existing.tdr_result || null,
         existing.pf_method || null,
+        existing.cpn_type || null,
       ]);
 
     const idRes = toObjects(d.exec('SELECT last_insert_rowid() as id'))[0];
@@ -1138,7 +1143,7 @@ async function updateRecord(id, data) {
 
     d.run(`UPDATE medical_records SET
       patient_nom=?, patient_prenom=?, sexe=?, age=?, age_type=?, domicile=?,
-      diagnostic=?, traitement=?, observation=?, cost=?, registry_number=?, treatments_json=?, appointment_date=?, tdr_result=?, pf_method=? WHERE id=?`,
+      diagnostic=?, traitement=?, observation=?, cost=?, registry_number=?, treatments_json=?, appointment_date=?, tdr_result=?, pf_method=?, cpn_type=? WHERE id=?`,
       [
         data.patient_nom,
         data.patient_prenom,
@@ -1155,6 +1160,7 @@ async function updateRecord(id, data) {
         data.appointment_date || null,
         data.tdr_result || null,
         data.pf_method || null,
+        data.cpn_type || null,
         id
       ]);
 

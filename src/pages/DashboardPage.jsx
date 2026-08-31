@@ -78,6 +78,7 @@ export default function DashboardPage() {
   const [dispensationCount, setDispensationCount] = useState(0);
   const [actFilter, setActFilter] = useState('');
   const [pfFilter, setPfFilter] = useState('');
+  const [cpnFilter, setCpnFilter] = useState('');
 
    useEffect(() => {
     const load = async () => {
@@ -203,6 +204,18 @@ export default function DashboardPage() {
     return acc;
   }, {}))
     .map(([method, patients]) => [method, patients.size])
+    .sort((a, b) => b[1] - a[1]);
+
+  const cpnSummary = Object.entries(records.reduce((acc, row) => {
+    if (row.category === 'cpn') {
+      const cpn = String(row.cpn_type || '').trim();
+      if (!cpn) return acc;
+      if (!acc[cpn]) acc[cpn] = new Set();
+      acc[cpn].add(getPatientId(row));
+    }
+    return acc;
+  }, {}))
+    .map(([cpn, patients]) => [cpn, patients.size])
     .sort((a, b) => b[1] - a[1]);
 
   const diagnosticsByCategory = categories.map((category) => {
@@ -353,6 +366,43 @@ export default function DashboardPage() {
                 ))
             ) : (
               <span style={{ fontSize: '0.92rem', color: '#888' }}>Tapez pour rechercher une méthode...</span>
+            )}
+          </div>
+        </article>
+
+        <article className="stat-card" style={{ borderTop: '5px solid #d81b83' }}>
+          <div className="stat-top">
+            <h3>CPN</h3>
+          </div>
+          <input
+            type="text"
+            placeholder="Filtrer les CPN..."
+            value={cpnFilter}
+            onChange={(e) => setCpnFilter(e.target.value)}
+            style={{
+              width: '100%',
+              marginTop: '8px',
+              marginBottom: '8px',
+              padding: '6px 10px',
+              border: '1px solid #c8d9df',
+              borderRadius: '8px',
+              font: 'inherit',
+              fontSize: '0.85rem'
+            }}
+          />
+          <div style={{ display: 'grid', gap: '4px' }}>
+            {cpnSummary.length === 0 ? (
+              <span style={{ fontSize: '0.92rem', color: '#888' }}>Aucun CPN enregistré</span>
+            ) : cpnFilter ? (
+              cpnSummary
+                .filter(([cpn]) => String(cpn).toLowerCase().includes(cpnFilter.toLowerCase()))
+                .map(([cpn, count]) => (
+                  <span key={cpn} style={{ fontSize: '0.92rem' }}>
+                    <strong>{cpn}</strong> : {count} patient{count !== 1 ? 's' : ''}
+                  </span>
+                ))
+            ) : (
+              <span style={{ fontSize: '0.92rem', color: '#888' }}>Tapez pour rechercher un CPN...</span>
             )}
           </div>
         </article>
