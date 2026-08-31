@@ -291,17 +291,19 @@ export default function DashboardPage() {
             }}
           />
           <div style={{ display: 'grid', gap: '4px' }}>
-            {actSummary.length === 0 && (
+            {actSummary.length === 0 ? (
               <span style={{ fontSize: '0.92rem', color: '#888' }}>Aucun acte médical enregistré</span>
+            ) : actFilter ? (
+              actSummary
+                .filter((act) => String(act.name).toLowerCase().includes(actFilter.toLowerCase()))
+                .map((act) => (
+                  <span key={act.name} style={{ fontSize: '0.92rem' }}>
+                    <strong>{act.name}</strong> : {act.count} fois — {act.total.toLocaleString()} Ar
+                  </span>
+                ))
+            ) : (
+              <span style={{ fontSize: '0.92rem', color: '#888' }}>Tapez pour rechercher un acte...</span>
             )}
-            {actSummary
-              .filter((act) => !actFilter || String(act.name).toLowerCase().includes(actFilter.toLowerCase()))
-              .slice(actFilter ? undefined : 0, actFilter ? undefined : 5)
-              .map((act) => (
-                <span key={act.name} style={{ fontSize: '0.92rem' }}>
-                  <strong>{act.name}</strong> : {act.count} fois — {act.total.toLocaleString()} Ar
-                </span>
-              ))}
           </div>
         </article>
       </div>
