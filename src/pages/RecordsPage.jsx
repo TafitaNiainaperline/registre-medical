@@ -18,6 +18,7 @@ const emptyForm = {
   tdr_result: '',
   cost: '',
   treatments: [],
+  pf_method: '',
 };
 
 function normalizeSearch(value) {
@@ -507,6 +508,7 @@ export default function RecordsPage({ category }) {
       diagnostic:     capitalizeWords(form.diagnostic),
       appointment_date: form.appointment_date || null,
       tdr_result: category.key === 'consultation' ? (form.tdr_result || null) : null,
+      pf_method: category.key === 'planning-familial' ? (form.pf_method || null) : null,
       traitement:     capitalizeWords(form.traitement),
       treatments,
       observation:    capitalizeWords(form.observation),
@@ -698,6 +700,7 @@ export default function RecordsPage({ category }) {
                     <th style={{ textAlign: 'left', padding: '6px 8px' }}>N°</th>
                     <th style={{ textAlign: 'left', padding: '6px 8px' }}>Date / Heure</th>
                     <th style={{ textAlign: 'left', padding: '6px 8px' }}>Traitement</th>
+                    <th style={{ textAlign: 'left', padding: '6px 8px' }}>Méthode PF</th>
                     <th style={{ textAlign: 'left', padding: '6px 8px' }}>Observation</th>
                     <th style={{ textAlign: 'left', padding: '6px 8px' }}>Coût ancien</th>
                     <th style={{ textAlign: 'left', padding: '6px 8px' }}>Coût présent</th>
@@ -714,6 +717,7 @@ export default function RecordsPage({ category }) {
                           ? historyRow.treatments.map((t) => t.item_type === 'act' ? t.name : `${t.name} x${t.quantity}${t.unit ? ` ${t.unit}` : ''}`).join(', ')
                           : historyRow.traitement || '-'}
                       </td>
+                      <td style={{ padding: '6px 8px' }}>{historyRow.pf_method || '-'}</td>
                       <td style={{ padding: '6px 8px' }}>{historyRow.observation || '-'}</td>
                       <td style={{ padding: '6px 8px' }}>{idx === dossierHistory.length - 1 ? '-' : `${historyRow.cost} Ar`}</td>
                       <td style={{ padding: '6px 8px' }}>{idx === dossierHistory.length - 1 ? `${historyRow.cost} Ar` : '-'}</td>
@@ -832,6 +836,19 @@ export default function RecordsPage({ category }) {
           </select>
         )}
 
+        {category.key === 'planning-familial' && (
+          <select name="pf_method" value={form.pf_method} onChange={onChange} className="select">
+            <option value="">Méthode PF (optionnel)</option>
+            <option value="Préservatif">Préservatif</option>
+            <option value="Pilule">Pilule</option>
+            <option value="Injectable">Injectable</option>
+            <option value="Implant">Implant</option>
+            <option value="DIU">DIU</option>
+            <option value="Méthodes naturelles">Méthodes naturelles</option>
+            <option value="Méthodes définitives">Méthodes définitives</option>
+          </select>
+        )}
+
         <div className="treatments-wrap">
           <TreatmentSelector
             medications={medications}
@@ -871,8 +888,9 @@ export default function RecordsPage({ category }) {
               <th>Diagnostic</th>
               <th>Traitement</th>
               <th>Observation</th>
-              <th>TDR</th>
-              <th>Coût</th>
+               <th>TDR</th>
+               <th>Méthode PF</th>
+               <th>Coût</th>
               <th>Date</th>
               <th>Rendez-vous</th>
               <th>Actions</th>
@@ -905,6 +923,7 @@ export default function RecordsPage({ category }) {
                 </td>
                 <td>{row.observation || '-'}</td>
                 <td>{row.tdr_result ? (row.tdr_result === 'positif' ? '🟠 Positif' : '🟢 Négatif') : '-'}</td>
+                <td>{row.pf_method || '-'}</td>
                 <td>{row.cost} Ar</td>
                  <td style={{ fontSize: '0.85rem', color: '#5f7b84' }}>
                    {row.created_at ? formatMadagascarDateTime(row.created_at).slice(0, 10) : '-'}

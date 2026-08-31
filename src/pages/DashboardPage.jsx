@@ -77,6 +77,7 @@ export default function DashboardPage() {
   const [dispensationTotal, setDispensationTotal] = useState(0);
   const [dispensationCount, setDispensationCount] = useState(0);
   const [actFilter, setActFilter] = useState('');
+  const [pfFilter, setPfFilter] = useState('');
 
    useEffect(() => {
     const load = async () => {
@@ -192,6 +193,18 @@ export default function DashboardPage() {
     .map(([name, data]) => ({ name, ...data }))
     .sort((a, b) => b.count - a.count);
 
+  const pfSummary = Object.entries(records.reduce((acc, row) => {
+    if (row.category === 'planning-familial') {
+      const method = String(row.pf_method || '').trim();
+      if (!method) return acc;
+      if (!acc[method]) acc[method] = new Set();
+      acc[method].add(getPatientId(row));
+    }
+    return acc;
+  }, {}))
+    .map(([method, patients]) => [method, patients.size])
+    .sort((a, b) => b[1] - a[1]);
+
   const diagnosticsByCategory = categories.map((category) => {
     const diagnostics = Object.entries(records
       .filter((row) => row.category === category.key)
@@ -303,6 +316,43 @@ export default function DashboardPage() {
                 ))
             ) : (
               <span style={{ fontSize: '0.92rem', color: '#888' }}>Tapez pour rechercher un acte...</span>
+            )}
+          </div>
+        </article>
+
+        <article className="stat-card" style={{ borderTop: '5px solid #28a745' }}>
+          <div className="stat-top">
+            <h3>Planification Familiale</h3>
+          </div>
+          <input
+            type="text"
+            placeholder="Filtrer les méthodes..."
+            value={pfFilter}
+            onChange={(e) => setPfFilter(e.target.value)}
+            style={{
+              width: '100%',
+              marginTop: '8px',
+              marginBottom: '8px',
+              padding: '6px 10px',
+              border: '1px solid #c8d9df',
+              borderRadius: '8px',
+              font: 'inherit',
+              fontSize: '0.85rem'
+            }}
+          />
+          <div style={{ display: 'grid', gap: '4px' }}>
+            {pfSummary.length === 0 ? (
+              <span style={{ fontSize: '0.92rem', color: '#888' }}>Aucune méthode PF enregistrée</span>
+            ) : pfFilter ? (
+              pfSummary
+                .filter(([method]) => String(method).toLowerCase().includes(pfFilter.toLowerCase()))
+                .map(([method, count]) => (
+                  <span key={method} style={{ fontSize: '0.92rem' }}>
+                    <strong>{method}</strong> : {count} patient{count !== 1 ? 's' : ''}
+                  </span>
+                ))
+            ) : (
+              <span style={{ fontSize: '0.92rem', color: '#888' }}>Tapez pour rechercher une méthode...</span>
             )}
           </div>
         </article>
