@@ -318,17 +318,17 @@ export default function DashboardPage() {
           />
           <div style={{ display: 'grid', gap: '4px' }}>
             {actSummary.length === 0 ? (
-              <span style={{ fontSize: '0.85rem', color: '#888' }}>Aucun acte médical enregistré</span>
+              <span style={{ fontSize: '0.75rem', color: '#888' }}>Aucun acte médical enregistré</span>
             ) : actFilter ? (
               actSummary
                 .filter((act) => String(act.name).toLowerCase().includes(actFilter.toLowerCase()))
                 .map((act) => (
-                  <span key={act.name} style={{ fontSize: '0.85rem' }}>
+                  <span key={act.name} style={{ fontSize: '0.75rem' }}>
                     <strong>{act.name}</strong> : {act.count} fois — {act.total.toLocaleString()} Ar
                   </span>
                 ))
             ) : (
-              <span style={{ fontSize: '0.85rem', color: '#888' }}>Tapez pour rechercher un acte...</span>
+              <span style={{ fontSize: '0.75rem', color: '#888' }}>Tapez pour rechercher un acte...</span>
             )}
           </div>
         </article>
@@ -355,17 +355,17 @@ export default function DashboardPage() {
           />
           <div style={{ display: 'grid', gap: '4px' }}>
             {pfSummary.length === 0 ? (
-              <span style={{ fontSize: '0.85rem', color: '#888' }}>Aucun produit PF enregistré</span>
+              <span style={{ fontSize: '0.75rem', color: '#888' }}>Aucun produit PF enregistré</span>
             ) : pfFilter ? (
               pfSummary
                 .filter(([method]) => String(method).toLowerCase().includes(pfFilter.toLowerCase()))
                 .map(([method, count]) => (
-                  <span key={method} style={{ fontSize: '0.85rem' }}>
+                  <span key={method} style={{ fontSize: '0.75rem' }}>
                     <strong>{method}</strong> : {count} patient{count !== 1 ? 's' : ''}
                   </span>
                 ))
             ) : (
-              <span style={{ fontSize: '0.85rem', color: '#888' }}>Tapez pour rechercher un produit...</span>
+              <span style={{ fontSize: '0.75rem', color: '#888' }}>Tapez pour rechercher un produit...</span>
             )}
           </div>
         </article>
@@ -392,17 +392,17 @@ export default function DashboardPage() {
           />
           <div style={{ display: 'grid', gap: '4px' }}>
             {cpnSummary.length === 0 ? (
-              <span style={{ fontSize: '0.85rem', color: '#888' }}>Aucun CPN enregistré</span>
+              <span style={{ fontSize: '0.75rem', color: '#888' }}>Aucun CPN enregistré</span>
             ) : cpnFilter ? (
               cpnSummary
                 .filter(([cpn]) => String(cpn).toLowerCase().includes(cpnFilter.toLowerCase()))
                 .map(([cpn, count]) => (
-                  <span key={cpn} style={{ fontSize: '0.85rem' }}>
+                  <span key={cpn} style={{ fontSize: '0.75rem' }}>
                     <strong>{cpn}</strong> : {count} patient{count !== 1 ? 's' : ''}
                   </span>
                 ))
             ) : (
-              <span style={{ fontSize: '0.85rem', color: '#888' }}>Tapez pour rechercher un CPN...</span>
+              <span style={{ fontSize: '0.75rem', color: '#888' }}>Tapez pour rechercher un CPN...</span>
             )}
           </div>
         </article>
