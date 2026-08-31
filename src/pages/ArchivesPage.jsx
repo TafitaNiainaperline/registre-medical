@@ -191,20 +191,20 @@ export default function ArchivesPage() {
                 </td>
               </tr>
             )}
-            {rows.map((r) => (
-              <tr key={r.id}>
-                <td style={{ color: '#5f7b84', fontWeight: 700 }}>{displayRegistryNumber(r.registry_number)}</td>
-                <td><strong>{r.patient_nom}</strong> {r.patient_prenom}</td>
-                <td>{r.sexe || '-'}</td>
-                <td>{String(r.age || '').includes('|') ? String(r.age).split('|')[0] : r.age}</td>
-                <td>{r.diagnostic}</td>
-                <td style={{ color: '#244955' }}>{renderTreatments(r)}</td>
-<td><strong>{r.cost} Ar</strong></td>
-                 <td style={{ fontSize: '0.85rem', color: '#5f7b84' }}>
+             {rows.map((r) => (
+               <tr key={r.id} className="compact-row">
+                 <td style={{ color: '#5f7b84', fontWeight: 700 }}>{displayRegistryNumber(r.registry_number)}</td>
+                 <td><strong>{r.patient_nom}</strong> {r.patient_prenom}</td>
+                 <td>{r.sexe || '-'}</td>
+                 <td>{String(r.age || '').includes('|') ? String(r.age).split('|')[0] : r.age}</td>
+                 <td>{r.diagnostic}</td>
+                 <td style={{ color: '#244955', fontSize: '0.85rem' }}>{renderTreatments(r)}</td>
+                 <td><strong>{r.cost} Ar</strong></td>
+                 <td style={{ fontSize: '0.8rem', color: '#5f7b84' }}>
                    {r.created_at ? formatMadagascarDateTime(r.created_at).slice(0, 10) : '-'}
                  </td>
                </tr>
-            ))}
+             ))}
           </tbody>
         </table>
       </div>

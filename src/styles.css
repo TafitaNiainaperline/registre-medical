@@ -952,6 +952,11 @@ section p{
   transform:scale(1.003);
 }
 
+.compact-row td{
+  padding:4px 8px !important;
+  font-size:0.78rem;
+}
+
 /* ─────────────────────────────
    INPUTS PREMIUM
 ───────────────────────────── */
