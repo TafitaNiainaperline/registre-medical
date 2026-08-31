@@ -76,6 +76,7 @@ export default function DashboardPage() {
   const [archiveDiagnostics, setArchiveDiagnostics] = useState([]);
   const [dispensationTotal, setDispensationTotal] = useState(0);
   const [dispensationCount, setDispensationCount] = useState(0);
+  const [actFilter, setActFilter] = useState('');
 
    useEffect(() => {
     const load = async () => {
@@ -270,16 +271,37 @@ export default function DashboardPage() {
         </article>
 
         <article className="stat-card" style={{ borderTop: '5px solid #8f60d0' }}>
-          <div className="stat-top"><h3>Actes médicaux</h3></div>
-          <div style={{ display: 'grid', gap: '4px', marginTop: '10px' }}>
+          <div className="stat-top">
+            <h3>Actes médicaux</h3>
+          </div>
+          <input
+            type="text"
+            placeholder="Filtrer les actes..."
+            value={actFilter}
+            onChange={(e) => setActFilter(e.target.value)}
+            style={{
+              width: '100%',
+              marginTop: '8px',
+              marginBottom: '8px',
+              padding: '6px 10px',
+              border: '1px solid #c8d9df',
+              borderRadius: '8px',
+              font: 'inherit',
+              fontSize: '0.85rem'
+            }}
+          />
+          <div style={{ display: 'grid', gap: '4px' }}>
             {actSummary.length === 0 && (
               <span style={{ fontSize: '0.92rem', color: '#888' }}>Aucun acte médical enregistré</span>
             )}
-            {actSummary.slice(0, 5).map((act) => (
-              <span key={act.name} style={{ fontSize: '0.92rem' }}>
-                <strong>{act.name}</strong> : {act.count} fois — {act.total.toLocaleString()} Ar
-              </span>
-            ))}
+            {actSummary
+              .filter((act) => !actFilter || String(act.name).toLowerCase().includes(actFilter.toLowerCase()))
+              .slice(0, 8)
+              .map((act) => (
+                <span key={act.name} style={{ fontSize: '0.92rem' }}>
+                  <strong>{act.name}</strong> : {act.count} fois — {act.total.toLocaleString()} Ar
+                </span>
+              ))}
           </div>
         </article>
       </div>
