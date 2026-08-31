@@ -335,11 +335,11 @@ export default function DashboardPage() {
 
         <article className="stat-card" style={{ borderTop: '5px solid #28a745' }}>
           <div className="stat-top">
-            <h3>Planification Familiale</h3>
+            <h3>Produits PF</h3>
           </div>
           <input
             type="text"
-            placeholder="Filtrer les méthodes..."
+            placeholder="Filtrer les produits..."
             value={pfFilter}
             onChange={(e) => setPfFilter(e.target.value)}
             style={{
@@ -355,7 +355,7 @@ export default function DashboardPage() {
           />
           <div style={{ display: 'grid', gap: '4px' }}>
             {pfSummary.length === 0 ? (
-              <span style={{ fontSize: '0.92rem', color: '#888' }}>Aucune méthode PF enregistrée</span>
+              <span style={{ fontSize: '0.92rem', color: '#888' }}>Aucun produit PF enregistré</span>
             ) : pfFilter ? (
               pfSummary
                 .filter(([method]) => String(method).toLowerCase().includes(pfFilter.toLowerCase()))
@@ -365,7 +365,7 @@ export default function DashboardPage() {
                   </span>
                 ))
             ) : (
-              <span style={{ fontSize: '0.92rem', color: '#888' }}>Tapez pour rechercher une méthode...</span>
+              <span style={{ fontSize: '0.92rem', color: '#888' }}>Tapez pour rechercher un produit...</span>
             )}
           </div>
         </article>

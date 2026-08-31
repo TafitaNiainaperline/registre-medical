@@ -702,7 +702,7 @@ export default function RecordsPage({ category }) {
                     <th style={{ textAlign: 'left', padding: '6px 8px' }}>N°</th>
                     <th style={{ textAlign: 'left', padding: '6px 8px' }}>Date / Heure</th>
                     <th style={{ textAlign: 'left', padding: '6px 8px' }}>Traitement</th>
-                    <th style={{ textAlign: 'left', padding: '6px 8px' }}>Méthode PF</th>
+                    <th style={{ textAlign: 'left', padding: '6px 8px' }}>Produits PF</th>
                     <th style={{ textAlign: 'left', padding: '6px 8px' }}>CPN</th>
                     <th style={{ textAlign: 'left', padding: '6px 8px' }}>Observation</th>
                     <th style={{ textAlign: 'left', padding: '6px 8px' }}>Coût ancien</th>
@@ -841,16 +841,13 @@ export default function RecordsPage({ category }) {
         )}
 
         {category.key === 'pf' && (
-          <select name="pf_method" value={form.pf_method} onChange={onChange} className="select">
-            <option value="">Méthode PF (optionnel)</option>
-            <option value="Préservatif">Préservatif</option>
-            <option value="Pilule">Pilule</option>
-            <option value="Injectable">Injectable</option>
-            <option value="Implant">Implant</option>
-            <option value="DIU">DIU</option>
-            <option value="Méthodes naturelles">Méthodes naturelles</option>
-            <option value="Méthodes définitives">Méthodes définitives</option>
-          </select>
+          <input
+            name="pf_method"
+            placeholder="Produits PF"
+            value={form.pf_method}
+            onChange={onChange}
+            className="select"
+          />
         )}
 
         {category.key === 'cpn' && (
@@ -904,7 +901,7 @@ export default function RecordsPage({ category }) {
               <th>Traitement</th>
               <th>Observation</th>
                <th>TDR</th>
-               <th>Méthode PF</th>
+               <th>Produits PF</th>
                <th>CPN</th>
                <th>Coût</th>
               <th>Date</th>
