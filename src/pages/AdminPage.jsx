@@ -247,9 +247,9 @@ export default function AdminPage() {
         <table>
           <thead>
             <tr>
-              <th>Date</th>
               <th>Médicament</th>
-              <th>Quantité ajoutée</th>
+              <th>Quantité totale ajoutée</th>
+              <th>Dernier ajout</th>
               <th>Ajouté par</th>
             </tr>
           </thead>
@@ -260,12 +260,12 @@ export default function AdminPage() {
               </td></tr>
             )}
             {stockHistory.map((s) => (
-              <tr key={s.id}>
-                <td style={{ fontSize: '0.85rem', color: '#5f7b84' }}>
-                  {formatMadagascarDateTime(s.created_at)}
-                </td>
+              <tr key={s.medication_name}>
                 <td><strong>{s.medication_name}</strong></td>
-                <td>+{s.quantity}</td>
+                <td>+{s.total_quantity}</td>
+                <td style={{ fontSize: '0.85rem', color: '#5f7b84' }}>
+                  {formatMadagascarDateTime(s.last_added_at)}
+                </td>
                 <td>{s.created_by_name || 'Utilisateur inconnu'}</td>
               </tr>
             ))}

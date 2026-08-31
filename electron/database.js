@@ -1315,12 +1315,13 @@ async function getMedicationHistory() {
 
 async function getMedicationStockHistory() {
   const d = await getDB();
-  const res = d.exec(`SELECT mm.id, mm.quantity, mm.created_at, m.name AS medication_name, u.name AS created_by_name
+  const res = d.exec(`SELECT m.name AS medication_name, SUM(mm.quantity) AS total_quantity, MAX(mm.created_at) AS last_added_at, u.name AS created_by_name
     FROM medication_movements mm
     JOIN medications m ON m.id = mm.medication_id
     LEFT JOIN users u ON u.id = mm.created_by
     WHERE mm.movement_type = 'entry' AND mm.created_by IS NOT NULL
-    ORDER BY mm.created_at DESC`);
+    GROUP BY mm.medication_id
+    ORDER BY last_added_at DESC`);
   return toObjects(res);
 }
 
