@@ -296,7 +296,7 @@ export default function DashboardPage() {
             )}
             {actSummary
               .filter((act) => !actFilter || String(act.name).toLowerCase().includes(actFilter.toLowerCase()))
-              .slice(0, 5)
+              .slice(actFilter ? undefined : 0, actFilter ? undefined : 5)
               .map((act) => (
                 <span key={act.name} style={{ fontSize: '0.92rem' }}>
                   <strong>{act.name}</strong> : {act.count} fois — {act.total.toLocaleString()} Ar
