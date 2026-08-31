@@ -269,18 +269,19 @@ export default function DashboardPage() {
           </div>
         </article>
 
-        {actSummary.length > 0 && (
-          <article className="stat-card" style={{ borderTop: '5px solid #8f60d0' }}>
-            <div className="stat-top"><h3>Actes médicaux</h3></div>
-            <div style={{ display: 'grid', gap: '4px', marginTop: '10px' }}>
-              {actSummary.slice(0, 5).map((act) => (
-                <span key={act.name} style={{ fontSize: '0.92rem' }}>
-                  <strong>{act.name}</strong> : {act.count} fois — {act.total.toLocaleString()} Ar
-                </span>
-              ))}
-            </div>
-          </article>
-        )}
+        <article className="stat-card" style={{ borderTop: '5px solid #8f60d0' }}>
+          <div className="stat-top"><h3>Actes médicaux</h3></div>
+          <div style={{ display: 'grid', gap: '4px', marginTop: '10px' }}>
+            {actSummary.length === 0 && (
+              <span style={{ fontSize: '0.92rem', color: '#888' }}>Aucun acte médical enregistré</span>
+            )}
+            {actSummary.slice(0, 5).map((act) => (
+              <span key={act.name} style={{ fontSize: '0.92rem' }}>
+                <strong>{act.name}</strong> : {act.count} fois — {act.total.toLocaleString()} Ar
+              </span>
+            ))}
+          </div>
+        </article>
       </div>
 
       {ageGroupSummary.length > 0 && (
