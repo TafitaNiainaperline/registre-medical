@@ -184,9 +184,9 @@ export default function TreatmentSelector({ medications, value, onChange }) {
             const med = byId.get(String(t.medication_id));
             return (
               <div className="treatment-row" key={String(t.medication_id)}>
-                <div className="treatment-name">
+                <div className="treatment-name" style={{ fontSize: '0.85rem' }}>
                   <strong>{t.name}</strong>
-                  <span style={{ color: '#5f7b84', marginLeft: 8 }}>
+                  <span style={{ color: '#5f7b84', marginLeft: 8, fontSize: '0.8rem' }}>
                     {toNumber(t.unit_price)} Ar{(t.item_type !== 'act' && med?.item_type !== 'act') ? ` / ${t.unit || med?.unit || 'unité'}` : ''}
                   </span>
                 </div>

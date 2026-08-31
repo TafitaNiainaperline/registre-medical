@@ -258,6 +258,7 @@ p { margin: 0 0 18px; color: var(--soft); }
   border-radius: 12px;
   background: #ffffff;
   border: 1px solid #e6eff2;
+  font-size: 0.85rem;
 }
 
 .treatment-search {
@@ -292,9 +293,10 @@ p { margin: 0 0 18px; color: var(--soft); }
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 12px;
+  padding: 8px 12px;
   cursor: pointer;
   border-bottom: 1px solid #f1f7f9;
+  font-size: 0.85rem;
 }
 .treatment-option:last-child {
   border-bottom: none;
@@ -310,6 +312,7 @@ p { margin: 0 0 18px; color: var(--soft); }
   border-left: 3px solid #1c96a4;
 }
 .treatment-option-name {
+  font-size: 0.85rem;
   font-weight: 600;
   color: #0d2f3a;
 }
