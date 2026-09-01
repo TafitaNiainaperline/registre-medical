@@ -296,7 +296,7 @@ export default function MedicamentsPage() {
       )}
       {showHistoryModal && (
         <div className="modal-overlay">
-          <div className="stock-modal" style={{ maxWidth: '800px', width: '95%', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
+          <div className="stock-modal" style={{ maxWidth: '1000px', width: '95%', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
 
             <div className="stock-modal-header">
               <h3>Historique du stock – {historyMedication?.name}</h3>
