@@ -296,116 +296,116 @@ export default function DashboardPage() {
           </div>
         </article>
 
-        <article className="stat-card" style={{ borderTop: '5px solid #8f60d0' }}>
-          <div className="stat-top">
-            <h3>Actes médicaux</h3>
-          </div>
-          <input
-            type="text"
-            placeholder="Filtrer les actes..."
-            value={actFilter}
-            onChange={(e) => setActFilter(e.target.value)}
-            style={{
-              width: '100%',
-              marginTop: '8px',
-              marginBottom: '8px',
-              padding: '10px 14px',
-              border: '1px solid #c8d9df',
-              borderRadius: '8px',
-              font: 'inherit',
-               fontSize: '0.85rem'
-             }}
-           />
-           <div style={{ display: 'grid', gap: '4px' }}>
-             {actSummary.length === 0 ? (
-              <span style={{ fontSize: '0.65rem', color: '#888' }}>Aucun acte médical enregistré</span>
-            ) : actFilter ? (
-              actSummary
+          <article className="stat-card" style={{ borderTop: '5px solid #8f60d0' }}>
+            <div className="stat-top">
+              <h3>Actes médicaux</h3>
+            </div>
+            <input
+              type="text"
+              placeholder="Filtrer les actes..."
+              value={actFilter}
+              onChange={(e) => setActFilter(e.target.value)}
+              style={{
+                width: '100%',
+                marginTop: '8px',
+                marginBottom: '8px',
+                padding: '10px 14px',
+                border: '1px solid #c8d9df',
+                borderRadius: '8px',
+                font: 'inherit',
+                fontSize: '0.85rem'
+              }}
+            />
+            <div style={{ display: 'grid', gap: '4px' }}>
+              {actFilter && actSummary
                 .filter((act) => String(act.name).toLowerCase().includes(actFilter.toLowerCase()))
-                .map((act) => (
-                  <span key={act.name} style={{ fontSize: '0.9rem' }}>
-                    <strong style={{ fontSize: '0.85rem' }}>{act.name}</strong> : {act.count} fois — {act.total.toLocaleString()} Ar
-                  </span>
-                ))
-            ) : (
-              <span style={{ fontSize: '0.85rem', color: '#888' }}>Tapez pour rechercher un acte...</span>
-            )}
-          </div>
-        </article>
+                .length > 0 ? (
+                  actSummary
+                    .filter((act) => String(act.name).toLowerCase().includes(actFilter.toLowerCase()))
+                    .map((act) => (
+                      <span key={act.name} style={{ fontSize: '0.9rem' }}>
+                        <strong style={{ fontSize: '0.85rem' }}>{act.name}</strong> : {act.count} fois — {act.total.toLocaleString()} Ar
+                      </span>
+                    ))
+                ) : actFilter ? (
+                  <span style={{ fontSize: '0.85rem', color: '#888' }}>Aucun résultat</span>
+                ) : null}
+            </div>
+          </article>
 
-        <article className="stat-card" style={{ borderTop: '5px solid #28a745' }}>
-          <div className="stat-top">
-            <h3>Produits PF</h3>
-          </div>
-          <input
-            type="text"
-            placeholder="Filtrer les produits..."
-            value={pfFilter}
-            onChange={(e) => setPfFilter(e.target.value)}
-            style={{
-              width: '100%',
-              marginTop: '8px',
-              marginBottom: '8px',
-              padding: '10px 14px',
-              border: '1px solid #c8d9df',
-              borderRadius: '8px',
-              font: 'inherit',
-               fontSize: '0.85rem'
-             }}
-           />
-           <div style={{ display: 'grid', gap: '4px' }}>
-             {pfSummary.length === 0 ? (
-              <span style={{ fontSize: '0.65rem', color: '#888' }}>Aucun produit PF enregistré</span>
-            ) : pfFilter ? (
-              pfSummary
+          <article className="stat-card" style={{ borderTop: '5px solid #28a745' }}>
+            <div className="stat-top">
+              <h3>Produits PF</h3>
+            </div>
+            <input
+              type="text"
+              placeholder="Filtrer les produits..."
+              value={pfFilter}
+              onChange={(e) => setPfFilter(e.target.value)}
+              style={{
+                width: '100%',
+                marginTop: '8px',
+                marginBottom: '8px',
+                padding: '10px 14px',
+                border: '1px solid #c8d9df',
+                borderRadius: '8px',
+                font: 'inherit',
+                fontSize: '0.85rem'
+              }}
+            />
+            <div style={{ display: 'grid', gap: '4px' }}>
+              {pfFilter && pfSummary
                 .filter(([method]) => String(method).toLowerCase().includes(pfFilter.toLowerCase()))
-                .map(([method, count]) => (
-                  <span key={method} style={{ fontSize: '0.9rem' }}>
-                    <strong style={{ fontSize: '0.85rem' }}>{method}</strong> : {count} patient{count !== 1 ? 's' : ''}
-                  </span>
-                ))
-            ) : (
-              <span style={{ fontSize: '0.85rem', color: '#888' }}>Tapez pour rechercher un produit...</span>
-            )}
-          </div>
-        </article>
+                .length > 0 ? (
+                  pfSummary
+                    .filter(([method]) => String(method).toLowerCase().includes(pfFilter.toLowerCase()))
+                    .map(([method, count]) => (
+                      <span key={method} style={{ fontSize: '0.9rem' }}>
+                        <strong style={{ fontSize: '0.85rem' }}>{method}</strong> : {count} patient{count !== 1 ? 's' : ''}
+                      </span>
+                    ))
+                ) : pfFilter ? (
+                  <span style={{ fontSize: '0.85rem', color: '#888' }}>Aucun résultat</span>
+                ) : null}
+            </div>
+          </article>
 
-        <article className="stat-card" style={{ borderTop: '5px solid #d81b83' }}>
-          <div className="stat-top">
-            <h3>CPN</h3>
-          </div>
-          <input
-            type="text"
-            placeholder="Filtrer les CPN..."
-            value={cpnFilter}
-            onChange={(e) => setCpnFilter(e.target.value)}
-            style={{
-              width: '100%',
-              marginTop: '8px',
-              marginBottom: '8px',
-              padding: '10px 14px',
-              border: '1px solid #c8d9df',
-              borderRadius: '8px',
-              font: 'inherit',
-               fontSize: '0.85rem'
-             }}
-           />
-           <div style={{ display: 'grid', gap: '4px' }}>
-             {cpnSummary.length === 0 ? (
-              <span style={{ fontSize: '0.65rem', color: '#888' }}>Aucun CPN enregistré</span>
-            ) : cpnFilter ? (
-              cpnSummary
+          <article className="stat-card" style={{ borderTop: '5px solid #d81b83' }}>
+            <div className="stat-top">
+              <h3>CPN</h3>
+            </div>
+            <input
+              type="text"
+              placeholder="Filtrer les CPN..."
+              value={cpnFilter}
+              onChange={(e) => setCpnFilter(e.target.value)}
+              style={{
+                width: '100%',
+                marginTop: '8px',
+                marginBottom: '8px',
+                padding: '10px 14px',
+                border: '1px solid #c8d9df',
+                borderRadius: '8px',
+                font: 'inherit',
+                fontSize: '0.85rem'
+              }}
+            />
+            <div style={{ display: 'grid', gap: '4px' }}>
+              {cpnFilter && cpnSummary
                 .filter(([cpn]) => String(cpn).toLowerCase().includes(cpnFilter.toLowerCase()))
-                .map(([cpn, count]) => (
-                  <span key={cpn} style={{ fontSize: '0.9rem' }}>
-                    <strong style={{ fontSize: '0.85rem' }}>{cpn}</strong> : {count} patient{count !== 1 ? 's' : ''}
-                  </span>
-                ))
-            ) : (
-              <span style={{ fontSize: '0.85rem', color: '#888' }}>Tapez pour rechercher un CPN...</span>
-            )}
-          </div>
-        </article>
+                .length > 0 ? (
+                  cpnSummary
+                    .filter(([cpn]) => String(cpn).toLowerCase().includes(cpnFilter.toLowerCase()))
+                    .map(([cpn, count]) => (
+                      <span key={cpn} style={{ fontSize: '0.9rem' }}>
+                        <strong style={{ fontSize: '0.85rem' }}>{cpn}</strong> : {count} patient{count !== 1 ? 's' : ''}
+                      </span>
+                    ))
+                ) : cpnFilter ? (
+                  <span style={{ fontSize: '0.85rem', color: '#888' }}>Aucun résultat</span>
+                ) : null}
+            </div>
+          </article>
       </div>
 
       {ageGroupSummary.length > 0 && (
