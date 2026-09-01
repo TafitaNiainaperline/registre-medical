@@ -46,7 +46,7 @@ export default function AppointmentsPage() {
   ].some((value) => String(value || '').toLowerCase().includes(query)));
 
   const pastCount = appointments.filter(a => getStatus(a.appointment_date).text === 'Passé').length;
-  const todayCount = appointments.filter(a => getStatus(a.appointment-date).text === "Aujourd'hui").length;
+  const todayCount = appointments.filter(a => getStatus(a.appointment_date).text === "Aujourd'hui").length;
   const upcomingCount = appointments.filter(a => getStatus(a.appointment_date).text === 'À venir').length;
 
   return (
