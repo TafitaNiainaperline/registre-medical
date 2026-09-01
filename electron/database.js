@@ -143,6 +143,8 @@ function initTables() {
      CREATE INDEX IF NOT EXISTS idx_medical_records_archive ON medical_records(archive_year, archive_month);
      CREATE INDEX IF NOT EXISTS idx_medical_records_category_archive ON medical_records(category, archive_year, archive_month);
      CREATE INDEX IF NOT EXISTS idx_record_medications_record_id ON record_medications(record_id);
+     CREATE INDEX IF NOT EXISTS idx_medication_movements_medication_id ON medication_movements(medication_id);
+     CREATE INDEX IF NOT EXISTS idx_medication_movements_created_at ON medication_movements(created_at);
    `);
 
   // Migration : ajouter colonnes manquantes si ancienne DB
@@ -1326,25 +1328,18 @@ async function getMedicationHistory() {
   return toObjects(res);
 }
 
-async function getMedicationStockHistory() {
-  const d = await getDB();
-  const res = d.exec(`SELECT m.name AS medication_name, SUM(mm.quantity) AS total_quantity, MAX(mm.created_at) AS last_added_at, u.name AS created_by_name
-    FROM medication_movements mm
-    JOIN medications m ON m.id = mm.medication_id
-    LEFT JOIN users u ON u.id = mm.created_by
-    WHERE mm.movement_type = 'entry' AND mm.created_by IS NOT NULL
-    GROUP BY mm.medication_id
-    ORDER BY last_added_at DESC`);
-  return toObjects(res);
-}
-
-async function addMedicationStock(id, quantity, createdBy) {
+async function addMedicationStock(id, quantity, createdBy, date) {
   const d = await getDB();
 
   const qty = Number(quantity);
 
   if (!qty || qty <= 0) {
     throw new Error('Quantité invalide');
+  }
+
+  let movementDate = null;
+  if (date && /^\d{4}-\d{2}-\d{2}$/.test(String(date))) {
+    movementDate = `${date} 00:00:00`;
   }
 
   d.run(
@@ -1364,11 +1359,12 @@ async function addMedicationStock(id, quantity, createdBy) {
       medication_id,
       movement_type,
       quantity,
-      created_by
+      created_by,
+      created_at
     )
-    VALUES (?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP))
     `,
-    [id, 'entry', qty, createdBy || null]
+    [id, 'entry', qty, createdBy || null, movementDate]
   );
 
   saveDB();
@@ -1380,14 +1376,111 @@ async function getMedicationMovements() {
   const res = d.exec(`
     SELECT
       mm.*,
-      m.name as medication_name
+      m.name as medication_name,
+      u.name as created_by_name
     FROM medication_movements mm
     JOIN medications m
       ON m.id = mm.medication_id
+    LEFT JOIN users u
+      ON u.id = mm.created_by
     ORDER BY mm.created_at DESC
   `);
 
   return toObjects(res);
+}
+
+async function getMedicationStockHistory(medicationId) {
+  const d = await getDB();
+
+  const medRes = d.exec(`
+    SELECT id, name, stock, created_at, created_by
+    FROM medications
+    WHERE id = ?
+  `, [medicationId]);
+
+  const med = toObjects(medRes)[0];
+  if (!med) return [];
+
+  const res = d.exec(`
+    SELECT
+      mm.id,
+      mm.movement_type,
+      mm.quantity,
+      mm.created_at,
+      u.name as created_by_name
+    FROM medication_movements mm
+    LEFT JOIN users u
+      ON u.id = mm.created_by
+    WHERE mm.medication_id = ?
+    ORDER BY mm.created_at ASC, mm.id ASC
+  `, [medicationId]);
+
+  const movements = toObjects(res);
+
+  if (movements.length === 0 && med.stock > 0) {
+    return [{
+      id: null,
+      movement_type: 'entry',
+      quantity: Number(med.stock),
+      created_at: med.created_at,
+      created_by_name: null,
+      stock_after: Number(med.stock),
+      initial: true,
+    }];
+  }
+
+  if (movements.length === 0) {
+    return [];
+  }
+
+  let totalEntries = 0;
+  let totalExits = 0;
+  movements.forEach((m) => {
+    const qty = Number(m.quantity) || 0;
+    if (m.movement_type === 'entry') {
+      totalEntries += qty;
+    } else {
+      totalExits += qty;
+    }
+  });
+
+  const currentStock = Number(med.stock) || 0;
+  const netMovements = totalEntries - totalExits;
+  const startingStock = currentStock - netMovements;
+
+  let runningStock = startingStock;
+  const history = movements.map((m) => {
+    const qty = Number(m.quantity) || 0;
+    if (m.movement_type === 'entry') {
+      runningStock += qty;
+    } else {
+      runningStock -= qty;
+    }
+    return {
+      ...m,
+      stock_after: runningStock,
+    };
+  });
+
+  if (startingStock > 0) {
+    history.unshift({
+      id: null,
+      movement_type: 'entry',
+      quantity: startingStock,
+      created_at: med.created_at,
+      created_by_name: null,
+      stock_after: startingStock,
+      initial: true,
+    });
+  }
+
+  return history.reverse();
+}
+
+async function clearMedicationMovements() {
+  const d = await getDB();
+  d.run('DELETE FROM medication_movements');
+  saveDB();
 }
 
 async function getTopSellingMedications() {
@@ -1656,11 +1749,11 @@ async function ensureRegistryNumbers() {
 module.exports = {
    loginUser, registerUser,
    getAllUsers, toggleUserActive, resetUserPassword, deleteUser,
-  fetchRecords, fetchRecordsByArchive, fetchRecordById, fetchRecordsByDossier, fetchAppointments, fetchStats, fetchStatsByArchive, createRecord, updateRecord, deleteRecord, clearAppointment,
+   fetchRecords, fetchRecordsByArchive, fetchRecordById, fetchRecordsByDossier, fetchAppointments, fetchStats, fetchStatsByArchive, createRecord, updateRecord, deleteRecord, clearAppointment,
    listArchives, getCurrentArchive,
-     listMedications, createMedication, updateMedication, deleteMedication, getMedicationHistory, getMedicationStockHistory,
-     addMedicationStock,
-   getMedicationMovements,
+   listMedications, createMedication, updateMedication, deleteMedication, getMedicationHistory,
+   addMedicationStock,
+   getMedicationMovements, getMedicationStockHistory, clearMedicationMovements,
    getTopSellingMedications,
    getLowStockMedications,
    ensureRegistryNumbers,
@@ -1672,4 +1765,4 @@ module.exports = {
    getDispensationTotal,
    deleteDispensation,
    updateDispensation
- };
+};
