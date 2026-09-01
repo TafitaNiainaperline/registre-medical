@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import TreatmentSelector from '../components/TreatmentSelector';
 import MonthlyArchiveBanner from '../components/MonthlyArchiveBanner';
 import SuggestionInput from '../components/SuggestionInput';
+import { Search, X, Edit, FileText, Trash2, History, Plus, Calendar, AlertTriangle, CheckCircle } from 'lucide-react';
 
 const emptyForm = {
   patient_nom: '',
@@ -618,7 +619,7 @@ export default function RecordsPage({ category }) {
           {category.key === 'consultation' && <p>Médicaments et actes médicaux.</p>}
         </div>
         <div className="dashboard-badge" style={{ background: category.color }}>
-          📁 {category.label}
+          <FileText size={16} /> {category.label}
         </div>
       </div>
 
@@ -630,7 +631,9 @@ export default function RecordsPage({ category }) {
 
       {diagnosticSummary.length > 0 && (
         <div style={{ marginBottom: '16px' }}>
-          <strong>Synthèse diagnostics ce mois :</strong>
+          <strong style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <CheckCircle size={16} /> Synthèse diagnostics ce mois :
+          </strong>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '8px' }}>
             {diagnosticSummary.slice(0, 6).map(([diagnostic, count]) => (
               <button
@@ -638,19 +641,23 @@ export default function RecordsPage({ category }) {
                 type="button"
                 onClick={() => setDiagnosticFilter(diagnostic)}
                 style={{
-                  padding: '8px 12px',
+                  padding: '6px 12px',
                   background: diagnosticFilter === diagnostic ? '#d8e9f7' : '#f4f9fd',
                   border: diagnosticFilter === diagnostic ? '1px solid #74a7d9' : '1px solid #dceaf2',
-                  borderRadius: '10px',
+                  borderRadius: '8px',
                   color: '#184a6e',
                   cursor: 'pointer',
+                  fontSize: '0.85rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
                 }}
               >
-                {diagnostic} : {count}
+                {diagnostic} <span style={{ background: '#fff', padding: '2px 6px', borderRadius: '10px', fontWeight: 600 }}>{count}</span>
               </button>
             ))}
             {diagnosticSummary.length > 6 && (
-              <span style={{ padding: '8px 12px', background: '#f4f9fd', border: '1px solid #dceaf2', borderRadius: '10px', color: '#184a6e' }}>
+              <span style={{ padding: '6px 12px', background: '#f4f9fd', border: '1px solid #dceaf2', borderRadius: '8px', color: '#184a6e', fontSize: '0.85rem' }}>
                 +{diagnosticSummary.length - 6} autres diagnostics
               </span>
             )}
@@ -659,20 +666,26 @@ export default function RecordsPage({ category }) {
       )}
 
       {actionError && (
-        <p className="error-msg" style={{ marginBottom: '12px' }}>
-          ⚠ {actionError}
+        <p className="error-msg" style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <AlertTriangle size={16} /> {actionError}
         </p>
       )}
       {actionOk && (
-        <p className="success-msg" style={{ marginBottom: '12px' }}>
-          ✓ {actionOk}
+        <p className="success-msg" style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <CheckCircle size={16} /> {actionOk}
         </p>
       )}
-      {toast && <div className="toast" role="status">🔔 {toast}</div>}
+      {toast && (
+        <div className="toast" role="status" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <Calendar size={16} /> {toast}
+        </div>
+      )}
 
       {duplicateCase && (
         <div className="info-msg" style={{ marginBottom: '12px', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <span>⚠ Dossier existant : {displayRegistryNumber(duplicateCase.registry_number)}</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <AlertTriangle size={16} /> Dossier existant : {displayRegistryNumber(duplicateCase.registry_number)}
+          </span>
           <button type="button" className="btn-light" onClick={() => { edit(duplicateCase); setDuplicateCase(null); setActionError(''); setDossierHistory([]); }}>
             Charger le dossier
           </button>
@@ -695,40 +708,44 @@ export default function RecordsPage({ category }) {
         </div>
       )}
       {(duplicateCase || selectedHistoryRow) && (
-        <div style={{ marginBottom: '18px', padding: '12px', border: '1px solid #e6e6e6', borderRadius: '8px', background: '#fafafa' }}>
-          <h3 style={{ margin: '0 0 8px 0' }}>Historique du dossier</h3>
+        <div style={{ marginBottom: '18px', padding: '16px', border: '1px solid #e6e6e6', borderRadius: '12px', background: '#fafafa' }}>
+          <h3 style={{ margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <History size={18} /> Historique du dossier
+          </h3>
           {historyLoading ? (
             <p>Chargement de l'historique...</p>
           ) : dossierHistory.length === 0 ? (
             <p style={{ margin: 0 }}>Aucun historique de dossier disponible.</p>
           ) : (
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                 <thead>
-                   <tr>
-                     <th style={{ textAlign: 'left', padding: '6px 8px' }}>Visite</th>
-                     <th style={{ textAlign: 'left', padding: '6px 8px' }}>N°</th>
-                     <th style={{ textAlign: 'left', padding: '6px 8px' }}>Date / Heure</th>
-                      <th style={{ textAlign: 'left', padding: '6px 8px' }}>Traitement</th>
-                      <th style={{ textAlign: 'left', padding: '6px 8px' }}>Observation</th>
-                     <th style={{ textAlign: 'left', padding: '6px 8px' }}>Coût ancien</th>
-                     <th style={{ textAlign: 'left', padding: '6px 8px' }}>Coût présent</th>
-                   </tr>
+                  <tr style={{ background: '#e8f4f8' }}>
+                    <th style={{ textAlign: 'left', padding: '8px 10px', color: '#184a6e' }}>Visite</th>
+                    <th style={{ textAlign: 'left', padding: '8px 10px', color: '#184a6e' }}>N°</th>
+                    <th style={{ textAlign: 'left', padding: '8px 10px', color: '#184a6e' }}>Date / Heure</th>
+                    <th style={{ textAlign: 'left', padding: '8px 10px', color: '#184a6e' }}>Traitement</th>
+                    <th style={{ textAlign: 'left', padding: '8px 10px', color: '#184a6e' }}>Observation</th>
+                    <th style={{ textAlign: 'left', padding: '8px 10px', color: '#184a6e' }}>Coût ancien</th>
+                    <th style={{ textAlign: 'left', padding: '8px 10px', color: '#184a6e' }}>Coût présent</th>
+                  </tr>
                 </thead>
                 <tbody>
                   {dossierHistory.map((historyRow, idx) => (
-                    <tr key={historyRow.id}>
-                      <td style={{ padding: '6px 8px' }}>{idx === dossierHistory.length - 1 ? 'Présent' : `Ancien ${idx + 1}`}</td>
-                      <td style={{ padding: '6px 8px' }}>{displayRegistryNumber(historyRow.registry_number)}</td>
-                      <td style={{ padding: '6px 8px' }}>{formatMadagascarDateTime(historyRow.created_at)}</td>
-                      <td style={{ padding: '6px 8px' }}>
+                    <tr key={historyRow.id} style={{ background: idx % 2 === 0 ? '#fff' : '#f8fbfd', borderBottom: '1px solid #eef5f9' }}>
+                      <td style={{ padding: '8px 10px', fontWeight: idx === dossierHistory.length - 1 ? 600 : 400 }}>
+                        {idx === dossierHistory.length - 1 ? 'Présent' : `Ancien ${idx + 1}`}
+                      </td>
+                      <td style={{ padding: '8px 10px', color: '#5f7b84', fontWeight: 600 }}>{displayRegistryNumber(historyRow.registry_number)}</td>
+                      <td style={{ padding: '8px 10px', color: '#5f7b84' }}>{formatMadagascarDateTime(historyRow.created_at)}</td>
+                      <td style={{ padding: '8px 10px' }}>
                         {Array.isArray(historyRow.treatments) && historyRow.treatments.length > 0
                           ? historyRow.treatments.map((t) => t.item_type === 'act' ? t.name : `${t.name} x${t.quantity}${t.unit ? ` ${t.unit}` : ''}`).join(', ')
                           : historyRow.traitement || '-'}
                       </td>
-                       <td style={{ padding: '6px 8px' }}>{historyRow.observation || '-'}</td>
-                      <td style={{ padding: '6px 8px' }}>{idx === dossierHistory.length - 1 ? '-' : `${historyRow.cost} Ar`}</td>
-                      <td style={{ padding: '6px 8px' }}>{idx === dossierHistory.length - 1 ? `${historyRow.cost} Ar` : '-'}</td>
+                      <td style={{ padding: '8px 10px' }}>{historyRow.observation || '-'}</td>
+                      <td style={{ padding: '8px 10px', color: '#5f7b84' }}>{idx === dossierHistory.length - 1 ? '-' : `${historyRow.cost} Ar`}</td>
+                      <td style={{ padding: '8px 10px', fontWeight: 600 }}>{idx === dossierHistory.length - 1 ? `${historyRow.cost} Ar` : '-'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -740,13 +757,16 @@ export default function RecordsPage({ category }) {
 
       {/* BARRE RECHERCHE */}
       <div className="search-bar" style={{ flexWrap: 'wrap', gap: '10px' }}>
-        <input
-          type="text"
-          placeholder="🔍 Recherche par nom, diagnostic ou N° registre..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ flex: '1 1 300px' }}
-        />
+        <div style={{ position: 'relative', flex: '1 1 300px', display: 'flex', alignItems: 'center' }}>
+          <Search size={16} style={{ position: 'absolute', left: '10px', color: '#5f7b84' }} />
+          <input
+            type="text"
+            placeholder="Recherche par nom, diagnostic ou N° registre..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ paddingLeft: '32px', width: '100%' }}
+          />
+        </div>
         <input
           type="text"
           placeholder="Filtrer par âge"
@@ -770,7 +790,7 @@ export default function RecordsPage({ category }) {
         {(search || diagnosticFilter || ageFilter || dateFilter || actFilter) && (
           <button type="button" className="btn-light"
             onClick={() => { setSearch(''); setDiagnosticFilter(''); setAgeFilter(''); setDateFilter(''); setActFilter(''); }}>
-            ✕ Effacer
+            <X size={14} /> Effacer
           </button>
         )}
         <span style={{ marginLeft: 'auto', color: '#5f7b84', fontSize: '0.9rem' }}>
@@ -884,7 +904,7 @@ export default function RecordsPage({ category }) {
         </div>
 
         <div className="dashboard-badge" style={{ justifySelf: 'start' }}>
-          Total : {treatmentTotal} Ar
+          <Plus size={14} /> Total : {treatmentTotal} Ar
         </div>
 
         <textarea name="observation" placeholder="Observation" value={form.observation} onChange={onChange} />
@@ -902,34 +922,34 @@ export default function RecordsPage({ category }) {
 
       {/* TABLEAU */}
       <div className="table-wrap">
-        <table>
+        <table style={{ fontSize: '0.88rem' }}>
           <thead>
-            <tr>
-              <th>N° registre</th>
-              <th>Patient</th>
-              <th>Sexe</th>
-              <th>Âge</th>
-              <th>Domicile</th>
-              <th>Diagnostic</th>
-               <th>Traitement</th>
-                <th>Observation</th>
-                {category.key === 'consultation' && <th>TDR</th>}
-                 <th>Coût</th>
-              <th>Date</th>
-              <th>Rendez-vous</th>
-              <th>Actions</th>
+            <tr style={{ background: '#e8f4f8' }}>
+              <th style={{ color: '#184a6e' }}>N° registre</th>
+              <th style={{ color: '#184a6e' }}>Patient</th>
+              <th style={{ color: '#184a6e' }}>Sexe</th>
+              <th style={{ color: '#184a6e' }}>Âge</th>
+              <th style={{ color: '#184a6e' }}>Domicile</th>
+              <th style={{ color: '#184a6e' }}>Diagnostic</th>
+              <th style={{ color: '#184a6e' }}>Traitement</th>
+              <th style={{ color: '#184a6e' }}>Observation</th>
+              {category.key === 'consultation' && <th style={{ color: '#184a6e' }}>TDR</th>}
+              <th style={{ color: '#184a6e' }}>Coût</th>
+              <th style={{ color: '#184a6e' }}>Date</th>
+              <th style={{ color: '#184a6e' }}>Rendez-vous</th>
+              <th style={{ color: '#184a6e' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
              {filteredRecords.length === 0 && (
               <tr>
-                 <td colSpan={category.key === 'consultation' ? 12 : 11} style={{ textAlign: 'center', color: '#5f7b84', padding: '24px' }}>
+                 <td colSpan={category.key === 'consultation' ? 12 : 11} style={{ textAlign: 'center', color: '#5f7b84', padding: '32px' }}>
                    Aucune donnée enregistrée.
                  </td>
-               </tr>
+              </tr>
              )}
-            {filteredRecords.map((row) => (
-              <tr key={row.id}>
+            {filteredRecords.map((row, idx) => (
+              <tr key={row.id} style={{ background: idx % 2 === 0 ? '#fff' : '#f8fbfd' }}>
                 <td style={{ color: '#5f7b84', fontWeight: 700 }}>{displayRegistryNumber(row.registry_number)}</td>
                 <td><strong>{row.patient_nom}</strong> {row.patient_prenom}</td>
                 <td>{row.sexe || '-'}</td>
@@ -940,57 +960,63 @@ export default function RecordsPage({ category }) {
                 </td>
                 <td>{row.domicile}</td>
                 <td>{row.diagnostic}</td>
-                <td>
+                <td style={{ maxWidth: '200px' }}>
                   {Array.isArray(row.treatments) && row.treatments.length > 0
                     ? row.treatments.map((t) => t.item_type === 'act' ? t.name : `${t.name} x${t.quantity}${t.unit ? ` ${t.unit}` : ''}`).join(', ')
                     : row.traitement}
                 </td>
                 <td>{row.observation || '-'}</td>
-                 {category.key === 'consultation' && (
-                   <td>{row.tdr_result ? (row.tdr_result === 'positif' ? '🟠 Positif' : '🟢 Négatif') : '-'}</td>
-                 )}
-                <td>{row.cost} Ar</td>
-                 <td style={{ fontSize: '0.85rem', color: '#5f7b84' }}>
+                  {category.key === 'consultation' && (
+                    <td>{row.tdr_result ? (
+                      <span style={{
+                        padding: '2px 8px',
+                        borderRadius: '6px',
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                        background: row.tdr_result === 'positif' ? '#fff3e0' : '#e8f5e9',
+                        color: row.tdr_result === 'positif' ? '#e65100' : '#2e7d32',
+                      }}>
+                        {row.tdr_result === 'positif' ? 'Positif' : 'Négatif'}
+                      </span>
+                    ) : '-'}</td>
+                  )}
+                 <td>{row.cost} Ar</td>
+                 <td style={{ fontSize: '0.82rem', color: '#5f7b84' }}>
                    {row.created_at ? formatMadagascarDateTime(row.created_at).slice(0, 10) : '-'}
                  </td>
-                 <td style={{ fontSize: '0.85rem', color: '#5f7b84' }}>
+                 <td style={{ fontSize: '0.82rem' }}>
                    {row.appointment_date ? (
-                     <>
-                       <strong>{row.appointment_date}</strong>
-                       <span style={{ display: 'block', fontSize: '0.75rem', color: row.appointment_date <= getTodayDate() ? '#a0522d' : '#1c96a4' }}>
+                     <div style={{ display: 'flex', flexDirection: 'column' }}>
+                       <strong style={{ color: '#184a6e' }}>{row.appointment_date}</strong>
+                       <span style={{ fontSize: '0.75rem', color: row.appointment_date <= getTodayDate() ? '#e65100' : '#1c96a4' }}>
                          {getAppointmentStatus(row.appointment_date)}
                        </span>
-                     </>
+                     </div>
                    ) : '-'}
                  </td>
-                 <td>
-                  {/* Editer : visible pour tous */}
-                  <button className="icon-btn" title="Modifier" aria-label="Modifier" onClick={() => edit(row)}>
-                    ✏️
-                  </button>
-                  {' '}
-                  <button className="icon-btn" title="Voir l'historique" aria-label="Voir l'historique" onClick={() => viewHistory(row)}>
-                    📜
-                  </button>
-                  {' '}
-                  <button className="icon-btn" title="Télécharger le reçu" aria-label="Télécharger le reçu" onClick={() => downloadReceipt(row)}>
-                    🧾
-                  </button>
+                 <td style={{ display: 'flex', gap: '4px' }}>
+                   {/* Editer : visible pour tous */}
+                   <button className="icon-btn" title="Modifier" aria-label="Modifier" onClick={() => edit(row)}>
+                     <Edit size={15} />
+                   </button>
+                   <button className="icon-btn" title="Voir l'historique" aria-label="Voir l'historique" onClick={() => viewHistory(row)}>
+                     <History size={15} />
+                   </button>
+                   <button className="icon-btn" title="Télécharger le reçu" aria-label="Télécharger le reçu" onClick={() => downloadReceipt(row)}>
+                     <FileText size={15} />
+                   </button>
 
-                  {/* Supprimer : visible uniquement pour l'admin */}
-                  {isAdmin && (
-                    <>
-                      {' '}
-                      <button className="icon-btn danger" title="Supprimer" aria-label="Supprimer"
-                        onClick={() => window.api.deleteRecord(row.id).then(load)}>
-                        🗑️
-                      </button>
-                    </>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
+                   {/* Supprimer : visible uniquement pour l'admin */}
+                   {isAdmin && (
+                     <button className="icon-btn danger" title="Supprimer" aria-label="Supprimer"
+                       onClick={() => window.api.deleteRecord(row.id).then(load)}>
+                       <Trash2 size={15} />
+                     </button>
+                   )}
+                 </td>
+               </tr>
+             ))}
+           </tbody>
         </table>
       </div>
     </section>
