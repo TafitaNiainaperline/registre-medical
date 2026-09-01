@@ -296,7 +296,7 @@ export default function MedicamentsPage() {
       )}
       {showHistoryModal && (
         <div className="modal-overlay">
-          <div className="stock-modal" style={{ maxWidth: '650px', width: '90%', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+          <div className="stock-modal" style={{ maxWidth: '800px', width: '95%', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
 
             <div className="stock-modal-header">
               <h3>Historique du stock – {historyMedication?.name}</h3>
@@ -308,69 +308,69 @@ export default function MedicamentsPage() {
               </button>
             </div>
 
-            <div style={{ padding: '12px 16px', background: '#f8fafa', borderBottom: '1px solid #e6eff2', display: 'flex', gap: '24px', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '0.75rem', color: '#888' }}>Stock:</span>
-                <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1C96A4' }}>{historyMedication?.stock ?? 0}</span>
+            <div style={{ padding: '14px 20px', background: '#f8fafa', borderBottom: '1px solid #e6eff2', display: 'flex', gap: '32px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.8rem', color: '#888' }}>Stock actuel:</span>
+                <span style={{ fontSize: '1.3rem', fontWeight: 700, color: '#1C96A4' }}>{historyMedication?.stock ?? 0}</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#28a745' }}></span>
-                <span style={{ fontSize: '0.75rem', color: '#555' }}>Entrées: <strong>{stockHistory.filter(h => h.movement_type === 'entry').reduce((s, h) => s + h.quantity, 0)}</strong></span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#28a745' }}></span>
+                <span style={{ fontSize: '0.8rem', color: '#555' }}>Entrées: <strong>{stockHistory.filter(h => h.movement_type === 'entry').reduce((s, h) => s + h.quantity, 0)}</strong></span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#dc3545' }}></span>
-                <span style={{ fontSize: '0.75rem', color: '#555' }}>Sorties: <strong>{stockHistory.filter(h => h.movement_type === 'exit').reduce((s, h) => s + h.quantity, 0)}</strong></span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#dc3545' }}></span>
+                <span style={{ fontSize: '0.8rem', color: '#555' }}>Sorties: <strong>{stockHistory.filter(h => h.movement_type === 'exit').reduce((s, h) => s + h.quantity, 0)}</strong></span>
               </div>
             </div>
 
             <div style={{ flex: 1, overflow: 'auto' }}>
-              <table style={{ borderCollapse: 'collapse', fontSize: '0.75rem', tableLayout: 'auto' }}>
+              <table style={{ borderCollapse: 'collapse', fontSize: '0.8rem', tableLayout: 'auto' }}>
                 <tbody>
                   <tr>
-                    <th style={{ padding: '8px 10px', textAlign: 'left', color: '#555', fontWeight: 600, background: '#f8fafa', borderRight: '1px solid #e6eff2', whiteSpace: 'nowrap', position: 'sticky', left: 0, zIndex: 1 }}>Date</th>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', color: '#555', fontWeight: 600, background: '#f8fafa', borderRight: '1px solid #e6eff2', whiteSpace: 'nowrap', position: 'sticky', left: 0, zIndex: 1 }}>Date</th>
                     {stockHistory.map((h, index) => (
-                      <td key={h.id || 'initial'} style={{ padding: '8px 10px', textAlign: 'center', color: '#555', whiteSpace: 'nowrap', borderRight: '1px solid #f0f0f0', background: index % 2 === 0 ? '#fff' : '#f8fafa' }}>
+                      <td key={h.id || 'initial'} style={{ padding: '10px 14px', textAlign: 'center', color: '#555', whiteSpace: 'nowrap', borderRight: '1px solid #f0f0f0', background: index % 2 === 0 ? '#fff' : '#f8fafa' }}>
                         {formatMadagascarDate(h.created_at)}
                       </td>
                     ))}
                   </tr>
                   <tr>
-                    <th style={{ padding: '8px 10px', textAlign: 'left', color: '#555', fontWeight: 600, background: '#f8fafa', borderRight: '1px solid #e6eff2', whiteSpace: 'nowrap', position: 'sticky', left: 0, zIndex: 1 }}>Type</th>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', color: '#555', fontWeight: 600, background: '#f8fafa', borderRight: '1px solid #e6eff2', whiteSpace: 'nowrap', position: 'sticky', left: 0, zIndex: 1 }}>Type</th>
                     {stockHistory.map((h, index) => (
-                      <td key={h.id || 'initial'} style={{ padding: '8px 10px', textAlign: 'center', borderRight: '1px solid #f0f0f0', background: index % 2 === 0 ? '#fff' : '#f8fafa' }}>
+                      <td key={h.id || 'initial'} style={{ padding: '10px 14px', textAlign: 'center', borderRight: '1px solid #f0f0f0', background: index % 2 === 0 ? '#fff' : '#f8fafa' }}>
                         <span style={{
-                          padding: '2px 6px',
+                          padding: '3px 8px',
                           borderRadius: '4px',
-                          fontSize: '0.65rem',
+                          fontSize: '0.7rem',
                           fontWeight: 600,
                           background: h.initial ? '#1a73e8' : (h.movement_type === 'entry' ? '#28a745' : '#dc3545'),
                           color: '#fff',
                         }}>
-                          {h.initial ? 'Init' : (h.movement_type === 'entry' ? 'In' : 'Out')}
+                          {h.initial ? 'Init' : (h.movement_type === 'entry' ? 'Entrée' : 'Sortie')}
                         </span>
                       </td>
                     ))}
                   </tr>
                   <tr>
-                    <th style={{ padding: '8px 10px', textAlign: 'left', color: '#28a745', fontWeight: 600, background: '#f8fafa', borderRight: '1px solid #e6eff2', whiteSpace: 'nowrap', position: 'sticky', left: 0, zIndex: 1 }}>Entrée</th>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', color: '#28a745', fontWeight: 600, background: '#f8fafa', borderRight: '1px solid #e6eff2', whiteSpace: 'nowrap', position: 'sticky', left: 0, zIndex: 1 }}>Entrée</th>
                     {stockHistory.map((h, index) => (
-                      <td key={h.id || 'initial'} style={{ padding: '8px 10px', textAlign: 'center', fontWeight: 600, color: '#28a745', borderRight: '1px solid #f0f0f0', background: index % 2 === 0 ? '#fff' : '#f8fafa' }}>
+                      <td key={h.id || 'initial'} style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: '#28a745', borderRight: '1px solid #f0f0f0', background: index % 2 === 0 ? '#fff' : '#f8fafa' }}>
                         {h.movement_type === 'entry' ? `+${h.quantity}` : '-'}
                       </td>
                     ))}
                   </tr>
                   <tr>
-                    <th style={{ padding: '8px 10px', textAlign: 'left', color: '#dc3545', fontWeight: 600, background: '#f8fafa', borderRight: '1px solid #e6eff2', whiteSpace: 'nowrap', position: 'sticky', left: 0, zIndex: 1 }}>Sortie</th>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', color: '#dc3545', fontWeight: 600, background: '#f8fafa', borderRight: '1px solid #e6eff2', whiteSpace: 'nowrap', position: 'sticky', left: 0, zIndex: 1 }}>Sortie</th>
                     {stockHistory.map((h, index) => (
-                      <td key={h.id || 'initial'} style={{ padding: '8px 10px', textAlign: 'center', fontWeight: 600, color: '#dc3545', borderRight: '1px solid #f0f0f0', background: index % 2 === 0 ? '#fff' : '#f8fafa' }}>
+                      <td key={h.id || 'initial'} style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: '#dc3545', borderRight: '1px solid #f0f0f0', background: index % 2 === 0 ? '#fff' : '#f8fafa' }}>
                         {h.movement_type === 'exit' ? `-${h.quantity}` : '-'}
                       </td>
                     ))}
                   </tr>
                   <tr>
-                    <th style={{ padding: '8px 10px', textAlign: 'left', color: '#1C96A4', fontWeight: 600, background: '#f8fafa', borderRight: '1px solid #e6eff2', whiteSpace: 'nowrap', position: 'sticky', left: 0, zIndex: 1 }}>Stock</th>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', color: '#1C96A4', fontWeight: 600, background: '#f8fafa', borderRight: '1px solid #e6eff2', whiteSpace: 'nowrap', position: 'sticky', left: 0, zIndex: 1 }}>Stock</th>
                     {stockHistory.map((h, index) => (
-                      <td key={h.id || 'initial'} style={{ padding: '8px 10px', textAlign: 'center', fontWeight: 700, color: '#1C96A4', borderRight: '1px solid #f0f0f0', background: index % 2 === 0 ? '#fff' : '#f8fafa' }}>
+                      <td key={h.id || 'initial'} style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 700, color: '#1C96A4', borderRight: '1px solid #f0f0f0', background: index % 2 === 0 ? '#fff' : '#f8fafa' }}>
                         {h.stock_after}
                       </td>
                     ))}
