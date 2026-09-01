@@ -22,6 +22,14 @@ export default function AppointmentsPage() {
     setAppointments((prev) => prev.filter((a) => a.id !== id));
   };
 
+  const removeAll = async () => {
+    if (!window.confirm('Supprimer tous les rendez-vous ? Cette action est irréversible.')) return;
+    for (const appointment of appointments) {
+      await window.api.clearAppointment(appointment.id);
+    }
+    setAppointments([]);
+  };
+
   useEffect(() => {
     window.api.fetchAppointments()
       .then((rows) => setAppointments(rows || []))
@@ -46,13 +54,31 @@ export default function AppointmentsPage() {
         <div className="dashboard-badge">📅 Rendez-vous</div>
       </div>
 
-      <div className="search-bar" style={{ marginBottom: '18px' }}>
+      <div className="search-bar" style={{ marginBottom: '18px', display: 'flex', gap: '10px' }}>
         <input
           type="search"
           placeholder="Rechercher un patient ou une date..."
           value={search}
           onChange={(event) => setSearch(event.target.value)}
+          style={{ flex: 1 }}
         />
+        {appointments.length > 0 && (
+          <button
+            onClick={removeAll}
+            style={{
+              padding: '8px 16px',
+              background: '#dc3545',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 600,
+              whiteSpace: 'nowrap'
+            }}
+          >
+            Supprimer tout
+          </button>
+        )}
       </div>
 
       <div className="table-wrap">
