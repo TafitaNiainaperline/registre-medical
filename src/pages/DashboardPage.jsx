@@ -370,7 +370,7 @@ export default function DashboardPage() {
                   .map((act) => (
                     <span key={act.name} style={{ fontSize: '0.78rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px' }}>
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{act.name}</span>
-                      <strong style={{ whiteSpace: 'nowrap', background: '#8f60d0', color: '#fff', padding: '2px 8px', borderRadius: '999px', fontSize: '0.72rem' }}>{act.count}x - {act.total.toLocaleString()}Ar</strong>
+                      <strong style={{ whiteSpace: 'nowrap', background: '#8f60d0', color: '#fff', padding: '2px 8px', borderRadius: '999px', fontSize: '0.72rem' }}>{act.count} fois - {act.total.toLocaleString()}Ar</strong>
                     </span>
                   ))
               ) : actFilter ? (
