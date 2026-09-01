@@ -76,6 +76,7 @@ export default function DashboardPage() {
   const [archiveDiagnostics, setArchiveDiagnostics] = useState([]);
   const [dispensationTotal, setDispensationTotal] = useState(0);
   const [dispensationCount, setDispensationCount] = useState(0);
+  const [cashOutflowTotal, setCashOutflowTotal] = useState(0);
   const [actFilter, setActFilter] = useState('');
   const [pfFilter, setPfFilter] = useState('');
   const [cpnFilter, setCpnFilter] = useState('');
@@ -105,6 +106,9 @@ export default function DashboardPage() {
 
         const dispCount = await window.api.getDispensations?.() || [];
         setDispensationCount(dispCount.length);
+
+        const outflowTotal = await window.api.getCashOutflowTotal?.({ year: current?.year, month: current?.month });
+        setCashOutflowTotal(Number(outflowTotal || 0));
 
         const archives = await window.api.listArchives?.() || [];
         const sortedArchives = [...archives].sort((a, b) => {
@@ -136,6 +140,7 @@ export default function DashboardPage() {
         setStats({});
         setArchiveDiagnostics([]);
         setDispensationTotal(0);
+        setCashOutflowTotal(0);
       }
     };
     load();
@@ -143,6 +148,7 @@ export default function DashboardPage() {
 
   const totalRecords = Object.values(stats).reduce((sum, count) => sum + count, 0);
   const totalAmount = records.reduce((sum, row) => sum + sumNumber(row.cost), 0) + (Number(dispensationTotal) || 0);
+  const soldeCaisse = totalAmount - cashOutflowTotal;
 
   const sexSummary = Object.entries(records.reduce((acc, row) => {
     const sex = String(row.sexe || '').trim().toUpperCase() || 'Non renseigné';
@@ -263,6 +269,17 @@ export default function DashboardPage() {
           </div>
           <strong>{totalAmount.toLocaleString()} Ar</strong>
           <span className="stat-subtitle">Total des coûts</span>
+        </article>
+
+        <article className="stat-card" style={{ borderTop: '5px solid #dc3545' }}>
+          <div className="stat-top">
+            <h3>Solde de caisse</h3>
+            <div className="stat-dot" style={{ background: '#dc3545' }} />
+          </div>
+          <strong>{soldeCaisse.toLocaleString()} Ar</strong>
+          <span className="stat-subtitle">
+            Entrées : {totalAmount.toLocaleString()} Ar — Sorties : {cashOutflowTotal.toLocaleString()} Ar
+          </span>
         </article>
 
         <article className="stat-card" style={{ borderTop: '5px solid #f59f00' }}>

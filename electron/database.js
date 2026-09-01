@@ -145,6 +145,16 @@ function initTables() {
      CREATE INDEX IF NOT EXISTS idx_record_medications_record_id ON record_medications(record_id);
      CREATE INDEX IF NOT EXISTS idx_medication_movements_medication_id ON medication_movements(medication_id);
      CREATE INDEX IF NOT EXISTS idx_medication_movements_created_at ON medication_movements(created_at);
+
+     CREATE TABLE IF NOT EXISTS cash_outflows (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       outflow_date DATE NOT NULL,
+       designation TEXT NOT NULL,
+       amount INTEGER NOT NULL,
+       created_by INTEGER,
+       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+     );
+     CREATE INDEX IF NOT EXISTS idx_cash_outflows_date ON cash_outflows(outflow_date);
    `);
 
   // Migration : ajouter colonnes manquantes si ancienne DB
@@ -1746,6 +1756,61 @@ async function ensureRegistryNumbers() {
   }
 }
 
+async function createCashOutflow(data) {
+  const d = await getDB();
+  const outflowDate = String(data.outflow_date || '').trim();
+  const designation = String(data.designation || '').trim();
+  const amount = Number(data.amount);
+
+  if (!outflowDate) throw new Error('La date est requise.');
+  if (!designation) throw new Error('La désignation est requise.');
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error('Le montant doit être supérieur à 0.');
+
+  d.run(
+    'INSERT INTO cash_outflows (outflow_date, designation, amount, created_by) VALUES (?, ?, ?, ?)',
+    [outflowDate, designation, amount, data.created_by || null]
+  );
+  saveDB();
+
+  const idRes = toObjects(d.exec('SELECT last_insert_rowid() as id'))[0];
+  return idRes?.id;
+}
+
+async function listCashOutflows({ year, month } = {}) {
+  const d = await getDB();
+  const where = [];
+  const params = [];
+  if (year) { where.push("CAST(strftime('%Y', outflow_date) AS INTEGER) = ?"); params.push(Number(year)); }
+  if (month) { where.push("CAST(strftime('%m', outflow_date) AS INTEGER) = ?"); params.push(Number(month)); }
+  const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
+  const res = d.exec(
+    `SELECT * FROM cash_outflows ${whereClause} ORDER BY outflow_date DESC, id DESC`,
+    params
+  );
+  return toObjects(res);
+}
+
+async function getCashOutflowTotal({ year, month } = {}) {
+  const d = await getDB();
+  const where = [];
+  const params = [];
+  if (year) { where.push("CAST(strftime('%Y', outflow_date) AS INTEGER) = ?"); params.push(Number(year)); }
+  if (month) { where.push("CAST(strftime('%m', outflow_date) AS INTEGER) = ?"); params.push(Number(month)); }
+  const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
+  const res = d.exec(
+    `SELECT COALESCE(SUM(amount), 0) as total FROM cash_outflows ${whereClause}`,
+    params
+  );
+  const rows = toObjects(res);
+  return Number(rows[0]?.total || 0);
+}
+
+async function deleteCashOutflow(id) {
+  const d = await getDB();
+  d.run('DELETE FROM cash_outflows WHERE id = ?', [id]);
+  saveDB();
+}
+
 module.exports = {
    loginUser, registerUser,
    getAllUsers, toggleUserActive, resetUserPassword, deleteUser,
@@ -1764,5 +1829,9 @@ module.exports = {
    getDispensations,
    getDispensationTotal,
    deleteDispensation,
-   updateDispensation
+   updateDispensation,
+   createCashOutflow,
+   listCashOutflows,
+   getCashOutflowTotal,
+   deleteCashOutflow
 };

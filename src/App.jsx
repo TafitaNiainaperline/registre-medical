@@ -9,6 +9,7 @@ import MedicamentsPage from './pages/MedicamentsPage';
 import DispensationPage from './pages/DispensationPage';
 import ArchivesPage from './pages/ArchivesPage';
 import AppointmentsPage from './pages/AppointmentsPage';
+import SortiesPage from './pages/SortiesPage';
 import { categories } from './constants';
 
 const ProtectedRoute = ({ children }) => {
@@ -38,6 +39,7 @@ export default function App() {
         <Route path="dispensation" element={<DispensationPage />} />
         <Route path="archives" element={<ArchivesPage />} />
         <Route path="rendez-vous" element={<AppointmentsPage />} />
+        <Route path="sorties" element={<SortiesPage />} />
       </Route>
     </Routes>
   );

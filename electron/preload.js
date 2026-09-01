@@ -137,4 +137,17 @@ contextBridge.exposeInMainWorld('api', {
 
   updateDispensation: (data) =>
     ipcRenderer.invoke('dispensations:update', data),
+
+  // CASH OUTFLOWS (Sorties de caisse)
+  createCashOutflow: (data) =>
+    ipcRenderer.invoke('cashOutflows:create', data),
+
+  listCashOutflows: (filters) =>
+    ipcRenderer.invoke('cashOutflows:list', filters),
+
+  getCashOutflowTotal: (filters) =>
+    ipcRenderer.invoke('cashOutflows:total', filters),
+
+  deleteCashOutflow: (id) =>
+    ipcRenderer.invoke('cashOutflows:delete', id),
 });

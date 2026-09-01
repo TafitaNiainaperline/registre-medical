@@ -362,3 +362,23 @@ ipcMain.handle('dispensations:delete', (_, id) => {
 ipcMain.handle('dispensations:update', (_, data) => {
   return db.updateDispensation(data.id, data);
 });
+
+// ─────────────────────────────────────────────────────
+// CASH OUTFLOWS (Sorties de caisse)
+// ─────────────────────────────────────────────────────
+
+ipcMain.handle('cashOutflows:create', (_, data) => {
+  return db.createCashOutflow(data);
+});
+
+ipcMain.handle('cashOutflows:list', (_, filters) => {
+  return db.listCashOutflows(filters || {});
+});
+
+ipcMain.handle('cashOutflows:total', (_, filters) => {
+  return db.getCashOutflowTotal(filters || {});
+});
+
+ipcMain.handle('cashOutflows:delete', (_, id) => {
+  return db.deleteCashOutflow(id);
+});

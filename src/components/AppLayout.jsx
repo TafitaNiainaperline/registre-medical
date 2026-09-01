@@ -65,8 +65,9 @@ export default function AppLayout() {
 <NavLink to="/dispensation">Dispensation</NavLink>
 
           <NavLink to="/medicaments">Médicaments</NavLink>
+ <NavLink to="/sorties">Sorties</NavLink>
 
-           {currentUser.role === 'admin' && (
+          {currentUser.role === 'admin' && (
              <NavLink
                to="/admin"
                style={{
