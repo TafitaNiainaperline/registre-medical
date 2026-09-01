@@ -297,9 +297,9 @@ export default function DashboardPage() {
           </div>
           <div style={{ display: 'grid', gap: '6px', marginTop: '12px' }}>
             {sexSummary.map(([sex, count]) => (
-              <span key={sex} style={{ fontSize: '0.95rem', display: 'flex', justifyContent: 'space-between' }}>
+              <span key={sex} style={{ fontSize: '0.95rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>{sex}</span>
-                <strong>{count}</strong>
+                <strong style={{ background: '#f59f00', color: '#fff', padding: '2px 10px', borderRadius: '999px', fontSize: '0.85rem' }}>{count}</strong>
               </span>
             ))}
           </div>
@@ -312,9 +312,9 @@ export default function DashboardPage() {
           </div>
           <div style={{ display: 'grid', gap: '6px', marginTop: '12px' }}>
             {diagnosticSummary.slice(0, 4).map(([diagnostic, count]) => (
-              <span key={diagnostic} style={{ fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+              <span key={diagnostic} style={{ fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{diagnostic}</span>
-                <strong style={{ color: '#6f42c1' }}>{count}</strong>
+                <strong style={{ background: '#6f42c1', color: '#fff', padding: '2px 10px', borderRadius: '999px', fontSize: '0.85rem' }}>{count}</strong>
               </span>
             ))}
             {diagnosticSummary.length === 0 && <span style={{ fontSize: '0.9rem', color: '#888' }}>Aucun diagnostic</span>}
@@ -327,13 +327,13 @@ export default function DashboardPage() {
             <h3>TDR Paludisme</h3>
           </div>
           <div style={{ display: 'grid', gap: '6px', marginTop: '12px' }}>
-            <span style={{ fontSize: '0.95rem', display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '0.95rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ color: '#28a745' }}>Positif</span>
-              <strong>{tdrSummary.positif || 0}</strong>
+              <strong style={{ background: '#28a745', color: '#fff', padding: '2px 10px', borderRadius: '999px', fontSize: '0.85rem' }}>{tdrSummary.positif || 0}</strong>
             </span>
-            <span style={{ fontSize: '0.95rem', display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '0.95rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ color: '#dc3545' }}>Négatif</span>
-              <strong>{tdrSummary.negatif || 0}</strong>
+              <strong style={{ background: '#dc3545', color: '#fff', padding: '2px 10px', borderRadius: '999px', fontSize: '0.85rem' }}>{tdrSummary.negatif || 0}</strong>
             </span>
           </div>
         </article>
@@ -407,9 +407,9 @@ export default function DashboardPage() {
                 pfSummary
                   .filter(([method]) => String(method).toLowerCase().includes(pfFilter.toLowerCase()))
                   .map(([method, count]) => (
-                    <span key={method} style={{ fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span key={method} style={{ fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>{method}</span>
-                      <strong>{count} patient{count !== 1 ? 's' : ''}</strong>
+                      <strong style={{ background: '#28a745', color: '#fff', padding: '2px 10px', borderRadius: '999px', fontSize: '0.85rem' }}>{count}</strong>
                     </span>
                   ))
               ) : pfFilter ? (
@@ -446,9 +446,9 @@ export default function DashboardPage() {
                 cpnSummary
                   .filter(([cpn]) => String(cpn).toLowerCase().includes(cpnFilter.toLowerCase()))
                   .map(([cpn, count]) => (
-                    <span key={cpn} style={{ fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span key={cpn} style={{ fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>{cpn}</span>
-                      <strong>{count} patient{count !== 1 ? 's' : ''}</strong>
+                      <strong style={{ background: '#d81b83', color: '#fff', padding: '2px 10px', borderRadius: '999px', fontSize: '0.85rem' }}>{count}</strong>
                     </span>
                   ))
               ) : cpnFilter ? (
