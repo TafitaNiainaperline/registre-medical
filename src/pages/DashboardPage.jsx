@@ -361,20 +361,20 @@ export default function DashboardPage() {
               fontSize: '0.85rem'
             }}
           />
-          <div style={{ display: 'grid', gap: '6px', maxHeight: '150px', overflowY: 'auto' }}>
+          <div style={{ display: 'grid', gap: '4px', maxHeight: '120px', overflowY: 'auto' }}>
             {actFilter && actSummary
               .filter((act) => String(act.name).toLowerCase().includes(actFilter.toLowerCase()))
               .length > 0 ? (
                 actSummary
                   .filter((act) => String(act.name).toLowerCase().includes(actFilter.toLowerCase()))
                   .map((act) => (
-                    <span key={act.name} style={{ fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+                    <span key={act.name} style={{ fontSize: '0.78rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px' }}>
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{act.name}</span>
-                      <strong style={{ whiteSpace: 'nowrap' }}>{act.count}x — {act.total.toLocaleString()} Ar</strong>
+                      <strong style={{ whiteSpace: 'nowrap', background: '#8f60d0', color: '#fff', padding: '2px 8px', borderRadius: '999px', fontSize: '0.72rem' }}>{act.count}x - {act.total.toLocaleString()}Ar</strong>
                     </span>
                   ))
               ) : actFilter ? (
-                <span style={{ fontSize: '0.85rem', color: '#888' }}>Aucun résultat</span>
+                <span style={{ fontSize: '0.8rem', color: '#888' }}>Aucun résultat</span>
               ) : null}
           </div>
         </article>
