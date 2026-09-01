@@ -1,33 +1,16 @@
 import { useEffect, useState } from 'react';
 
-function formatMadagascarDateTime(utcString) {
-  if (!utcString) return '-';
-  const d = new Date(utcString);
-  const offset = 3 * 60;
-  const local = new Date(d.getTime() + offset * 60 * 1000);
-  const y = local.getFullYear();
-  const m = String(local.getMonth() + 1).padStart(2, '0');
-  const day = String(local.getDate()).padStart(2, '0');
-  const h = String(local.getHours()).padStart(2, '0');
-  const min = String(local.getMinutes()).padStart(2, '0');
-  return `${day}/${m}/${y} ${h}:${min}`;
-}
-
 export default function AdminPage() {
   const [users, setUsers] = useState([]);
   const [newPwd, setNewPwd] = useState({});
   const [showPwd, setShowPwd] = useState({});
   const [msg, setMsg] = useState({ text: '', type: 'ok' });
-  const [medHistory, setMedHistory] = useState([]);
-  const [stockHistory, setStockHistory] = useState([]);
 
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
   const load = () => window.api.getAllUsers().then(setUsers).catch(() => {});
-  const loadMedHistory = () => window.api.getMedicationHistory().then(setMedHistory).catch(() => setMedHistory([]));
-  const loadStockHistory = () => window.api.getMedicationStockHistory().then(setStockHistory).catch(() => setStockHistory([]));
 
-  useEffect(() => { load(); loadMedHistory(); loadStockHistory(); }, []);
+  useEffect(() => { load(); }, []);
 
   const notify = (text, type = 'ok') => {
     setMsg({ text, type });
@@ -181,92 +164,6 @@ export default function AdminPage() {
                     <span style={{ color: '#aaa', fontSize: '0.85rem' }}>—</span>
                   )}
                 </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div style={{ height: '16px' }} />
-
-      <div className="page-header" style={{ marginTop: '4px' }}>
-        <div>
-          <h1 style={{ fontSize: '1.35rem' }}>Historique des médicaments</h1>
-          <p>Liste des médicaments ajoutés avec la date et la personne qui a ajouté.</p>
-        </div>
-        <div className="dashboard-badge" style={{ background: '#8f60d0' }}>
-          💊 Historique
-        </div>
-      </div>
-
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Nom</th>
-              <th>Prix</th>
-              <th>Stock</th>
-              <th>Ajouté par</th>
-            </tr>
-          </thead>
-          <tbody>
-            {medHistory.length === 0 && (
-              <tr><td colSpan="5" style={{ textAlign: 'center', color: '#5f7b84', padding: '24px' }}>
-                Aucun médicament enregistré.
-              </td></tr>
-            )}
-            {medHistory.map((m) => (
-              <tr key={m.id}>
-                <td style={{ fontSize: '0.85rem', color: '#5f7b84' }}>
-                  {formatMadagascarDateTime(m.created_at)}
-                </td>
-                <td><strong>{m.name}</strong></td>
-                <td>{Number(m.price).toLocaleString()} Ar</td>
-                <td>{m.stock !== null && m.stock !== undefined ? m.stock : '-'}</td>
-                <td>{m.created_by_name || 'Utilisateur inconnu'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div style={{ height: '16px' }} />
-
-      <div className="page-header" style={{ marginTop: '4px' }}>
-        <div>
-          <h1 style={{ fontSize: '1.35rem' }}>Historique des ajouts de stock</h1>
-          <p>Liste des ajouts de stock avec la quantité et la personne qui a ajouté.</p>
-        </div>
-        <div className="dashboard-badge" style={{ background: '#1c96a4' }}>
-          📦 Stock
-        </div>
-      </div>
-
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Médicament</th>
-              <th>Quantité totale ajoutée</th>
-              <th>Dernier ajout</th>
-              <th>Ajouté par</th>
-            </tr>
-          </thead>
-          <tbody>
-            {stockHistory.length === 0 && (
-              <tr><td colSpan="4" style={{ textAlign: 'center', color: '#5f7b84', padding: '24px' }}>
-                Aucun ajout de stock enregistré.
-              </td></tr>
-            )}
-            {stockHistory.map((s) => (
-              <tr key={s.medication_name}>
-                <td><strong>{s.medication_name}</strong></td>
-                <td>+{s.total_quantity}</td>
-                <td style={{ fontSize: '0.85rem', color: '#5f7b84' }}>
-                  {formatMadagascarDateTime(s.last_added_at)}
-                </td>
-                <td>{s.created_by_name || 'Utilisateur inconnu'}</td>
               </tr>
             ))}
           </tbody>
