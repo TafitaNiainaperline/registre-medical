@@ -767,7 +767,7 @@ export default function RecordsPage({ category }) {
           onChange={(e) => setActFilter(e.target.value)}
           style={{ flex: '1 1 200px' }}
         />
-        {(search || diagnosticFilter || ageFilter || dateFilter || actFilter || pfFilter || cpnFilter) && (
+        {(search || diagnosticFilter || ageFilter || dateFilter || actFilter) && (
           <button type="button" className="btn-light"
             onClick={() => { setSearch(''); setDiagnosticFilter(''); setAgeFilter(''); setDateFilter(''); setActFilter(''); }}>
             ✕ Effacer
