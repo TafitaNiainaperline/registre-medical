@@ -324,28 +324,20 @@ export default function MedicamentsPage() {
             </div>
 
             <div style={{ flex: 1, overflow: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
-                <thead>
-                  <tr style={{ position: 'sticky', top: 0, background: '#fff', boxShadow: '0 1px 0 #e6eff2' }}>
-                    <th style={{ padding: '10px 12px', textAlign: 'left', color: '#555', fontWeight: 600 }}>Date</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'center', color: '#555', fontWeight: 600 }}>Type</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'center', color: '#28a745', fontWeight: 600 }}>Entrée</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'center', color: '#dc3545', fontWeight: 600 }}>Sortie</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'center', color: '#555', fontWeight: 600 }}>Stock</th>
-                  </tr>
-                </thead>
+              <table style={{ borderCollapse: 'collapse', fontSize: '0.75rem', tableLayout: 'auto' }}>
                 <tbody>
-                  {stockHistory.length === 0 && (
-                    <tr>
-                      <td colSpan="5" style={{ textAlign: 'center', padding: '30px', color: '#888' }}>
-                        Aucun mouvement enregistré.
+                  <tr>
+                    <th style={{ padding: '8px 10px', textAlign: 'left', color: '#555', fontWeight: 600, background: '#f8fafa', borderRight: '1px solid #e6eff2', whiteSpace: 'nowrap', position: 'sticky', left: 0, zIndex: 1 }}>Date</th>
+                    {stockHistory.map((h, index) => (
+                      <td key={h.id || 'initial'} style={{ padding: '8px 10px', textAlign: 'center', color: '#555', whiteSpace: 'nowrap', borderRight: '1px solid #f0f0f0', background: index % 2 === 0 ? '#fff' : '#f8fafa' }}>
+                        {formatMadagascarDate(h.created_at)}
                       </td>
-                    </tr>
-                  )}
-                  {stockHistory.map((h, index) => (
-                    <tr key={h.id || 'initial'} style={{ background: index % 2 === 0 ? '#fff' : '#f8fafa', borderBottom: '1px solid #f0f0f0' }}>
-                      <td style={{ padding: '8px 12px', color: '#555', whiteSpace: 'nowrap' }}>{formatMadagascarDate(h.created_at)}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                    ))}
+                  </tr>
+                  <tr>
+                    <th style={{ padding: '8px 10px', textAlign: 'left', color: '#555', fontWeight: 600, background: '#f8fafa', borderRight: '1px solid #e6eff2', whiteSpace: 'nowrap', position: 'sticky', left: 0, zIndex: 1 }}>Type</th>
+                    {stockHistory.map((h, index) => (
+                      <td key={h.id || 'initial'} style={{ padding: '8px 10px', textAlign: 'center', borderRight: '1px solid #f0f0f0', background: index % 2 === 0 ? '#fff' : '#f8fafa' }}>
                         <span style={{
                           padding: '2px 6px',
                           borderRadius: '4px',
@@ -354,18 +346,35 @@ export default function MedicamentsPage() {
                           background: h.initial ? '#1a73e8' : (h.movement_type === 'entry' ? '#28a745' : '#dc3545'),
                           color: '#fff',
                         }}>
-                          {h.initial ? 'Init.' : (h.movement_type === 'entry' ? 'In' : 'Out')}
+                          {h.initial ? 'Init' : (h.movement_type === 'entry' ? 'In' : 'Out')}
                         </span>
                       </td>
-                      <td style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 600, color: '#28a745' }}>
+                    ))}
+                  </tr>
+                  <tr>
+                    <th style={{ padding: '8px 10px', textAlign: 'left', color: '#28a745', fontWeight: 600, background: '#f8fafa', borderRight: '1px solid #e6eff2', whiteSpace: 'nowrap', position: 'sticky', left: 0, zIndex: 1 }}>Entrée</th>
+                    {stockHistory.map((h, index) => (
+                      <td key={h.id || 'initial'} style={{ padding: '8px 10px', textAlign: 'center', fontWeight: 600, color: '#28a745', borderRight: '1px solid #f0f0f0', background: index % 2 === 0 ? '#fff' : '#f8fafa' }}>
                         {h.movement_type === 'entry' ? `+${h.quantity}` : '-'}
                       </td>
-                      <td style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 600, color: '#dc3545' }}>
+                    ))}
+                  </tr>
+                  <tr>
+                    <th style={{ padding: '8px 10px', textAlign: 'left', color: '#dc3545', fontWeight: 600, background: '#f8fafa', borderRight: '1px solid #e6eff2', whiteSpace: 'nowrap', position: 'sticky', left: 0, zIndex: 1 }}>Sortie</th>
+                    {stockHistory.map((h, index) => (
+                      <td key={h.id || 'initial'} style={{ padding: '8px 10px', textAlign: 'center', fontWeight: 600, color: '#dc3545', borderRight: '1px solid #f0f0f0', background: index % 2 === 0 ? '#fff' : '#f8fafa' }}>
                         {h.movement_type === 'exit' ? `-${h.quantity}` : '-'}
                       </td>
-                      <td style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 600, color: '#1C96A4' }}>{h.stock_after}</td>
-                    </tr>
-                  ))}
+                    ))}
+                  </tr>
+                  <tr>
+                    <th style={{ padding: '8px 10px', textAlign: 'left', color: '#1C96A4', fontWeight: 600, background: '#f8fafa', borderRight: '1px solid #e6eff2', whiteSpace: 'nowrap', position: 'sticky', left: 0, zIndex: 1 }}>Stock</th>
+                    {stockHistory.map((h, index) => (
+                      <td key={h.id || 'initial'} style={{ padding: '8px 10px', textAlign: 'center', fontWeight: 700, color: '#1C96A4', borderRight: '1px solid #f0f0f0', background: index % 2 === 0 ? '#fff' : '#f8fafa' }}>
+                        {h.stock_after}
+                      </td>
+                    ))}
+                  </tr>
                 </tbody>
               </table>
             </div>
