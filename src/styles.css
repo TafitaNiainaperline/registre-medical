@@ -44,22 +44,12 @@ body {
   border-bottom: 1px solid #e6f2f5;
   margin-bottom: 16px;
 }
-.brand-icon {
-  width: 64px;
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #e6f7fa 0%, #d4f0f5 100%);
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(20, 140, 160, 0.2);
-}
 .brand img {
-  width: min(120px, 80%);
+  width: min(140px, 85%);
   height: auto;
-  max-height: 100px;
+  max-height: 110px;
   object-fit: contain;
-  filter: drop-shadow(0 4px 8px rgba(20, 140, 160, 0.15));
+  filter: drop-shadow(0 4px 12px rgba(20, 140, 160, 0.2));
 }
 .brand span {
   background: linear-gradient(135deg, #148ca0 0%, #0d7280 100%);
@@ -1197,10 +1187,6 @@ body.dark-mode .sidebar{
 
 body.dark-mode .brand {
   border-bottom-color: #1e3038;
-}
-body.dark-mode .brand-icon {
-  background: linear-gradient(135deg, #1a3038 0%, #16282f 100%);
-  box-shadow: 0 4px 12px rgba(79, 209, 224, 0.15);
 }
 body.dark-mode .brand span {
   background: linear-gradient(135deg, #4fd1e0 0%, #2bb3c4 100%);
