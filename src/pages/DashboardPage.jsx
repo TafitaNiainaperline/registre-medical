@@ -256,37 +256,42 @@ export default function DashboardPage() {
 
       <div className="cards-grid" style={{ marginBottom: '28px' }}>
         <article className="stat-card" style={{ borderTop: '5px solid #3777cc' }}>
-          <div className="stat-top">
-            <FolderOpen size={24} color="#3777cc" />
-            <h3>Total dossiers</h3>
+          <div className="stat-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <FolderOpen size={24} color="#3777cc" />
+              <h3>Total dossiers</h3>
+            </div>
+            <strong style={{ fontSize: '1.8rem', color: '#3777cc' }}>{totalRecords}</strong>
           </div>
-          <strong style={{ fontSize: '1.8rem' }}>{totalRecords}</strong>
           <span className="stat-subtitle">Ce mois</span>
         </article>
 
         <article className="stat-card" style={{ borderTop: '5px solid #28a745' }}>
-          <div className="stat-top">
-            <DollarSign size={24} color="#28a745" />
-            <h3>Montant facturé</h3>
+          <div className="stat-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <DollarSign size={24} color="#28a745" />
+              <h3>Montant facturé</h3>
+            </div>
+            <strong style={{ fontSize: '1.8rem', color: '#28a745' }}>{totalAmount.toLocaleString()} Ar</strong>
           </div>
-          <strong style={{ fontSize: '1.8rem' }}>{totalAmount.toLocaleString()} Ar</strong>
           <span className="stat-subtitle">Total des coûts</span>
         </article>
 
         <article className="stat-card" style={{ borderTop: '5px solid #dc3545' }}>
-          <div className="stat-top">
-            <Landmark size={24} color="#dc3545" />
-            <h3>Solde de caisse</h3>
+          <div className="stat-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Landmark size={24} color="#dc3545" />
+              <h3>Solde de caisse</h3>
+            </div>
+            <strong style={{ fontSize: '1.8rem', color: '#dc3545' }}>{soldeCaisse.toLocaleString()} Ar</strong>
           </div>
-          <strong style={{ fontSize: '1.8rem' }}>{soldeCaisse.toLocaleString()} Ar</strong>
           <span className="stat-subtitle" style={{ fontSize: '0.8rem' }}>
-            Entrées : {totalAmount.toLocaleString()} Ar<br/>
-            Sorties : {cashOutflowTotal.toLocaleString()} Ar
+            Entrées : {totalAmount.toLocaleString()} Ar | Sorties : {cashOutflowTotal.toLocaleString()} Ar
           </span>
         </article>
 
         <article className="stat-card" style={{ borderTop: '5px solid #f59f00' }}>
-          <div className="stat-top">
+          <div className="stat-top" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Users size={24} color="#f59f00" />
             <h3>Sexe des patients</h3>
           </div>
@@ -301,7 +306,7 @@ export default function DashboardPage() {
         </article>
 
         <article className="stat-card" style={{ borderTop: '5px solid #6f42c1' }}>
-          <div className="stat-top">
+          <div className="stat-top" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Microscope size={24} color="#6f42c1" />
             <h3>Top diagnostics</h3>
           </div>
@@ -317,7 +322,7 @@ export default function DashboardPage() {
         </article>
 
         <article className="stat-card" style={{ borderTop: '5px solid #d81b83' }}>
-          <div className="stat-top">
+          <div className="stat-top" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Bug size={24} color="#d81b83" />
             <h3>TDR Paludisme</h3>
           </div>
@@ -336,7 +341,7 @@ export default function DashboardPage() {
 
       <div className="cards-grid" style={{ marginBottom: '28px' }}>
         <article className="stat-card" style={{ borderTop: '5px solid #8f60d0' }}>
-          <div className="stat-top">
+          <div className="stat-top" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Stethoscope size={24} color="#8f60d0" />
             <h3>Actes médicaux</h3>
           </div>
@@ -453,11 +458,13 @@ export default function DashboardPage() {
         </article>
 
         <article className="stat-card" style={{ borderTop: '5px solid #4a90d9' }}>
-          <div className="stat-top">
-            <Pill size={24} color="#4a90d9" />
-            <h3>Dispensations</h3>
+          <div className="stat-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Pill size={24} color="#4a90d9" />
+              <h3>Dispensations</h3>
+            </div>
+            <strong style={{ fontSize: '1.8rem', color: '#4a90d9' }}>{dispensationCount}</strong>
           </div>
-          <strong style={{ fontSize: '1.8rem' }}>{dispensationCount}</strong>
           <span className="stat-subtitle">
             Total : {Number(dispensationTotal || 0).toLocaleString()} Ar
           </span>
