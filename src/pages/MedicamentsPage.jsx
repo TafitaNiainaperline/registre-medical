@@ -326,7 +326,7 @@ export default function MedicamentsPage() {
             <div style={{ flex: 1, overflow: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                 <thead>
-                  <tr style={{ position: 'sticky', top: 0', background: '#fff', boxShadow: '0 1px 0 #e6eff2' }}>
+                  <tr style={{ position: 'sticky', top: 0, background: '#fff', boxShadow: '0 1px 0 #e6eff2' }}>
                     <th style={{ padding: '10px 12px', textAlign: 'left', color: '#555', fontWeight: 600 }}>Date</th>
                     <th style={{ padding: '10px 12px', textAlign: 'center', color: '#555', fontWeight: 600 }}>Mouvement</th>
                     <th style={{ padding: '10px 12px', textAlign: 'center', color: '#555', fontWeight: 600 }}>Qté</th>
