@@ -1,5 +1,6 @@
 ﻿import { useEffect, useState } from 'react';
 import { categories } from '../constants';
+import { FolderOpen, DollarSign, Landmark, Users, Microscope, Bug, Stethoscope, Baby, Pill, Heart, Calendar, Activity } from 'lucide-react';
 
 function parseAgeToMonths(stored) {
   const value = String(stored || '');
@@ -256,7 +257,7 @@ export default function DashboardPage() {
       <div className="cards-grid" style={{ marginBottom: '28px' }}>
         <article className="stat-card" style={{ borderTop: '5px solid #3777cc' }}>
           <div className="stat-top">
-            <span style={{ fontSize: '1.5rem' }}>📁</span>
+            <FolderOpen size={24} color="#3777cc" />
             <h3>Total dossiers</h3>
           </div>
           <strong style={{ fontSize: '1.8rem' }}>{totalRecords}</strong>
@@ -265,7 +266,7 @@ export default function DashboardPage() {
 
         <article className="stat-card" style={{ borderTop: '5px solid #28a745' }}>
           <div className="stat-top">
-            <span style={{ fontSize: '1.5rem' }}>💰</span>
+            <DollarSign size={24} color="#28a745" />
             <h3>Montant facturé</h3>
           </div>
           <strong style={{ fontSize: '1.8rem' }}>{totalAmount.toLocaleString()} Ar</strong>
@@ -274,7 +275,7 @@ export default function DashboardPage() {
 
         <article className="stat-card" style={{ borderTop: '5px solid #dc3545' }}>
           <div className="stat-top">
-            <span style={{ fontSize: '1.5rem' }}>🏦</span>
+            <Landmark size={24} color="#dc3545" />
             <h3>Solde de caisse</h3>
           </div>
           <strong style={{ fontSize: '1.8rem' }}>{soldeCaisse.toLocaleString()} Ar</strong>
@@ -286,7 +287,7 @@ export default function DashboardPage() {
 
         <article className="stat-card" style={{ borderTop: '5px solid #f59f00' }}>
           <div className="stat-top">
-            <span style={{ fontSize: '1.5rem' }}>⚥</span>
+            <Users size={24} color="#f59f00" />
             <h3>Sexe des patients</h3>
           </div>
           <div style={{ display: 'grid', gap: '6px', marginTop: '12px' }}>
@@ -301,7 +302,7 @@ export default function DashboardPage() {
 
         <article className="stat-card" style={{ borderTop: '5px solid #6f42c1' }}>
           <div className="stat-top">
-            <span style={{ fontSize: '1.5rem' }}>🔬</span>
+            <Microscope size={24} color="#6f42c1" />
             <h3>Top diagnostics</h3>
           </div>
           <div style={{ display: 'grid', gap: '6px', marginTop: '12px' }}>
@@ -317,7 +318,7 @@ export default function DashboardPage() {
 
         <article className="stat-card" style={{ borderTop: '5px solid #d81b83' }}>
           <div className="stat-top">
-            <span style={{ fontSize: '1.5rem' }}>🦟</span>
+            <Bug size={24} color="#d81b83" />
             <h3>TDR Paludisme</h3>
           </div>
           <div style={{ display: 'grid', gap: '6px', marginTop: '12px' }}>
@@ -336,7 +337,7 @@ export default function DashboardPage() {
       <div className="cards-grid" style={{ marginBottom: '28px' }}>
         <article className="stat-card" style={{ borderTop: '5px solid #8f60d0' }}>
           <div className="stat-top">
-            <span style={{ fontSize: '1.5rem' }}>💉</span>
+            <Stethoscope size={24} color="#8f60d0" />
             <h3>Actes médicaux</h3>
           </div>
           <input
@@ -375,7 +376,7 @@ export default function DashboardPage() {
 
         <article className="stat-card" style={{ borderTop: '5px solid #28a745' }}>
           <div className="stat-top">
-            <span style={{ fontSize: '1.5rem' }}>👨‍👩‍👧</span>
+            <Heart size={24} color="#28a745" />
             <h3>Produits PF</h3>
           </div>
           <input
@@ -414,7 +415,7 @@ export default function DashboardPage() {
 
         <article className="stat-card" style={{ borderTop: '5px solid #d81b83' }}>
           <div className="stat-top">
-            <span style={{ fontSize: '1.5rem' }}>🤰</span>
+            <Baby size={24} color="#d81b83" />
             <h3>CPN</h3>
           </div>
           <input
@@ -453,7 +454,7 @@ export default function DashboardPage() {
 
         <article className="stat-card" style={{ borderTop: '5px solid #4a90d9' }}>
           <div className="stat-top">
-            <span style={{ fontSize: '1.5rem' }}>💊</span>
+            <Pill size={24} color="#4a90d9" />
             <h3>Dispensations</h3>
           </div>
           <strong style={{ fontSize: '1.8rem' }}>{dispensationCount}</strong>
@@ -465,7 +466,7 @@ export default function DashboardPage() {
 
       {ageGroupSummary.length > 0 && (
         <div style={{ marginBottom: '28px', padding: '20px', background: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-          <h3 style={{ marginBottom: '16px', color: '#333', fontSize: '1rem' }}>👥 Patients par tranche d'âge</h3>
+          <h3 style={{ marginBottom: '16px', color: '#333', fontSize: '1rem' }}><Users size={18} style={{ verticalAlign: 'middle', marginRight: '6px' }} />Patients par tranche d'âge</h3>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
             {ageGroupSummary.map(([group, count]) => (
               <span key={group} style={{ padding: '10px 16px', background: '#f4f9fd', border: '1px solid #dceaf2', borderRadius: '10px', color: '#184a6e', fontWeight: 500 }}>
@@ -478,7 +479,7 @@ export default function DashboardPage() {
 
       {archiveDiagnostics.length > 0 && (
         <div style={{ marginBottom: '28px', padding: '20px', background: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-          <h3 style={{ marginBottom: '16px', color: '#333', fontSize: '1rem' }}>📅 Diagnostics par mois</h3>
+          <h3 style={{ marginBottom: '16px', color: '#333', fontSize: '1rem' }}><Calendar size={18} style={{ verticalAlign: 'middle', marginRight: '6px' }} />Diagnostics par mois</h3>
           <div style={{ display: 'grid', gap: '14px' }}>
             {archiveDiagnostics.map((archive) => (
               <div key={archive.label} style={{ padding: '16px', border: '1px solid #e6e6e6', borderRadius: '10px', background: '#fafafa' }}>
@@ -501,7 +502,7 @@ export default function DashboardPage() {
       )}
 
       <div style={{ marginBottom: '28px', padding: '20px', background: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-        <h3 style={{ marginBottom: '16px', color: '#333', fontSize: '1rem' }}>📋 Diagnostics par registre</h3>
+        <h3 style={{ marginBottom: '16px', color: '#333', fontSize: '1rem' }}><Activity size={18} style={{ verticalAlign: 'middle', marginRight: '6px' }} />Diagnostics par registre</h3>
         <div className="cards-grid" style={{ marginTop: '10px' }}>
           {diagnosticsByCategory.map((category) => (
             <article key={category.key} className="stat-card" style={{ borderTop: `4px solid ${category.color}` }}>
@@ -522,7 +523,7 @@ export default function DashboardPage() {
       </div>
 
       <div style={{ padding: '20px', background: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-        <h3 style={{ marginBottom: '16px', color: '#333', fontSize: '1rem' }}>🏥 Registres</h3>
+        <h3 style={{ marginBottom: '16px', color: '#333', fontSize: '1rem' }}><FolderOpen size={18} style={{ verticalAlign: 'middle', marginRight: '6px' }} />Registres</h3>
         <div className="cards-grid" style={{ marginTop: '10px' }}>
           {categories.map((cat) => (
             <article
@@ -533,12 +534,12 @@ export default function DashboardPage() {
                 textAlign: 'center'
               }}
             >
-              <div style={{ fontSize: '1.5rem', marginBottom: '8px' }}>
-                {cat.key === 'consultation' && '🩺'}
-                {cat.key === 'cpn' && '🤰'}
-                {cat.key === 'pf' && '👨‍👩‍👧'}
-                {cat.key === 'analyse' && '🔬'}
-                {cat.key === 'soin' && '💊'}
+              <div style={{ marginBottom: '8px', color: cat.color }}>
+                {cat.key === 'consultation' && <Stethoscope size={28} />}
+                {cat.key === 'cpn' && <Baby size={28} />}
+                {cat.key === 'pf' && <Heart size={28} />}
+                {cat.key === 'analyse' && <Microscope size={28} />}
+                {cat.key === 'soin' && <Pill size={28} />}
               </div>
               <h4 style={{ marginBottom: '8px' }}>{cat.label}</h4>
               <strong style={{ fontSize: '1.5rem', display: 'block' }}>{stats[cat.key] || 0}</strong>
