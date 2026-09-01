@@ -91,18 +91,21 @@ contextBridge.exposeInMainWorld('api', {
   getMedicationHistory: () =>
     ipcRenderer.invoke('meds:history'),
 
-  getMedicationStockHistory: () =>
-    ipcRenderer.invoke('meds:stockHistory'),
-
-  addMedicationStock: (id, quantity, createdBy) =>
-    ipcRenderer.invoke('meds:addStock', id, quantity, createdBy),
+  addMedicationStock: (id, quantity, createdBy, date) =>
+    ipcRenderer.invoke('meds:addStock', id, quantity, createdBy, date),
 
   getMedicationMovements: () =>
     ipcRenderer.invoke('meds:movements'),
 
+  getMedicationStockHistory: (medicationId) =>
+    ipcRenderer.invoke('meds:stockHistory', medicationId),
+
   // EXPORT
   exportExcelByArchive: (filters) =>
     ipcRenderer.invoke('export:excelByArchive', filters),
+
+  clearMedicationMovements: () =>
+    ipcRenderer.invoke('meds:clearMovements'),
 
   getTopSellingMedications: () =>
     ipcRenderer.invoke('meds:topSelling'),
