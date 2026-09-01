@@ -400,20 +400,20 @@ export default function DashboardPage() {
               fontSize: '0.85rem'
             }}
           />
-          <div style={{ display: 'grid', gap: '6px', maxHeight: '150px', overflowY: 'auto' }}>
+          <div style={{ display: 'grid', gap: '4px', maxHeight: '120px', overflowY: 'auto' }}>
             {pfFilter && pfSummary
               .filter(([method]) => String(method).toLowerCase().includes(pfFilter.toLowerCase()))
               .length > 0 ? (
                 pfSummary
                   .filter(([method]) => String(method).toLowerCase().includes(pfFilter.toLowerCase()))
                   .map(([method, count]) => (
-                    <span key={method} style={{ fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>{method}</span>
-                      <strong style={{ background: '#28a745', color: '#fff', padding: '2px 10px', borderRadius: '999px', fontSize: '0.85rem' }}>{count}</strong>
+                    <span key={method} style={{ fontSize: '0.78rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{method}</span>
+                      <strong style={{ whiteSpace: 'nowrap', background: '#28a745', color: '#fff', padding: '2px 8px', borderRadius: '999px', fontSize: '0.72rem' }}>{count}</strong>
                     </span>
                   ))
               ) : pfFilter ? (
-                <span style={{ fontSize: '0.85rem', color: '#888' }}>Aucun résultat</span>
+                <span style={{ fontSize: '0.8rem', color: '#888' }}>Aucun résultat</span>
               ) : null}
           </div>
         </article>
@@ -439,20 +439,20 @@ export default function DashboardPage() {
               fontSize: '0.85rem'
             }}
           />
-          <div style={{ display: 'grid', gap: '6px', maxHeight: '150px', overflowY: 'auto' }}>
+          <div style={{ display: 'grid', gap: '4px', maxHeight: '120px', overflowY: 'auto' }}>
             {cpnFilter && cpnSummary
               .filter(([cpn]) => String(cpn).toLowerCase().includes(cpnFilter.toLowerCase()))
               .length > 0 ? (
                 cpnSummary
                   .filter(([cpn]) => String(cpn).toLowerCase().includes(cpnFilter.toLowerCase()))
                   .map(([cpn, count]) => (
-                    <span key={cpn} style={{ fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>{cpn}</span>
-                      <strong style={{ background: '#d81b83', color: '#fff', padding: '2px 10px', borderRadius: '999px', fontSize: '0.85rem' }}>{count}</strong>
+                    <span key={cpn} style={{ fontSize: '0.78rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cpn}</span>
+                      <strong style={{ whiteSpace: 'nowrap', background: '#d81b83', color: '#fff', padding: '2px 8px', borderRadius: '999px', fontSize: '0.72rem' }}>{count}</strong>
                     </span>
                   ))
               ) : cpnFilter ? (
-                <span style={{ fontSize: '0.85rem', color: '#888' }}>Aucun résultat</span>
+                <span style={{ fontSize: '0.8rem', color: '#888' }}>Aucun résultat</span>
               ) : null}
           </div>
         </article>
