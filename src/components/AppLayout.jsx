@@ -13,7 +13,8 @@ import {
   LogOut,
   Moon,
   Sun,
-  User
+  User,
+  Heart
 } from 'lucide-react';
 
 const menuItems = [
@@ -78,8 +79,10 @@ export default function AppLayout() {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          <img src="./Logo.png" alt="Logo" />
-          <span>Registre Medical</span>
+          <div className="brand-icon">
+            <Heart size={28} fill="#148ca0" color="#148ca0" />
+          </div>
+          <span>Registre<br />Medical</span>
         </div>
 
         <nav>
