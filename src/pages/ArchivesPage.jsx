@@ -189,44 +189,54 @@ export default function ArchivesPage() {
         </div>
       )}
 
-      <div className="table-wrap">
-        <table>
+      <div className="table-wrap" style={{ marginTop: '20px', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
           <thead>
-            <tr>
-              <th>N° registre</th>
-              <th>Patient</th>
-              <th>Sexe</th>
-              <th>Âge</th>
-              <th>Diagnostic</th>
-              <th>Traitements</th>
-              <th>Coût</th>
-              <th>Date</th>
+            <tr style={{ background: '#1C96A4' }}>
+              <th style={{ padding: '14px 12px', color: '#fff', fontWeight: 600, textAlign: 'left' }}>N°</th>
+              <th style={{ padding: '14px 12px', color: '#fff', fontWeight: 600, textAlign: 'left' }}>Patient</th>
+              <th style={{ padding: '14px 12px', color: '#fff', fontWeight: 600, textAlign: 'center' }}>Sexe</th>
+              <th style={{ padding: '14px 12px', color: '#fff', fontWeight: 600, textAlign: 'center' }}>Âge</th>
+              <th style={{ padding: '14px 12px', color: '#fff', fontWeight: 600, textAlign: 'left' }}>Diagnostic</th>
+              <th style={{ padding: '14px 12px', color: '#fff', fontWeight: 600, textAlign: 'left' }}>Traitements</th>
+              <th style={{ padding: '14px 12px', color: '#fff', fontWeight: 600, textAlign: 'right' }}>Coût</th>
+              <th style={{ padding: '14px 12px', color: '#fff', fontWeight: 600, textAlign: 'center' }}>Date</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 && (
               <tr>
-                <td colSpan="8" style={{ textAlign: 'center', color: '#5f7b84', padding: '24px' }}>
-                  {loading ? 'Chargement...' : 'Aucune donnée.'}
+                <td colSpan="8" style={{ textAlign: 'center', color: '#5f7b84', padding: '40px', background: '#f8fafa' }}>
+                  {loading ? 'Chargement...' : 'Aucune donnée trouvée.'}
                 </td>
               </tr>
             )}
-             {rows.map((r) => (
-               <tr key={r.id} className="compact-row">
-                 <td style={{ color: '#5f7b84', fontWeight: 700 }}>{displayRegistryNumber(r.registry_number)}</td>
-                 <td><strong>{r.patient_nom}</strong> {r.patient_prenom}</td>
-                 <td>{r.sexe || '-'}</td>
-                 <td>{String(r.age || '').includes('|') ? String(r.age).split('|')[0] : r.age}</td>
-                 <td>{r.diagnostic}</td>
-                 <td style={{ color: '#244955', fontSize: '0.85rem' }}>{renderTreatments(r)}</td>
-                 <td><strong>{r.cost} Ar</strong></td>
-                 <td style={{ fontSize: '0.8rem', color: '#5f7b84' }}>
-                   {r.created_at ? formatMadagascarDateTime(r.created_at).slice(0, 10) : '-'}
-                 </td>
-               </tr>
-             ))}
+            {rows.map((r, index) => (
+              <tr key={r.id} style={{ background: index % 2 === 0 ? '#fff' : '#f8fafa', borderBottom: '1px solid #e6eff2' }}>
+                <td style={{ padding: '12px', fontWeight: 700, color: '#1C96A4', textAlign: 'center' }}>{displayRegistryNumber(r.registry_number)}</td>
+                <td style={{ padding: '12px' }}>
+                  <strong>{r.patient_nom}</strong> {r.patient_prenom}
+                </td>
+                <td style={{ padding: '12px', textAlign: 'center' }}>{r.sexe || '-'}</td>
+                <td style={{ padding: '12px', textAlign: 'center' }}>{String(r.age || '').includes('|') ? String(r.age).split('|')[0] : r.age}</td>
+                <td style={{ padding: '12px' }}>{r.diagnostic}</td>
+                <td style={{ padding: '12px', color: '#244955', fontSize: '0.85rem' }}>{renderTreatments(r)}</td>
+                <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600, color: '#28a745' }}>{r.cost} Ar</td>
+                <td style={{ padding: '12px', fontSize: '0.85rem', color: '#5f7b84', textAlign: 'center' }}>
+                  {r.created_at ? formatMadagascarDateTime(r.created_at).slice(0, 10) : '-'}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
+        {rows.length > 0 && (
+          <div style={{ padding: '14px 16px', background: '#1C96A4', color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.85rem' }}>{rows.length} enregistrement{rows.length > 1 ? 's' : ''}</span>
+            <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>
+              Total : {rows.reduce((sum, r) => sum + (Number(r.cost) || 0), 0).toLocaleString()} Ar
+            </span>
+          </div>
+        )}
       </div>
     </section>
   );
