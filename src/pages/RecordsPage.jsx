@@ -313,6 +313,9 @@ export default function RecordsPage({ category }) {
   const [diagnosticFilter, setDiagnosticFilter] = useState('');
   const [ageFilter, setAgeFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
+  const [actFilter, setActFilter] = useState('');
+  const [pfFilter, setPfFilter] = useState('');
+  const [cpnFilter, setCpnFilter] = useState('');
   const [medications, setMedications] = useState([]);
   const [archives, setArchives] = useState([]);
   const [activeArchive, setActiveArchive] = useState(null);
@@ -424,6 +427,9 @@ export default function RecordsPage({ category }) {
     setDiagnosticFilter('');
     setAgeFilter('');
     setDateFilter('');
+    setActFilter('');
+    setPfFilter('');
+    setCpnFilter('');
     setActionError('');
     setActionOk('');
   }, [category.key]);
@@ -581,11 +587,23 @@ export default function RecordsPage({ category }) {
     const fullName    = normalizeSearch(`${row.patient_nom || ''} ${row.patient_prenom || ''}`);
     const diagnostic = normalizeSearch(row.diagnostic);
     const diagnosticQuery = normalizeSearch(diagnosticFilter);
+
     const matchesSearch = !q || fullName.includes(q) || diagnostic.includes(q) || registry.includes(q) || fullRegistry.includes(q);
     const matchesDiagnostic = !diagnosticQuery || diagnostic.includes(diagnosticQuery);
-    const matchesAge    = !ageFilter || normalizeSearch(displayAge(row.age)).includes(normalizeSearch(ageFilter));
-    const matchesDate   = !dateFilter || (row.created_at && row.created_at.slice(0, 10) === dateFilter);
-    return matchesSearch && matchesDiagnostic && matchesAge && matchesDate;
+    const matchesAge = !ageFilter || normalizeSearch(displayAge(row.age)).includes(normalizeSearch(ageFilter));
+    const matchesDate = !dateFilter || (row.created_at && row.created_at.slice(0, 10) === dateFilter);
+
+    const treatments = Array.isArray(row.treatments) ? row.treatments : [];
+    const actNames = treatments.filter((t) => t.item_type === 'act').map((t) => normalizeSearch(t.name));
+    const matchesAct = !actFilter || actNames.some((name) => name.includes(normalizeSearch(actFilter)));
+
+    const pfMethod = normalizeSearch(row.pf_method);
+    const matchesPf = !pfFilter || pfMethod.includes(normalizeSearch(pfFilter));
+
+    const cpnType = normalizeSearch(row.cpn_type);
+    const matchesCpn = !cpnFilter || cpnType.includes(normalizeSearch(cpnFilter));
+
+    return matchesSearch && matchesDiagnostic && matchesAge && matchesDate && matchesAct && matchesPf && matchesCpn;
   });
 
   const diagnosticCounts = records.reduce((counts, row) => {
@@ -607,7 +625,7 @@ export default function RecordsPage({ category }) {
       <div className="page-header">
         <div>
           <h1>Registre {category.label}</h1>
-          <p>Médicaments et actes médicaux.</p>
+          {category.key === 'consultation' && <p>Médicaments et actes médicaux.</p>}
         </div>
         <div className="dashboard-badge" style={{ background: category.color }}>
           📁 {category.label}
@@ -697,17 +715,15 @@ export default function RecordsPage({ category }) {
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr>
-                    <th style={{ textAlign: 'left', padding: '6px 8px' }}>Visite</th>
-                    <th style={{ textAlign: 'left', padding: '6px 8px' }}>N°</th>
-                    <th style={{ textAlign: 'left', padding: '6px 8px' }}>Date / Heure</th>
-                    <th style={{ textAlign: 'left', padding: '6px 8px' }}>Traitement</th>
-                    <th style={{ textAlign: 'left', padding: '6px 8px' }}>Produits PF</th>
-                    <th style={{ textAlign: 'left', padding: '6px 8px' }}>CPN</th>
-                    <th style={{ textAlign: 'left', padding: '6px 8px' }}>Observation</th>
-                    <th style={{ textAlign: 'left', padding: '6px 8px' }}>Coût ancien</th>
-                    <th style={{ textAlign: 'left', padding: '6px 8px' }}>Coût présent</th>
-                  </tr>
+                   <tr>
+                     <th style={{ textAlign: 'left', padding: '6px 8px' }}>Visite</th>
+                     <th style={{ textAlign: 'left', padding: '6px 8px' }}>N°</th>
+                     <th style={{ textAlign: 'left', padding: '6px 8px' }}>Date / Heure</th>
+                      <th style={{ textAlign: 'left', padding: '6px 8px' }}>Traitement</th>
+                      <th style={{ textAlign: 'left', padding: '6px 8px' }}>Observation</th>
+                     <th style={{ textAlign: 'left', padding: '6px 8px' }}>Coût ancien</th>
+                     <th style={{ textAlign: 'left', padding: '6px 8px' }}>Coût présent</th>
+                   </tr>
                 </thead>
                 <tbody>
                   {dossierHistory.map((historyRow, idx) => (
@@ -720,9 +736,7 @@ export default function RecordsPage({ category }) {
                           ? historyRow.treatments.map((t) => t.item_type === 'act' ? t.name : `${t.name} x${t.quantity}${t.unit ? ` ${t.unit}` : ''}`).join(', ')
                           : historyRow.traitement || '-'}
                       </td>
-                      <td style={{ padding: '6px 8px' }}>{historyRow.pf_method || '-'}</td>
-                      <td style={{ padding: '6px 8px' }}>{historyRow.cpn_type || '-'}</td>
-                      <td style={{ padding: '6px 8px' }}>{historyRow.observation || '-'}</td>
+                       <td style={{ padding: '6px 8px' }}>{historyRow.observation || '-'}</td>
                       <td style={{ padding: '6px 8px' }}>{idx === dossierHistory.length - 1 ? '-' : `${historyRow.cost} Ar`}</td>
                       <td style={{ padding: '6px 8px' }}>{idx === dossierHistory.length - 1 ? `${historyRow.cost} Ar` : '-'}</td>
                     </tr>
@@ -735,28 +749,55 @@ export default function RecordsPage({ category }) {
       )}
 
       {/* BARRE RECHERCHE */}
-      <div className="search-bar">
+      <div className="search-bar" style={{ flexWrap: 'wrap', gap: '10px' }}>
         <input
           type="text"
           placeholder="🔍 Recherche par nom, diagnostic ou N° registre..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          style={{ flex: '1 1 300px' }}
         />
         <input
           type="text"
           placeholder="Filtrer par âge"
           value={ageFilter}
           onChange={(e) => setAgeFilter(e.target.value)}
-          style={{ maxWidth: '200px' }}
+          style={{ flex: '1 1 150px' }}
         />
         <input
           type="date"
           value={dateFilter}
           onChange={(e) => setDateFilter(e.target.value)}
+          style={{ flex: '1 1 150px' }}
         />
-        {(search || diagnosticFilter || ageFilter || dateFilter) && (
+        <input
+          type="text"
+          placeholder="Filtrer par acte médical..."
+          value={actFilter}
+          onChange={(e) => setActFilter(e.target.value)}
+          style={{ flex: '1 1 200px' }}
+        />
+        {category.key !== 'cpn' && category.key !== 'consultation' && (
+          <input
+            type="text"
+            placeholder="Filtrer par produit PF..."
+            value={pfFilter}
+            onChange={(e) => setPfFilter(e.target.value)}
+            style={{ flex: '1 1 200px' }}
+          />
+        )}
+        {category.key !== 'pf' && category.key !== 'consultation' && (
+          <input
+            type="text"
+            placeholder="Filtrer par CPN..."
+            value={cpnFilter}
+            onChange={(e) => setCpnFilter(e.target.value)}
+            style={{ flex: '1 1 200px' }}
+          />
+        )}
+        {(search || diagnosticFilter || ageFilter || dateFilter || actFilter || pfFilter || cpnFilter) && (
           <button type="button" className="btn-light"
-            onClick={() => { setSearch(''); setDiagnosticFilter(''); setAgeFilter(''); setDateFilter(''); }}>
+            onClick={() => { setSearch(''); setDiagnosticFilter(''); setAgeFilter(''); setDateFilter(''); setActFilter(''); setPfFilter(''); setCpnFilter(''); }}>
             ✕ Effacer
           </button>
         )}
@@ -769,7 +810,7 @@ export default function RecordsPage({ category }) {
       <form className="record-form" onSubmit={submit} style={{ borderColor: category.color }}>
         <SuggestionInput
           value={form.patient_nom}
-          onChange={(val) => setForm({ ...form, patient_nom: val })}
+          onChange={(val) => setForm({ ...form, patient_nom: capitalizeWords(val, true) })}
           suggestions={patientNameOptions}
           placeholder="Nom et prénom"
           id="patient-nom"
@@ -816,14 +857,14 @@ export default function RecordsPage({ category }) {
 
         <SuggestionInput
           value={form.domicile}
-          onChange={(val) => setForm({ ...form, domicile: val })}
+          onChange={(val) => setForm({ ...form, domicile: capitalizeWords(val, true) })}
           suggestions={domicileOptions}
           placeholder="Domicile"
           id="domicile"
         />
         <SuggestionInput
           value={form.diagnostic}
-          onChange={(val) => setForm({ ...form, diagnostic: val })}
+          onChange={(val) => setForm({ ...form, diagnostic: capitalizeWords(val, true) })}
           suggestions={diagnosticOptions}
           placeholder="Diagnostic"
           id="diagnostic"
@@ -898,25 +939,23 @@ export default function RecordsPage({ category }) {
               <th>Âge</th>
               <th>Domicile</th>
               <th>Diagnostic</th>
-              <th>Traitement</th>
-              <th>Observation</th>
-               <th>TDR</th>
-               <th>Produits PF</th>
-               <th>CPN</th>
-               <th>Coût</th>
+               <th>Traitement</th>
+                <th>Observation</th>
+                 {category.key !== 'cpn' && category.key !== 'pf' && <th>TDR</th>}
+                 <th>Coût</th>
               <th>Date</th>
               <th>Rendez-vous</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {filteredRecords.length === 0 && (
+             {filteredRecords.length === 0 && (
               <tr>
-                <td colSpan="13" style={{ textAlign: 'center', color: '#5f7b84', padding: '24px' }}>
-                  Aucune donnée enregistrée.
-                </td>
-              </tr>
-            )}
+                 <td colSpan={13 - (category.key === 'cpn' ? 1 : 0) - (category.key === 'pf' ? 1 : 0)} style={{ textAlign: 'center', color: '#5f7b84', padding: '24px' }}>
+                   Aucune donnée enregistrée.
+                 </td>
+               </tr>
+             )}
             {filteredRecords.map((row) => (
               <tr key={row.id}>
                 <td style={{ color: '#5f7b84', fontWeight: 700 }}>{displayRegistryNumber(row.registry_number)}</td>
@@ -935,9 +974,9 @@ export default function RecordsPage({ category }) {
                     : row.traitement}
                 </td>
                 <td>{row.observation || '-'}</td>
-                <td>{row.tdr_result ? (row.tdr_result === 'positif' ? '🟠 Positif' : '🟢 Négatif') : '-'}</td>
-                <td>{row.pf_method || '-'}</td>
-                <td>{row.cpn_type || '-'}</td>
+                 {category.key !== 'cpn' && category.key !== 'pf' && (
+                   <td>{row.tdr_result ? (row.tdr_result === 'positif' ? '🟠 Positif' : '🟢 Négatif') : '-'}</td>
+                 )}
                 <td>{row.cost} Ar</td>
                  <td style={{ fontSize: '0.85rem', color: '#5f7b84' }}>
                    {row.created_at ? formatMadagascarDateTime(row.created_at).slice(0, 10) : '-'}
