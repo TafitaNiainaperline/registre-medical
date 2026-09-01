@@ -314,8 +314,6 @@ export default function RecordsPage({ category }) {
   const [ageFilter, setAgeFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [actFilter, setActFilter] = useState('');
-  const [pfFilter, setPfFilter] = useState('');
-  const [cpnFilter, setCpnFilter] = useState('');
   const [medications, setMedications] = useState([]);
   const [archives, setArchives] = useState([]);
   const [activeArchive, setActiveArchive] = useState(null);
@@ -428,8 +426,6 @@ export default function RecordsPage({ category }) {
     setAgeFilter('');
     setDateFilter('');
     setActFilter('');
-    setPfFilter('');
-    setCpnFilter('');
     setActionError('');
     setActionOk('');
   }, [category.key]);
@@ -597,13 +593,7 @@ export default function RecordsPage({ category }) {
     const actNames = treatments.filter((t) => t.item_type === 'act').map((t) => normalizeSearch(t.name));
     const matchesAct = !actFilter || actNames.some((name) => name.includes(normalizeSearch(actFilter)));
 
-    const pfMethod = normalizeSearch(row.pf_method);
-    const matchesPf = !pfFilter || pfMethod.includes(normalizeSearch(pfFilter));
-
-    const cpnType = normalizeSearch(row.cpn_type);
-    const matchesCpn = !cpnFilter || cpnType.includes(normalizeSearch(cpnFilter));
-
-    return matchesSearch && matchesDiagnostic && matchesAge && matchesDate && matchesAct && matchesPf && matchesCpn;
+    return matchesSearch && matchesDiagnostic && matchesAge && matchesDate && matchesAct;
   });
 
   const diagnosticCounts = records.reduce((counts, row) => {
@@ -777,27 +767,9 @@ export default function RecordsPage({ category }) {
           onChange={(e) => setActFilter(e.target.value)}
           style={{ flex: '1 1 200px' }}
         />
-        {category.key !== 'cpn' && category.key !== 'consultation' && (
-          <input
-            type="text"
-            placeholder="Filtrer par produit PF..."
-            value={pfFilter}
-            onChange={(e) => setPfFilter(e.target.value)}
-            style={{ flex: '1 1 200px' }}
-          />
-        )}
-        {category.key !== 'pf' && category.key !== 'consultation' && (
-          <input
-            type="text"
-            placeholder="Filtrer par CPN..."
-            value={cpnFilter}
-            onChange={(e) => setCpnFilter(e.target.value)}
-            style={{ flex: '1 1 200px' }}
-          />
-        )}
         {(search || diagnosticFilter || ageFilter || dateFilter || actFilter || pfFilter || cpnFilter) && (
           <button type="button" className="btn-light"
-            onClick={() => { setSearch(''); setDiagnosticFilter(''); setAgeFilter(''); setDateFilter(''); setActFilter(''); setPfFilter(''); setCpnFilter(''); }}>
+            onClick={() => { setSearch(''); setDiagnosticFilter(''); setAgeFilter(''); setDateFilter(''); setActFilter(''); }}>
             ✕ Effacer
           </button>
         )}
