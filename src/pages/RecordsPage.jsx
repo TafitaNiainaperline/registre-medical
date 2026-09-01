@@ -941,7 +941,7 @@ export default function RecordsPage({ category }) {
               <th>Diagnostic</th>
                <th>Traitement</th>
                 <th>Observation</th>
-                 {category.key !== 'cpn' && category.key !== 'pf' && <th>TDR</th>}
+                {category.key === 'consultation' && <th>TDR</th>}
                  <th>Coût</th>
               <th>Date</th>
               <th>Rendez-vous</th>
@@ -951,7 +951,7 @@ export default function RecordsPage({ category }) {
           <tbody>
              {filteredRecords.length === 0 && (
               <tr>
-                 <td colSpan={13 - (category.key === 'cpn' ? 1 : 0) - (category.key === 'pf' ? 1 : 0)} style={{ textAlign: 'center', color: '#5f7b84', padding: '24px' }}>
+                 <td colSpan={category.key === 'consultation' ? 12 : 11} style={{ textAlign: 'center', color: '#5f7b84', padding: '24px' }}>
                    Aucune donnée enregistrée.
                  </td>
                </tr>
@@ -974,7 +974,7 @@ export default function RecordsPage({ category }) {
                     : row.traitement}
                 </td>
                 <td>{row.observation || '-'}</td>
-                 {category.key !== 'cpn' && category.key !== 'pf' && (
+                 {category.key === 'consultation' && (
                    <td>{row.tdr_result ? (row.tdr_result === 'positif' ? '🟠 Positif' : '🟢 Négatif') : '-'}</td>
                  )}
                 <td>{row.cost} Ar</td>
