@@ -61,7 +61,10 @@ export default function MedicamentsPage() {
   const [showStockModal, setShowStockModal] = useState(false);
   const [selectedMedication, setSelectedMedication] = useState(null);
   const [stockQuantity, setStockQuantity] = useState('');
-  const [movements, setMovements] = useState([]);
+  const [stockDate, setStockDate] = useState(getToday());
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyMedication, setHistoryMedication] = useState(null);
+  const [stockHistory, setStockHistory] = useState([]);
   const [topSelling, setTopSelling] = useState([]);
   
 
@@ -71,14 +74,11 @@ export default function MedicamentsPage() {
       .catch(() => setRows([]));
 
    useEffect(() => {
-    load();
-  
-    window.api.getMedicationMovements()
-      .then(setMovements);
-  
-    window.api.getTopSellingMedications()
-      .then(setTopSelling);
-  }, []);
+     load();
+   
+     window.api.getTopSellingMedications()
+       .then(setTopSelling);
+   }, []);
 
   const notify = (text, type = 'ok') => {
     setMsg({ text, type });
@@ -175,7 +175,15 @@ export default function MedicamentsPage() {
   const addStock = (row) => {
     setSelectedMedication(row);
     setStockQuantity('');
+    setStockDate(getToday());
     setShowStockModal(true);
+  };
+
+  const openStockHistory = async (row) => {
+    setHistoryMedication(row);
+    const history = await window.api.getMedicationStockHistory(row.id);
+    setStockHistory(history);
+    setShowHistoryModal(true);
   };
 
   const confirmAddStock = async () => {
@@ -190,17 +198,19 @@ export default function MedicamentsPage() {
       await window.api.addMedicationStock(
         selectedMedication.id,
         quantity,
-        currentUser.id || null
+        currentUser.id || null,
+        stockDate
       );
 
       const newStock = (Number(selectedMedication.stock) || 0) + quantity;
       notify(newStock <= Number(selectedMedication.stock_threshold ?? 100)
-        ? `Stock ajouté : +${quantity}. Attention : stock atteint le seuil de ${selectedMedication.stock_threshold ?? 100}.`
-        : `Stock ajouté : +${quantity}`);
+        ? `Stock ajouté : +${quantity} le ${stockDate.split('-').reverse().join('/')}. Attention : stock atteint le seuil de ${selectedMedication.stock_threshold ?? 100}.`
+        : `Stock ajouté : +${quantity} le ${stockDate.split('-').reverse().join('/')}.`);
 
       setShowStockModal(false);
       setSelectedMedication(null);
       setStockQuantity('');
+      setStockDate(getToday());
 
       load();
     } catch (err) {
@@ -227,46 +237,131 @@ export default function MedicamentsPage() {
           <div className="stock-modal">
 
             <div className="stock-modal-header">
-              <h3>Ajouter du stock</h3>
+              <h3>Ajouter au stock – {selectedMedication?.name}</h3>
 
               <button
                 className="modal-close"
-                onClick={() => setShowStockModal(false)}
+                onClick={() => { setShowStockModal(false); setStockDate(getToday()); }}
               >
                 ✕
               </button>
             </div>
 
-            <p>
-              Médicament :
-              <strong> {selectedMedication?.name}</strong>
-            </p>
+            <div className="stock-modal-info">
+              <p>Stock actuel : <strong>{selectedMedication?.stock ?? 0}</strong></p>
+            </div>
 
-            <input
-              type="number"
-              min="1"
-              placeholder="Quantité à ajouter"
-              value={stockQuantity}
-              onChange={(e) => setStockQuantity(e.target.value)}
-            />
+            <label className="medication-date-field">
+              <span>Quantité à ajouter</span>
+              <input
+                type="number"
+                min="1"
+                placeholder="Ex: 100"
+                value={stockQuantity}
+                onChange={(e) => setStockQuantity(e.target.value)}
+              />
+            </label>
+
+            <label className="medication-date-field">
+              <span>Date d'ajout</span>
+              <input
+                type="date"
+                value={stockDate}
+                onChange={(e) => setStockDate(e.target.value)}
+              />
+            </label>
+
+            <div className="stock-modal-user">
+              <span>Ajouté par : <strong>{currentUser.name || currentUser.username || 'Utilisateur'}</strong></span>
+            </div>
 
             <div className="stock-modal-actions">
 
               <button
                 className="btn-light"
-                onClick={() => setShowStockModal(false)}
+                onClick={() => { setShowStockModal(false); setStockDate(getToday()); }}
               >
                 Annuler
               </button>
 
               <button onClick={confirmAddStock}>
-                Ajouter
+                Ajouter au stock
               </button>
 
             </div>
 
           </div>
 
+        </div>
+      )}
+      {showHistoryModal && (
+        <div className="modal-overlay">
+          <div className="stock-modal" style={{ maxWidth: '900px', width: '90%', maxHeight: '80vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+
+            <div className="stock-modal-header">
+              <h3>Historique du stock – {historyMedication?.name}</h3>
+
+              <button
+                className="modal-close"
+                onClick={() => setShowHistoryModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="stock-history-table" style={{ flex: 1, overflow: 'auto', maxHeight: '60vh' }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Mouvement</th>
+                    <th>Quantité</th>
+                    <th>Stock après</th>
+                    <th>Ajouté par</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stockHistory.length === 0 && (
+                    <tr>
+                      <td colSpan="5" style={{ textAlign: 'center', padding: '20px' }}>
+                        Aucun mouvement enregistré.
+                      </td>
+                    </tr>
+                  )}
+                  {stockHistory.map((h) => (
+                    <tr key={h.id || 'initial'}>
+                      <td>{formatMadagascarDate(h.created_at)}</td>
+                      <td>
+                        <span style={{
+                          padding: '3px 8px',
+                          borderRadius: '999px',
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          background: h.initial ? '#e8f0fe' : (h.movement_type === 'entry' ? '#e6f4ea' : '#fce8e6'),
+                          color: h.initial ? '#1a73e8' : (h.movement_type === 'entry' ? '#137333' : '#c5221f'),
+                        }}>
+                          {h.initial ? 'Stock initial' : (h.movement_type === 'entry' ? 'Entrée' : 'Sortie')}
+                        </span>
+                      </td>
+                      <td>{h.movement_type === 'entry' ? '+' : '-'}{h.quantity}</td>
+                      <td><strong>{h.stock_after}</strong></td>
+                      <td>{h.created_by_name || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="stock-modal-actions">
+              <button
+                className="btn-light"
+                onClick={() => setShowHistoryModal(false)}
+              >
+                Fermer
+              </button>
+            </div>
+
+          </div>
         </div>
       )}
       <section>
@@ -430,29 +525,43 @@ export default function MedicamentsPage() {
                     <td>
                       {r.item_type === 'act' ? '-' : <span className="unit-badge">{r.unit || 'comprimé'}</span>}
                     </td>
-                    <td>
-                      {r.item_type === 'act' ? '-'
-                        : r.stock !== null && r.stock !== undefined
-                        ? (
-                          <>
-                            <strong>{r.stock}</strong>
-                            {isLowStock && (
-                              <span style={{
-                                marginLeft: '8px',
-                                padding: '3px 8px',
-                                background: '#ffe4c2',
-                                color: '#8f4c00',
-                                borderRadius: '999px',
-                                fontSize: '0.8rem',
-                                fontWeight: 600,
-                              }}>
-                                Stock faible
-                              </span>
-                            )}
-                          </>
-                        )
-                        : <span style={{ color: '#888' }}>Non suivi</span>}
-                    </td>
+                     <td>
+                       {r.item_type === 'act' ? '-'
+                         : r.stock !== null && r.stock !== undefined
+                         ? (
+                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                             <button
+                               onClick={() => openStockHistory(r)}
+                               style={{
+                                 background: 'none',
+                                 border: 'none',
+                                 padding: '4px 8px',
+                                 cursor: 'pointer',
+                                 fontWeight: 'bold',
+                                 color: '#0d6efd',
+                                 textDecoration: 'underline',
+                                 fontSize: '1rem',
+                               }}
+                               title="Voir l'historique du stock"
+                             >
+                               {r.stock}
+                             </button>
+                             {isLowStock && (
+                               <span style={{
+                                 padding: '3px 8px',
+                                 background: '#ffe4c2',
+                                 color: '#8f4c00',
+                                 borderRadius: '999px',
+                                 fontSize: '0.8rem',
+                                 fontWeight: 600,
+                               }}>
+                                 Stock faible
+                               </span>
+                             )}
+                           </div>
+                         )
+                         : <span style={{ color: '#888' }}>Non suivi</span>}
+                     </td>
                     <td>{r.item_type === 'act' ? '-' : (r.stock_threshold ?? 100)}</td>
                       <td>{formatMadagascarDate(r.created_at)}</td>
                       <td>
@@ -513,56 +622,8 @@ export default function MedicamentsPage() {
             </tbody>
           </table>
 
-        </div>
-
-        {/* Historique des mouvements */}
-        <div className="table-wrap" style={{ marginTop: '30px' }}>
-
-          <h2>🔄 Historique des mouvements</h2>
-
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Médicament</th>
-                <th>Type</th>
-                <th>Quantité</th>
-              </tr>
-            </thead>
-
-            <tbody>
-
-              {movements.length === 0 && (
-                <tr>
-                  <td
-                    colSpan="4"
-                    style={{ textAlign: 'center' }}
-                  >
-                    Aucun mouvement enregistré.
-                  </td>
-                </tr>
-              )}
-
-              {movements.map((m) => (
-                <tr key={m.id}>
-                  <td>{formatMadagascarDate(m.created_at)}</td>
-
-                  <td>{m.medication_name}</td>
-
-                  <td>
-                    {m.movement_type === 'entry'
-                      ? 'Entrée'
-                      : 'Sortie'}
-                  </td>
-
-                  <td>{m.quantity}</td>
-                </tr>
-              ))}
-
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </>
-  );
-}
+         </div>
+       </section>
+     </>
+   );
+ }
