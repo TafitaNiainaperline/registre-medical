@@ -38,16 +38,47 @@ body {
   max-height: 96px;
   object-fit: contain;
 }
-.sidebar nav { display: flex; flex-direction: column; gap: 6px; }
-.sidebar a {
+.sidebar nav { display: flex; flex-direction: column; gap: 4px; }
+.sidebar .nav-link {
   text-decoration: none;
   color: #24505d;
   padding: 10px 12px;
   border-radius: 10px;
   transition: 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
 }
-.sidebar a:hover, .sidebar a.active { background: #e2f4f7; color: #0d7280; font-weight: 600; }
-.logout { border: none; padding: 10px; border-radius: 10px; background: #ef6f86; color: white; cursor: pointer; width: 100%; }
+.sidebar .nav-link:hover, .sidebar .nav-link.active { 
+  background: #e2f4f7; 
+  color: #0d7280; 
+  font-weight: 600; 
+}
+.sidebar .nav-link svg {
+  flex-shrink: 0;
+}
+.sidebar .admin-link {
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+.logout { 
+  border: none; 
+  padding: 10px 12px; 
+  border-radius: 10px; 
+  background: #ef6f86; 
+  color: white; 
+  cursor: pointer; 
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+}
+.logout:hover {
+  background: #e55f76;
+}
 .main-content { padding: 28px; }
 h1 { margin: 0 0 8px; font-size: 2rem; }
 p { margin: 0 0 18px; color: var(--soft); }
@@ -1362,29 +1393,20 @@ body.dark-mode ::-webkit-scrollbar-thumb{
 /* THEME BUTTON */
 .theme-toggle{
   width:100%;
-
   border:none;
-
   border-radius:12px;
-
-  padding:12px;
-
-  background:
-    linear-gradient(135deg,#1c96a4,#15707a);
-
+  padding:10px 12px;
+  background: linear-gradient(135deg,#1c96a4,#15707a);
   color:white;
-
   font-weight:600;
-
   cursor:pointer;
-
   margin-top:auto;
-
   margin-bottom:10px;
-
-  transition:
-    transform .2s ease,
-    opacity .2s ease;
+  transition: transform .2s ease, opacity .2s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
 }
 
 .theme-toggle:hover{
@@ -1429,16 +1451,13 @@ body.dark-mode .age-badge.jours{
 
 .user-box{
   font-size:0.85rem;
-
   color:#5f7b84;
-
-  padding:8px 12px;
-
+  padding:10px 12px;
   border-radius:12px;
-
   background:rgba(28,150,164,0.08);
-
-  text-align:center;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 /* DARK */
