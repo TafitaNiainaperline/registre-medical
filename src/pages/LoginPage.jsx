@@ -1,5 +1,6 @@
 ﻿import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Eye, EyeOff, User, Lock, UserPlus, LogIn, Heart } from 'lucide-react';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -54,25 +55,32 @@ export default function LoginPage() {
 
         <form onSubmit={submit}>
           {isRegister && (
-            <input
-              name="name"
-              placeholder="Nom complet"
-              value={form.name}
-              onChange={onChange}
-              required
-            />
+            <div className="input-field">
+              <User size={18} className="input-icon" />
+              <input
+                name="name"
+                placeholder="Nom complet"
+                value={form.name}
+                onChange={onChange}
+                required
+              />
+            </div>
           )}
 
-          <input
-            name="username"
-            placeholder="Pseudo"
-            value={form.username}
-            onChange={onChange}
-            required
-            autoComplete="username"
-          />
+          <div className="input-field">
+            <User size={18} className="input-icon" />
+            <input
+              name="username"
+              placeholder="Pseudo"
+              value={form.username}
+              onChange={onChange}
+              required
+              autoComplete="username"
+            />
+          </div>
 
-          <div className="pwd-field">
+          <div className="input-field">
+            <Lock size={18} className="input-icon" />
             <input
               name="password"
               type={showPwd ? 'text' : 'password'}
@@ -83,12 +91,13 @@ export default function LoginPage() {
               autoComplete={isRegister ? 'new-password' : 'current-password'}
             />
             <button type="button" className="eye-btn" onClick={() => setShowPwd(!showPwd)} tabIndex={-1}>
-              {showPwd ? '🙈' : '👁️'}
+              {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
 
           {isRegister && (
-            <div className="pwd-field">
+            <div className="input-field">
+              <Lock size={18} className="input-icon" />
               <input
                 name="confirm"
                 type={showConfirm ? 'text' : 'password'}
@@ -99,16 +108,24 @@ export default function LoginPage() {
                 autoComplete="new-password"
               />
               <button type="button" className="eye-btn" onClick={() => setShowConfirm(!showConfirm)} tabIndex={-1}>
-                {showConfirm ? '🙈' : '👁️'}
+                {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           )}
 
-          {error && <p className="error-msg">⚠ {error}</p>}
-          {success && <p className="success-msg">✓ {success}</p>}
+          {error && (
+            <p className="error-msg" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ color: '#dc3545' }}>⚠</span> {error}
+            </p>
+          )}
+          {success && (
+            <p className="success-msg" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ color: '#28a745' }}>✓</span> {success}
+            </p>
+          )}
 
-          <button type="submit">
-            {isRegister ? 'Envoyer la demande' : 'Se connecter'}
+          <button type="submit" className="auth-submit">
+            {isRegister ? <><UserPlus size={18} /> Envoyer la demande</> : <><LogIn size={18} /> Se connecter</>}
           </button>
         </form>
 
