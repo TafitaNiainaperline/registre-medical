@@ -296,11 +296,10 @@ export default function MedicamentsPage() {
       )}
       {showHistoryModal && (
         <div className="modal-overlay">
-          <div className="stock-modal" style={{ maxWidth: '900px', width: '90%', maxHeight: '80vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <div className="stock-modal" style={{ maxWidth: '700px', width: '90%', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
 
             <div className="stock-modal-header">
               <h3>Historique du stock – {historyMedication?.name}</h3>
-
               <button
                 className="modal-close"
                 onClick={() => setShowHistoryModal(false)}
@@ -309,47 +308,70 @@ export default function MedicamentsPage() {
               </button>
             </div>
 
-            <div className="stock-history-table" style={{ flex: 1, overflow: 'auto', maxHeight: '60vh' }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Mouvement</th>
-                    <th>Quantité</th>
-                    <th>Stock après</th>
-                    <th>Ajouté par</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {stockHistory.length === 0 && (
-                    <tr>
-                      <td colSpan="5" style={{ textAlign: 'center', padding: '20px' }}>
-                        Aucun mouvement enregistré.
-                      </td>
-                    </tr>
-                  )}
-                  {stockHistory.map((h) => (
-                    <tr key={h.id || 'initial'}>
-                      <td>{formatMadagascarDate(h.created_at)}</td>
-                      <td>
+            <div style={{ padding: '16px', background: '#f8fafa', borderBottom: '1px solid #e6eff2', display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+              <div>
+                <span style={{ fontSize: '0.8rem', color: '#666' }}>Stock actuel</span>
+                <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#1C96A4' }}>{historyMedication?.stock ?? 0}</div>
+              </div>
+              <div>
+                <span style={{ fontSize: '0.8rem', color: '#666' }}>Entrées</span>
+                <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#28a745' }}>
+                  {stockHistory.filter(h => h.movement_type === 'entry').reduce((s, h) => s + h.quantity, 0)}
+                </div>
+              </div>
+              <div>
+                <span style={{ fontSize: '0.8rem', color: '#666' }}>Sorties</span>
+                <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#dc3545' }}>
+                  {stockHistory.filter(h => h.movement_type === 'exit').reduce((s, h) => s + h.quantity, 0)}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
+              {stockHistory.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
+                  Aucun mouvement enregistré.
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px' }}>
+                  {stockHistory.map((h, index) => (
+                    <div
+                      key={h.id || 'initial'}
+                      style={{
+                        padding: '12px',
+                        borderRadius: '8px',
+                        background: h.initial ? '#e8f0fe' : (h.movement_type === 'entry' ? '#e6f4ea' : '#fce8e6'),
+                        border: `1px solid ${h.initial ? '#b3d4fc' : (h.movement_type === 'entry' ? '#a8dab5' : '#f5c6cb')}`,
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                         <span style={{
-                          padding: '3px 8px',
+                          padding: '2px 8px',
                           borderRadius: '999px',
-                          fontSize: '0.8rem',
+                          fontSize: '0.7rem',
                           fontWeight: 600,
-                          background: h.initial ? '#e8f0fe' : (h.movement_type === 'entry' ? '#e6f4ea' : '#fce8e6'),
-                          color: h.initial ? '#1a73e8' : (h.movement_type === 'entry' ? '#137333' : '#c5221f'),
+                          background: h.initial ? '#1a73e8' : (h.movement_type === 'entry' ? '#137333' : '#c5221f'),
+                          color: '#fff',
                         }}>
-                          {h.initial ? 'Stock initial' : (h.movement_type === 'entry' ? 'Entrée' : 'Sortie')}
+                          {h.initial ? 'Initial' : (h.movement_type === 'entry' ? 'Entrée' : 'Sortie')}
                         </span>
-                      </td>
-                      <td>{h.movement_type === 'entry' ? '+' : '-'}{h.quantity}</td>
-                      <td><strong>{h.stock_after}</strong></td>
-                      <td>{h.created_by_name || '-'}</td>
-                    </tr>
+                        <span style={{ fontSize: '0.75rem', color: '#666' }}>{formatMadagascarDate(h.created_at)}</span>
+                      </div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 700, color: h.movement_type === 'entry' ? '#137333' : '#c5221f' }}>
+                        {h.movement_type === 'entry' ? '+' : '-'}{h.quantity}
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: '#555', marginTop: '4px' }}>
+                        Stock: <strong>{h.stock_after}</strong>
+                      </div>
+                      {h.created_by_name && (
+                        <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '2px' }}>
+                          par {h.created_by_name}
+                        </div>
+                      )}
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              )}
             </div>
 
             <div className="stock-modal-actions">
