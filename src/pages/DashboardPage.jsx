@@ -328,12 +328,12 @@ export default function DashboardPage() {
           </div>
           <div style={{ display: 'grid', gap: '6px', marginTop: '12px' }}>
             <span style={{ fontSize: '0.95rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: '#28a745' }}>Positif</span>
-              <strong style={{ background: '#28a745', color: '#fff', padding: '2px 10px', borderRadius: '999px', fontSize: '0.85rem' }}>{tdrSummary.positif || 0}</strong>
+              <span style={{ color: '#dc3545' }}>Positif</span>
+              <strong style={{ background: '#dc3545', color: '#fff', padding: '2px 10px', borderRadius: '999px', fontSize: '0.85rem' }}>{tdrSummary.positif || 0}</strong>
             </span>
             <span style={{ fontSize: '0.95rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: '#dc3545' }}>Négatif</span>
-              <strong style={{ background: '#dc3545', color: '#fff', padding: '2px 10px', borderRadius: '999px', fontSize: '0.85rem' }}>{tdrSummary.negatif || 0}</strong>
+              <span style={{ color: '#007bff' }}>Négatif</span>
+              <strong style={{ background: '#007bff', color: '#fff', padding: '2px 10px', borderRadius: '999px', fontSize: '0.85rem' }}>{tdrSummary.negatif || 0}</strong>
             </span>
           </div>
         </article>
