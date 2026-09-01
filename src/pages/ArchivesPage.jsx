@@ -114,12 +114,6 @@ export default function ArchivesPage() {
         <div className="dashboard-badge">🗂 Archives</div>
       </div>
 
-      {msg && (
-        <div className="success-msg" style={{ marginBottom: '12px' }}>
-          {msg}
-        </div>
-      )}
-
       <div className="archive-grid">
         {(archives || []).map((a) => {
           const active = selected && formatArchiveKey(a) === formatArchiveKey(selected);
@@ -139,35 +133,61 @@ export default function ArchivesPage() {
         )}
       </div>
 
-      <div className="search-bar" style={{ marginTop: '12px' }}>
+      <div className="search-bar" style={{ marginTop: '12px', flexWrap: 'wrap', gap: '10px' }}>
         <input
           placeholder="Rechercher un patient (nom/prénom)..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') loadRows(selected); }}
+          style={{ flex: '1', minWidth: '200px' }}
         />
 
-        <select className="select" value={category} onChange={(e) => setCategory(e.target.value)}>
+        <select className="select" value={category} onChange={(e) => setCategory(e.target.value)} style={{ minWidth: '150px' }}>
           <option value="">Toutes catégories</option>
           {categories.map((c) => (
             <option key={c.key} value={c.key}>{c.label}</option>
           ))}
         </select>
 
-        <button className="btn-light" onClick={() => loadRows(selected)} disabled={loading}>
-          {loading ? 'Chargement...' : 'Rechercher'}
+        <button className="btn-light" onClick={() => loadRows(selected)} disabled={loading} style={{ minWidth: '120px' }}>
+          {loading ? 'Chargement...' : '🔍 Rechercher'}
         </button>
 
-        <button onClick={exportExcel} disabled={!selected?.year || !selected?.month}>
-          Exporter en Excel
+        <button
+          onClick={exportExcel}
+          disabled={!selected?.year || !selected?.month || loading}
+          style={{
+            padding: '8px 16px',
+            background: '#28a745',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: selected?.year && selected?.month && !loading ? 'pointer' : 'not-allowed',
+            fontWeight: 600,
+            fontSize: '0.9rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            opacity: selected?.year && selected?.month && !loading ? 1 : 0.6,
+            minWidth: '140px'
+          }}
+        >
+          📊 Exporter Excel
         </button>
-
-        {!isAdmin && (
-          <span style={{ color: '#5f7b84', fontSize: '0.9rem' }}>
-            (export disponible pour tous)
-          </span>
-        )}
       </div>
+
+      {msg && (
+        <div style={{
+          marginTop: '12px',
+          padding: '10px 16px',
+          background: msg.includes('réussi') ? '#e8f5e9' : '#fdecea',
+          color: msg.includes('réussi') ? '#2e7d32' : '#dc3545',
+          borderRadius: '6px',
+          fontSize: '0.9rem'
+        }}>
+          {msg}
+        </div>
+      )}
 
       <div className="table-wrap">
         <table>
