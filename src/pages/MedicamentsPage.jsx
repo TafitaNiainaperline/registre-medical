@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Pill, AlertTriangle, Download, FileSpreadsheet, FileText, Plus, Edit, Trash2, TrendingUp, Package, Search, X } from 'lucide-react';
 
 function getToday() {
   const today = new Date();
@@ -397,18 +398,23 @@ export default function MedicamentsPage() {
             <h1>Gestion des médicaments</h1>
             <p>Ajoutez, modifiez et supprimez les médicaments utilisés dans les traitements.</p>
           </div>
-          <div className="dashboard-badge">💊 Médicaments</div>
+          <div className="dashboard-badge">
+            <Pill size={16} style={{ marginRight: '6px' }} /> Médicaments
+          </div>
         </div>
 
         {msg.text && (
-          <div className={msg.type === 'err' ? 'error-msg' : 'success-msg'} style={{ marginBottom: '14px' }}>
-            {msg.type === 'err' ? '⚠ ' : '✓ '}{msg.text}
+          <div className={msg.type === 'err' ? 'error-msg' : 'success-msg'} style={{ marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {msg.type === 'err' ? <AlertTriangle size={16} /> : null}
+            {msg.text}
           </div>
         )}
 
         {rows.filter((r) => r.stock !== null && r.stock !== undefined && Number(r.stock) <= Number(r.stock_threshold ?? 100)).length > 0 && (
-          <div style={{ marginBottom: '14px', padding: '12px 14px', borderRadius: '12px', background: '#fff4e5', border: '1px solid #f5d1a3', color: '#7f4a00' }}>
-            ⚠️ {rows.filter((r) => r.stock !== null && r.stock !== undefined && Number(r.stock) <= Number(r.stock_threshold ?? 100)).length} médicament(s) ont atteint leur seuil d'alerte.
+          <div style={{ marginBottom: '18px', padding: '14px 18px', borderRadius: '10px', background: '#fff4e5', border: '1px solid #f5d1a3', color: '#7f4a00', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <AlertTriangle size={18} />
+            <strong>{rows.filter((r) => r.stock !== null && r.stock !== undefined && Number(r.stock) <= Number(r.stock_threshold ?? 100)).length}</strong>
+            médicament(s) ont atteint leur seuil d'alerte.
           </div>
         )}
 
@@ -490,118 +496,162 @@ export default function MedicamentsPage() {
           </div>
         </form>
 
-        {/* Barre de recherche */}
-        <div className="search-bar" style={{ margin: '20px 0' }}>
-          <input
-            type="text"
-            placeholder="🔍 Rechercher un médicament..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{ flex: 1, minWidth: '220px' }}
-          />
+        {/* Barre de recherche et export */}
+        <div style={{ margin: '20px 0', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ flex: 1, minWidth: '220px', position: 'relative' }}>
+            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#888' }} />
+            <input
+              type="text"
+              placeholder="Rechercher un médicament..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ width: '100%', padding: '10px 12px 10px 38px', border: '1px solid #c8d9df', borderRadius: '8px', fontSize: '0.9rem' }}
+            />
+          </div>
 
-        </div>
-
-        <div className="archive-grid" style={{ marginBottom: '20px' }}>
           <button
             onClick={() => window.api.exportStockExcel()}
+            style={{
+              padding: '10px 16px',
+              background: '#28a745',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 600,
+              fontSize: '0.85rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
           >
-            📊 Excel
+            <FileSpreadsheet size={16} /> Excel
           </button>
 
           <button
             onClick={() => window.api.exportStockPdf()}
+            style={{
+              padding: '10px 16px',
+              background: '#dc3545',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 600,
+              fontSize: '0.85rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
           >
-            📄 PDF
+            <FileText size={16} /> PDF
           </button>
         </div>
 
         {/* Tableau des médicaments */}
-        <div className="table-wrap">
-          <table>
+        <div className="table-wrap" style={{ borderRadius: '10px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
             <thead>
-              <tr>
-                <th>Nom</th>
-                <th>Type</th>
-                <th>Prix (Ar)</th>
-                <th>Unité</th>
-                <th>Stock</th>
-                <th>Seuil</th>
-                <th>Date</th>
-                <th>Actions</th>
+              <tr style={{ background: '#1C96A4' }}>
+                <th style={{ padding: '14px 12px', color: '#fff', fontWeight: 600, textAlign: 'left' }}>Nom</th>
+                <th style={{ padding: '14px 12px', color: '#fff', fontWeight: 600, textAlign: 'center' }}>Type</th>
+                <th style={{ padding: '14px 12px', color: '#fff', fontWeight: 600, textAlign: 'right' }}>Prix (Ar)</th>
+                <th style={{ padding: '14px 12px', color: '#fff', fontWeight: 600, textAlign: 'center' }}>Unité</th>
+                <th style={{ padding: '14px 12px', color: '#fff', fontWeight: 600, textAlign: 'center' }}>Stock</th>
+                <th style={{ padding: '14px 12px', color: '#fff', fontWeight: 600, textAlign: 'center' }}>Seuil</th>
+                <th style={{ padding: '14px 12px', color: '#fff', fontWeight: 600, textAlign: 'center' }}>Date</th>
+                <th style={{ padding: '14px 12px', color: '#fff', fontWeight: 600, textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan="8" style={{ textAlign: 'center', padding: '20px', color: '#5f7b84' }}>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: '30px', color: '#888', background: '#f8fafa' }}>
                     Aucun médicament trouvé.
                   </td>
                 </tr>
               )}
-              {filtered.map((r) => {
+              {filtered.map((r, index) => {
                 const isLowStock = r.stock !== null && r.stock !== undefined && Number(r.stock) <= Number(r.stock_threshold ?? 100);
                 return (
                   <tr
                     key={r.id}
-                    style={isLowStock ? { background: '#fff7ea' } : undefined}
+                    style={isLowStock ? { background: '#fff7ea' } : { background: index % 2 === 0 ? '#fff' : '#f8fafa' }}
                   >
-                    <td><strong>{r.name}</strong></td>
-                    <td>{r.item_type === 'act' ? 'Acte médical' : 'Médicament'}</td>
-                    <td>{Number(r.price).toLocaleString()} Ar</td>
-                    <td>
-                      {r.item_type === 'act' ? '-' : <span className="unit-badge">{r.unit || 'comprimé'}</span>}
+                    <td style={{ padding: '12px' }}><strong>{r.name}</strong></td>
+                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '999px',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        background: r.item_type === 'act' ? '#8f60d0' : '#1C96A4',
+                        color: '#fff',
+                      }}>
+                        {r.item_type === 'act' ? 'Acte' : 'Médicament'}
+                      </span>
                     </td>
-                     <td>
-                       {r.item_type === 'act' ? '-'
-                         : r.stock !== null && r.stock !== undefined
-                         ? (
-                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                             <button
-                               onClick={() => openStockHistory(r)}
-                               style={{
-                                 background: 'none',
-                                 border: 'none',
-                                 padding: '4px 8px',
-                                 cursor: 'pointer',
-                                 fontWeight: 'bold',
-                                 color: '#0d6efd',
-                                 textDecoration: 'underline',
-                                 fontSize: '1rem',
-                               }}
-                               title="Voir l'historique du stock"
-                             >
-                               {r.stock}
-                             </button>
-                             {isLowStock && (
-                               <span style={{
-                                 padding: '3px 8px',
-                                 background: '#ffe4c2',
-                                 color: '#8f4c00',
-                                 borderRadius: '999px',
-                                 fontSize: '0.8rem',
-                                 fontWeight: 600,
-                               }}>
-                                 Stock faible
-                               </span>
-                             )}
-                           </div>
-                         )
-                         : <span style={{ color: '#888' }}>Non suivi</span>}
-                     </td>
-                    <td>{r.item_type === 'act' ? '-' : (r.stock_threshold ?? 100)}</td>
-                      <td>{formatMadagascarDate(r.created_at)}</td>
-                      <td>
-                         {r.item_type !== 'act' && (
-                           <button className="icon-btn" onClick={() => addStock(r)} title="Ajouter du stock">➕</button>
-                         )}
-
-                         {isAdmin && (
-                           <button className="icon-btn" onClick={() => edit(r)} title="Modifier">✏️</button>
-                         )}
-
-                         <button className="icon-btn danger" onClick={() => remove(r.id)} title="Supprimer">🗑️</button>
-                       </td>
+                    <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600 }}>{Number(r.price).toLocaleString()}</td>
+                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                      {r.item_type === 'act' ? '-' : <span style={{ padding: '2px 8px', background: '#e8f4f6', borderRadius: '4px', fontSize: '0.8rem' }}>{r.unit || 'comprimé'}</span>}
+                    </td>
+                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                      {r.item_type === 'act' ? '-'
+                        : r.stock !== null && r.stock !== undefined
+                        ? (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                            <button
+                              onClick={() => openStockHistory(r)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                padding: '4px 8px',
+                                cursor: 'pointer',
+                                fontWeight: 'bold',
+                                color: '#1C96A4',
+                                fontSize: '1rem',
+                              }}
+                              title="Voir l'historique du stock"
+                            >
+                              {r.stock}
+                            </button>
+                            {isLowStock && (
+                              <span style={{
+                                padding: '3px 8px',
+                                background: '#ffe4c2',
+                                color: '#8f4c00',
+                                borderRadius: '999px',
+                                fontSize: '0.7rem',
+                                fontWeight: 600,
+                              }}>
+                                Stock faible
+                              </span>
+                            )}
+                          </div>
+                        )
+                        : <span style={{ color: '#888' }}>Non suivi</span>}
+                    </td>
+                    <td style={{ padding: '12px', textAlign: 'center' }}>{r.item_type === 'act' ? '-' : (r.stock_threshold ?? 100)}</td>
+                    <td style={{ padding: '12px', fontSize: '0.85rem', color: '#5f7b84', textAlign: 'center' }}>
+                      {formatMadagascarDate(r.created_at)}
+                    </td>
+                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                        {r.item_type !== 'act' && (
+                          <button style={{ padding: '6px', background: '#28a745', border: 'none', borderRadius: '6px', cursor: 'pointer', color: '#fff' }} onClick={() => addStock(r)} title="Ajouter du stock">
+                            <Plus size={14} />
+                          </button>
+                        )}
+                        {isAdmin && (
+                          <button style={{ padding: '6px', background: '#007bff', border: 'none', borderRadius: '6px', cursor: 'pointer', color: '#fff' }} onClick={() => edit(r)} title="Modifier">
+                            <Edit size={14} />
+                          </button>
+                        )}
+                        <button style={{ padding: '6px', background: '#dc3545', border: 'none', borderRadius: '6px', cursor: 'pointer', color: '#fff' }} onClick={() => remove(r.id)} title="Supprimer">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
@@ -609,48 +659,26 @@ export default function MedicamentsPage() {
           </table>
         </div>
 
-
-
         {/* Médicaments les plus vendus */}
-        <div className="table-wrap" style={{ marginTop: '30px' }}>
-
-          <h2>🏆 Médicaments les plus vendus</h2>
-
-          <table>
-            <thead>
-              <tr>
-                <th>Médicament</th>
-                <th>Quantité vendue</th>
-              </tr>
-            </thead>
-
-            <tbody>
-
-              {topSelling.length === 0 && (
-                <tr>
-                  <td
-                    colSpan="2"
-                    style={{ textAlign: 'center' }}
-                  >
-                    Aucune vente enregistrée.
-                  </td>
-                </tr>
-              )}
-
-              {topSelling.map((m, i) => {
-                return (
-                  <tr key={i}>
-                    <td>{m.medication_name}</td>
-                    <td>{m.total_sold}</td>
-                  </tr>
-                );
-              })}
-
-            </tbody>
-          </table>
-
-         </div>
-       </section>
+        <div style={{ marginTop: '30px', padding: '20px', background: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+          <h3 style={{ marginBottom: '16px', color: '#333', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <TrendingUp size={20} color="#f59f00" /> Médicaments les plus vendus
+          </h3>
+          <div style={{ display: 'grid', gap: '8px' }}>
+            {topSelling.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '20px', color: '#888' }}>
+                Aucune vente enregistrée.
+              </div>
+            )}
+            {topSelling.map((m, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: i % 2 === 0 ? '#f8fafa' : '#fff', borderRadius: '8px' }}>
+                <span style={{ fontWeight: 500 }}>{m.medication_name}</span>
+                <span style={{ padding: '4px 12px', background: '#f59f00', color: '#fff', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 600 }}>{m.total_sold}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
      </>
    );
  }
