@@ -212,16 +212,20 @@ ipcMain.handle('meds:history', () => {
   return db.getMedicationHistory();
 });
 
-ipcMain.handle('meds:stockHistory', () => {
-  return db.getMedicationStockHistory();
-});
-
-ipcMain.handle('meds:addStock', (_, id, quantity, createdBy) => {
-  return db.addMedicationStock(id, quantity, createdBy);
+ipcMain.handle('meds:addStock', (_, id, quantity, createdBy, date) => {
+  return db.addMedicationStock(id, quantity, createdBy, date);
 });
 
 ipcMain.handle('meds:movements', () => {
   return db.getMedicationMovements();
+});
+
+ipcMain.handle('meds:stockHistory', (_, medicationId) => {
+  return db.getMedicationStockHistory(medicationId);
+});
+
+ipcMain.handle('meds:clearMovements', () => {
+  return db.clearMedicationMovements();
 });
 
 ipcMain.handle('meds:topSelling', () => {
