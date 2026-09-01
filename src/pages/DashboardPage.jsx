@@ -514,15 +514,15 @@ export default function DashboardPage() {
           {diagnosticsByCategory.map((category) => (
             <article key={category.key} className="stat-card" style={{ borderTop: `4px solid ${category.color}` }}>
               <h4 style={{ marginBottom: '8px' }}>{category.label}</h4>
-              <div style={{ display: 'grid', gap: '6px', marginTop: '10px', maxHeight: '120px', overflowY: 'auto' }}>
+              <div style={{ display: 'grid', gap: '4px', marginTop: '10px', maxHeight: '120px', overflowY: 'auto' }}>
                 {category.diagnostics.length > 0
                   ? category.diagnostics.map(([diagnostic, count]) => (
-                    <span key={diagnostic} style={{ fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between' }}>
-                      <span>{diagnostic}</span>
-                      <strong style={{ color: category.color }}>{count}</strong>
+                    <span key={diagnostic} style={{ fontSize: '0.78rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{diagnostic}</span>
+                      <strong style={{ whiteSpace: 'nowrap', background: category.color, color: '#fff', padding: '2px 8px', borderRadius: '999px', fontSize: '0.72rem' }}>{count}</strong>
                     </span>
                   ))
-                  : <span style={{ color: '#888', fontSize: '0.9rem' }}>Aucun diagnostic</span>}
+                  : <span style={{ color: '#888', fontSize: '0.8rem' }}>Aucun diagnostic</span>}
               </div>
             </article>
           ))}
