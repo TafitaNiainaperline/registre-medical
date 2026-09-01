@@ -324,24 +324,24 @@ export default function MedicamentsPage() {
             </div>
 
             <div style={{ flex: 1, overflow: 'auto' }}>
-              <table style={{ borderCollapse: 'collapse', fontSize: '0.8rem', tableLayout: 'auto' }}>
+              <table style={{ borderCollapse: 'separate', borderSpacing: '0 6px', fontSize: '0.8rem', tableLayout: 'auto' }}>
                 <tbody>
                   <tr>
-                    <th style={{ padding: '10px 14px', textAlign: 'left', color: '#555', fontWeight: 600, background: '#f8fafa', borderRight: '1px solid #e6eff2', whiteSpace: 'nowrap', position: 'sticky', left: 0, zIndex: 1 }}>Date</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'left', color: '#555', fontWeight: 600, background: '#e8f4f6', borderRight: '1px solid #e6eff2', whiteSpace: 'nowrap', position: 'sticky', left: 0, zIndex: 1, borderRadius: '6px 0 0 6px' }}>Date</th>
                     {stockHistory.map((h, index) => (
-                      <td key={h.id || 'initial'} style={{ padding: '10px 14px', textAlign: 'center', color: '#555', whiteSpace: 'nowrap', borderRight: '1px solid #f0f0f0', background: index % 2 === 0 ? '#fff' : '#f8fafa' }}>
+                      <td key={h.id || 'initial'} style={{ padding: '12px 16px', textAlign: 'center', color: '#555', whiteSpace: 'nowrap', borderRight: '1px solid #f0f0f0', background: '#e8f4f6', borderRadius: index === stockHistory.length - 1 ? '0 6px 6px 0' : '0' }}>
                         {formatMadagascarDate(h.created_at)}
                       </td>
                     ))}
                   </tr>
                   <tr>
-                    <th style={{ padding: '10px 14px', textAlign: 'left', color: '#555', fontWeight: 600, background: '#f8fafa', borderRight: '1px solid #e6eff2', whiteSpace: 'nowrap', position: 'sticky', left: 0, zIndex: 1 }}>Type</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'left', color: '#555', fontWeight: 600, background: '#f8fafa', borderRight: '1px solid #e6eff2', whiteSpace: 'nowrap', position: 'sticky', left: 0, zIndex: 1, borderRadius: '6px 0 0 6px' }}>Type</th>
                     {stockHistory.map((h, index) => (
-                      <td key={h.id || 'initial'} style={{ padding: '10px 14px', textAlign: 'center', borderRight: '1px solid #f0f0f0', background: index % 2 === 0 ? '#fff' : '#f8fafa' }}>
+                      <td key={h.id || 'initial'} style={{ padding: '12px 16px', textAlign: 'center', borderRight: '1px solid #f0f0f0', background: '#f8fafa', borderRadius: index === stockHistory.length - 1 ? '0 6px 6px 0' : '0' }}>
                         <span style={{
-                          padding: '3px 8px',
+                          padding: '4px 10px',
                           borderRadius: '4px',
-                          fontSize: '0.7rem',
+                          fontSize: '0.75rem',
                           fontWeight: 600,
                           background: h.initial ? '#1a73e8' : (h.movement_type === 'entry' ? '#28a745' : '#dc3545'),
                           color: '#fff',
@@ -352,25 +352,25 @@ export default function MedicamentsPage() {
                     ))}
                   </tr>
                   <tr>
-                    <th style={{ padding: '10px 14px', textAlign: 'left', color: '#28a745', fontWeight: 600, background: '#f8fafa', borderRight: '1px solid #e6eff2', whiteSpace: 'nowrap', position: 'sticky', left: 0, zIndex: 1 }}>Entrée</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'left', color: '#28a745', fontWeight: 600, background: '#e8f5e9', borderRight: '1px solid #e6eff2', whiteSpace: 'nowrap', position: 'sticky', left: 0, zIndex: 1, borderRadius: '6px 0 0 6px' }}>Entrée</th>
                     {stockHistory.map((h, index) => (
-                      <td key={h.id || 'initial'} style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: '#28a745', borderRight: '1px solid #f0f0f0', background: index % 2 === 0 ? '#fff' : '#f8fafa' }}>
+                      <td key={h.id || 'initial'} style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 600, color: '#28a745', borderRight: '1px solid #f0f0f0', background: '#e8f5e9', borderRadius: index === stockHistory.length - 1 ? '0 6px 6px 0' : '0' }}>
                         {h.movement_type === 'entry' ? `+${h.quantity}` : '-'}
                       </td>
                     ))}
                   </tr>
                   <tr>
-                    <th style={{ padding: '10px 14px', textAlign: 'left', color: '#dc3545', fontWeight: 600, background: '#f8fafa', borderRight: '1px solid #e6eff2', whiteSpace: 'nowrap', position: 'sticky', left: 0, zIndex: 1 }}>Sortie</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'left', color: '#dc3545', fontWeight: 600, background: '#fdecea', borderRight: '1px solid #e6eff2', whiteSpace: 'nowrap', position: 'sticky', left: 0, zIndex: 1, borderRadius: '6px 0 0 6px' }}>Sortie</th>
                     {stockHistory.map((h, index) => (
-                      <td key={h.id || 'initial'} style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: '#dc3545', borderRight: '1px solid #f0f0f0', background: index % 2 === 0 ? '#fff' : '#f8fafa' }}>
+                      <td key={h.id || 'initial'} style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 600, color: '#dc3545', borderRight: '1px solid #f0f0f0', background: '#fdecea', borderRadius: index === stockHistory.length - 1 ? '0 6px 6px 0' : '0' }}>
                         {h.movement_type === 'exit' ? `-${h.quantity}` : '-'}
                       </td>
                     ))}
                   </tr>
                   <tr>
-                    <th style={{ padding: '10px 14px', textAlign: 'left', color: '#1C96A4', fontWeight: 600, background: '#f8fafa', borderRight: '1px solid #e6eff2', whiteSpace: 'nowrap', position: 'sticky', left: 0, zIndex: 1 }}>Stock</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'left', color: '#1C96A4', fontWeight: 600, background: '#e8f0fe', borderRight: '1px solid #e6eff2', whiteSpace: 'nowrap', position: 'sticky', left: 0, zIndex: 1, borderRadius: '6px 0 0 6px' }}>Stock</th>
                     {stockHistory.map((h, index) => (
-                      <td key={h.id || 'initial'} style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 700, color: '#1C96A4', borderRight: '1px solid #f0f0f0', background: index % 2 === 0 ? '#fff' : '#f8fafa' }}>
+                      <td key={h.id || 'initial'} style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 700, color: '#1C96A4', borderRight: '1px solid #f0f0f0', background: '#e8f0fe', borderRadius: index === stockHistory.length - 1 ? '0 6px 6px 0' : '0' }}>
                         {h.stock_after}
                       </td>
                     ))}
