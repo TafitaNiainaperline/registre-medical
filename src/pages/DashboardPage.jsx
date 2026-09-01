@@ -248,190 +248,228 @@ export default function DashboardPage() {
             Aperçu général des registres{archiveLabel ? ` — ${archiveLabel}` : ''}.
           </p>
         </div>
-
         <div className="dashboard-badge">
-           Gestion Clinique
+          📊 Gestion Clinique
         </div>
       </div>
 
-      <div className="cards-grid" style={{ marginBottom: '24px' }}>
+      <div className="cards-grid" style={{ marginBottom: '28px' }}>
         <article className="stat-card" style={{ borderTop: '5px solid #3777cc' }}>
           <div className="stat-top">
+            <span style={{ fontSize: '1.5rem' }}>📁</span>
             <h3>Total dossiers</h3>
           </div>
-          <strong>{totalRecords}</strong>
+          <strong style={{ fontSize: '1.8rem' }}>{totalRecords}</strong>
           <span className="stat-subtitle">Ce mois</span>
         </article>
 
         <article className="stat-card" style={{ borderTop: '5px solid #28a745' }}>
           <div className="stat-top">
+            <span style={{ fontSize: '1.5rem' }}>💰</span>
             <h3>Montant facturé</h3>
           </div>
-          <strong>{totalAmount.toLocaleString()} Ar</strong>
+          <strong style={{ fontSize: '1.8rem' }}>{totalAmount.toLocaleString()} Ar</strong>
           <span className="stat-subtitle">Total des coûts</span>
         </article>
 
         <article className="stat-card" style={{ borderTop: '5px solid #dc3545' }}>
           <div className="stat-top">
+            <span style={{ fontSize: '1.5rem' }}>🏦</span>
             <h3>Solde de caisse</h3>
-            <div className="stat-dot" style={{ background: '#dc3545' }} />
           </div>
-          <strong>{soldeCaisse.toLocaleString()} Ar</strong>
-          <span className="stat-subtitle">
-            Entrées : {totalAmount.toLocaleString()} Ar — Sorties : {cashOutflowTotal.toLocaleString()} Ar
+          <strong style={{ fontSize: '1.8rem' }}>{soldeCaisse.toLocaleString()} Ar</strong>
+          <span className="stat-subtitle" style={{ fontSize: '0.8rem' }}>
+            Entrées : {totalAmount.toLocaleString()} Ar<br/>
+            Sorties : {cashOutflowTotal.toLocaleString()} Ar
           </span>
         </article>
 
         <article className="stat-card" style={{ borderTop: '5px solid #f59f00' }}>
           <div className="stat-top">
+            <span style={{ fontSize: '1.5rem' }}>⚥</span>
             <h3>Sexe des patients</h3>
           </div>
-          <div style={{ display: 'grid', gap: '4px', marginTop: '10px' }}>
+          <div style={{ display: 'grid', gap: '6px', marginTop: '12px' }}>
             {sexSummary.map(([sex, count]) => (
-              <span key={sex} style={{ fontSize: '0.95rem' }}>{sex} : {count}</span>
+              <span key={sex} style={{ fontSize: '0.95rem', display: 'flex', justifyContent: 'space-between' }}>
+                <span>{sex}</span>
+                <strong>{count}</strong>
+              </span>
             ))}
           </div>
         </article>
 
         <article className="stat-card" style={{ borderTop: '5px solid #6f42c1' }}>
           <div className="stat-top">
+            <span style={{ fontSize: '1.5rem' }}>🔬</span>
             <h3>Top diagnostics</h3>
           </div>
-          <div style={{ display: 'grid', gap: '4px', marginTop: '10px' }}>
+          <div style={{ display: 'grid', gap: '6px', marginTop: '12px' }}>
             {diagnosticSummary.slice(0, 4).map(([diagnostic, count]) => (
-              <span key={diagnostic} style={{ fontSize: '0.95rem' }}>{diagnostic} : {count}</span>
+              <span key={diagnostic} style={{ fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{diagnostic}</span>
+                <strong style={{ color: '#6f42c1' }}>{count}</strong>
+              </span>
             ))}
-            {diagnosticSummary.length === 0 && <span style={{ fontSize: '0.95rem' }}>Aucun diagnostic</span>}
+            {diagnosticSummary.length === 0 && <span style={{ fontSize: '0.9rem', color: '#888' }}>Aucun diagnostic</span>}
           </div>
         </article>
 
         <article className="stat-card" style={{ borderTop: '5px solid #d81b83' }}>
-          <div className="stat-top"><h3>TDR Paludisme</h3></div>
-          <div style={{ display: 'grid', gap: '4px', marginTop: '10px' }}>
-            <span>Positif : {tdrSummary.positif || 0}</span>
-            <span>Négatif : {tdrSummary.negatif || 0}</span>
+          <div className="stat-top">
+            <span style={{ fontSize: '1.5rem' }}>🦟</span>
+            <h3>TDR Paludisme</h3>
+          </div>
+          <div style={{ display: 'grid', gap: '6px', marginTop: '12px' }}>
+            <span style={{ fontSize: '0.95rem', display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: '#28a745' }}>Positif</span>
+              <strong>{tdrSummary.positif || 0}</strong>
+            </span>
+            <span style={{ fontSize: '0.95rem', display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: '#dc3545' }}>Négatif</span>
+              <strong>{tdrSummary.negatif || 0}</strong>
+            </span>
+          </div>
+        </article>
+      </div>
+
+      <div className="cards-grid" style={{ marginBottom: '28px' }}>
+        <article className="stat-card" style={{ borderTop: '5px solid #8f60d0' }}>
+          <div className="stat-top">
+            <span style={{ fontSize: '1.5rem' }}>💉</span>
+            <h3>Actes médicaux</h3>
+          </div>
+          <input
+            type="text"
+            placeholder="Filtrer les actes..."
+            value={actFilter}
+            onChange={(e) => setActFilter(e.target.value)}
+            style={{
+              width: '100%',
+              marginTop: '12px',
+              marginBottom: '8px',
+              padding: '10px 14px',
+              border: '1px solid #c8d9df',
+              borderRadius: '8px',
+              font: 'inherit',
+              fontSize: '0.85rem'
+            }}
+          />
+          <div style={{ display: 'grid', gap: '6px', maxHeight: '150px', overflowY: 'auto' }}>
+            {actFilter && actSummary
+              .filter((act) => String(act.name).toLowerCase().includes(actFilter.toLowerCase()))
+              .length > 0 ? (
+                actSummary
+                  .filter((act) => String(act.name).toLowerCase().includes(actFilter.toLowerCase()))
+                  .map((act) => (
+                    <span key={act.name} style={{ fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{act.name}</span>
+                      <strong style={{ whiteSpace: 'nowrap' }}>{act.count}x — {act.total.toLocaleString()} Ar</strong>
+                    </span>
+                  ))
+              ) : actFilter ? (
+                <span style={{ fontSize: '0.85rem', color: '#888' }}>Aucun résultat</span>
+              ) : null}
           </div>
         </article>
 
-          <article className="stat-card" style={{ borderTop: '5px solid #8f60d0' }}>
-            <div className="stat-top">
-              <h3>Actes médicaux</h3>
-            </div>
-            <input
-              type="text"
-              placeholder="Filtrer les actes..."
-              value={actFilter}
-              onChange={(e) => setActFilter(e.target.value)}
-              style={{
-                width: '100%',
-                marginTop: '8px',
-                marginBottom: '8px',
-                padding: '10px 14px',
-                border: '1px solid #c8d9df',
-                borderRadius: '8px',
-                font: 'inherit',
-                fontSize: '0.85rem'
-              }}
-            />
-            <div style={{ display: 'grid', gap: '4px' }}>
-              {actFilter && actSummary
-                .filter((act) => String(act.name).toLowerCase().includes(actFilter.toLowerCase()))
-                .length > 0 ? (
-                  actSummary
-                    .filter((act) => String(act.name).toLowerCase().includes(actFilter.toLowerCase()))
-                    .map((act) => (
-                      <span key={act.name} style={{ fontSize: '0.9rem' }}>
-                        <strong style={{ fontSize: '0.85rem' }}>{act.name}</strong> : {act.count} fois — {act.total.toLocaleString()} Ar
-                      </span>
-                    ))
-                ) : actFilter ? (
-                  <span style={{ fontSize: '0.85rem', color: '#888' }}>Aucun résultat</span>
-                ) : null}
-            </div>
-          </article>
+        <article className="stat-card" style={{ borderTop: '5px solid #28a745' }}>
+          <div className="stat-top">
+            <span style={{ fontSize: '1.5rem' }}>👨‍👩‍👧</span>
+            <h3>Produits PF</h3>
+          </div>
+          <input
+            type="text"
+            placeholder="Filtrer les produits..."
+            value={pfFilter}
+            onChange={(e) => setPfFilter(e.target.value)}
+            style={{
+              width: '100%',
+              marginTop: '12px',
+              marginBottom: '8px',
+              padding: '10px 14px',
+              border: '1px solid #c8d9df',
+              borderRadius: '8px',
+              font: 'inherit',
+              fontSize: '0.85rem'
+            }}
+          />
+          <div style={{ display: 'grid', gap: '6px', maxHeight: '150px', overflowY: 'auto' }}>
+            {pfFilter && pfSummary
+              .filter(([method]) => String(method).toLowerCase().includes(pfFilter.toLowerCase()))
+              .length > 0 ? (
+                pfSummary
+                  .filter(([method]) => String(method).toLowerCase().includes(pfFilter.toLowerCase()))
+                  .map(([method, count]) => (
+                    <span key={method} style={{ fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>{method}</span>
+                      <strong>{count} patient{count !== 1 ? 's' : ''}</strong>
+                    </span>
+                  ))
+              ) : pfFilter ? (
+                <span style={{ fontSize: '0.85rem', color: '#888' }}>Aucun résultat</span>
+              ) : null}
+          </div>
+        </article>
 
-          <article className="stat-card" style={{ borderTop: '5px solid #28a745' }}>
-            <div className="stat-top">
-              <h3>Produits PF</h3>
-            </div>
-            <input
-              type="text"
-              placeholder="Filtrer les produits..."
-              value={pfFilter}
-              onChange={(e) => setPfFilter(e.target.value)}
-              style={{
-                width: '100%',
-                marginTop: '8px',
-                marginBottom: '8px',
-                padding: '10px 14px',
-                border: '1px solid #c8d9df',
-                borderRadius: '8px',
-                font: 'inherit',
-                fontSize: '0.85rem'
-              }}
-            />
-            <div style={{ display: 'grid', gap: '4px' }}>
-              {pfFilter && pfSummary
-                .filter(([method]) => String(method).toLowerCase().includes(pfFilter.toLowerCase()))
-                .length > 0 ? (
-                  pfSummary
-                    .filter(([method]) => String(method).toLowerCase().includes(pfFilter.toLowerCase()))
-                    .map(([method, count]) => (
-                      <span key={method} style={{ fontSize: '0.9rem' }}>
-                        <strong style={{ fontSize: '0.85rem' }}>{method}</strong> : {count} patient{count !== 1 ? 's' : ''}
-                      </span>
-                    ))
-                ) : pfFilter ? (
-                  <span style={{ fontSize: '0.85rem', color: '#888' }}>Aucun résultat</span>
-                ) : null}
-            </div>
-          </article>
+        <article className="stat-card" style={{ borderTop: '5px solid #d81b83' }}>
+          <div className="stat-top">
+            <span style={{ fontSize: '1.5rem' }}>🤰</span>
+            <h3>CPN</h3>
+          </div>
+          <input
+            type="text"
+            placeholder="Filtrer les CPN..."
+            value={cpnFilter}
+            onChange={(e) => setCpnFilter(e.target.value)}
+            style={{
+              width: '100%',
+              marginTop: '12px',
+              marginBottom: '8px',
+              padding: '10px 14px',
+              border: '1px solid #c8d9df',
+              borderRadius: '8px',
+              font: 'inherit',
+              fontSize: '0.85rem'
+            }}
+          />
+          <div style={{ display: 'grid', gap: '6px', maxHeight: '150px', overflowY: 'auto' }}>
+            {cpnFilter && cpnSummary
+              .filter(([cpn]) => String(cpn).toLowerCase().includes(cpnFilter.toLowerCase()))
+              .length > 0 ? (
+                cpnSummary
+                  .filter(([cpn]) => String(cpn).toLowerCase().includes(cpnFilter.toLowerCase()))
+                  .map(([cpn, count]) => (
+                    <span key={cpn} style={{ fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>{cpn}</span>
+                      <strong>{count} patient{count !== 1 ? 's' : ''}</strong>
+                    </span>
+                  ))
+              ) : cpnFilter ? (
+                <span style={{ fontSize: '0.85rem', color: '#888' }}>Aucun résultat</span>
+              ) : null}
+          </div>
+        </article>
 
-          <article className="stat-card" style={{ borderTop: '5px solid #d81b83' }}>
-            <div className="stat-top">
-              <h3>CPN</h3>
-            </div>
-            <input
-              type="text"
-              placeholder="Filtrer les CPN..."
-              value={cpnFilter}
-              onChange={(e) => setCpnFilter(e.target.value)}
-              style={{
-                width: '100%',
-                marginTop: '8px',
-                marginBottom: '8px',
-                padding: '10px 14px',
-                border: '1px solid #c8d9df',
-                borderRadius: '8px',
-                font: 'inherit',
-                fontSize: '0.85rem'
-              }}
-            />
-            <div style={{ display: 'grid', gap: '4px' }}>
-              {cpnFilter && cpnSummary
-                .filter(([cpn]) => String(cpn).toLowerCase().includes(cpnFilter.toLowerCase()))
-                .length > 0 ? (
-                  cpnSummary
-                    .filter(([cpn]) => String(cpn).toLowerCase().includes(cpnFilter.toLowerCase()))
-                    .map(([cpn, count]) => (
-                      <span key={cpn} style={{ fontSize: '0.9rem' }}>
-                        <strong style={{ fontSize: '0.85rem' }}>{cpn}</strong> : {count} patient{count !== 1 ? 's' : ''}
-                      </span>
-                    ))
-                ) : cpnFilter ? (
-                  <span style={{ fontSize: '0.85rem', color: '#888' }}>Aucun résultat</span>
-                ) : null}
-            </div>
-          </article>
+        <article className="stat-card" style={{ borderTop: '5px solid #4a90d9' }}>
+          <div className="stat-top">
+            <span style={{ fontSize: '1.5rem' }}>💊</span>
+            <h3>Dispensations</h3>
+          </div>
+          <strong style={{ fontSize: '1.8rem' }}>{dispensationCount}</strong>
+          <span className="stat-subtitle">
+            Total : {Number(dispensationTotal || 0).toLocaleString()} Ar
+          </span>
+        </article>
       </div>
 
       {ageGroupSummary.length > 0 && (
-        <div style={{ marginBottom: '24px' }}>
-          <strong>Patients par tranche d'âge</strong>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px' }}>
+        <div style={{ marginBottom: '28px', padding: '20px', background: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+          <h3 style={{ marginBottom: '16px', color: '#333', fontSize: '1rem' }}>👥 Patients par tranche d'âge</h3>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
             {ageGroupSummary.map(([group, count]) => (
-              <span key={group} style={{ padding: '8px 12px', background: '#f4f9fd', border: '1px solid #dceaf2', borderRadius: '10px', color: '#184a6e' }}>
-                {group} : {count}
+              <span key={group} style={{ padding: '10px 16px', background: '#f4f9fd', border: '1px solid #dceaf2', borderRadius: '10px', color: '#184a6e', fontWeight: 500 }}>
+                {group} <strong style={{ color: '#3777cc' }}>({count})</strong>
               </span>
             ))}
           </div>
@@ -439,22 +477,22 @@ export default function DashboardPage() {
       )}
 
       {archiveDiagnostics.length > 0 && (
-        <div style={{ marginBottom: '24px' }}>
-          <strong>Diagnostics par mois</strong>
-          <div style={{ display: 'grid', gap: '12px', marginTop: '10px' }}>
+        <div style={{ marginBottom: '28px', padding: '20px', background: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+          <h3 style={{ marginBottom: '16px', color: '#333', fontSize: '1rem' }}>📅 Diagnostics par mois</h3>
+          <div style={{ display: 'grid', gap: '14px' }}>
             {archiveDiagnostics.map((archive) => (
-              <div key={archive.label} style={{ padding: '12px', border: '1px solid #e6e6e6', borderRadius: '10px', background: '#fff' }}>
-                <div style={{ fontWeight: 600, marginBottom: '8px' }}>{archive.label}</div>
+              <div key={archive.label} style={{ padding: '16px', border: '1px solid #e6e6e6', borderRadius: '10px', background: '#fafafa' }}>
+                <div style={{ fontWeight: 600, marginBottom: '10px', color: '#333' }}>{archive.label}</div>
                 {archive.topDiagnostics.length > 0 ? (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {archive.topDiagnostics.map(([diagnostic, count]) => (
-                      <span key={diagnostic} style={{ padding: '6px 10px', background: '#f4f9fd', borderRadius: '999px', color: '#184a6e', fontSize: '0.92rem' }}>
-                        {diagnostic} : {count}
+                      <span key={diagnostic} style={{ padding: '6px 12px', background: '#e8f4f6', borderRadius: '999px', color: '#1C96A4', fontSize: '0.9rem', fontWeight: 500 }}>
+                        {diagnostic} ({count})
                       </span>
                     ))}
                   </div>
                 ) : (
-                  <span style={{ color: '#666' }}>Aucun diagnostic enregistré</span>
+                  <span style={{ color: '#888', fontSize: '0.9rem' }}>Aucun diagnostic enregistré</span>
                 )}
               </div>
             ))}
@@ -462,63 +500,52 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div style={{ marginBottom: '24px' }}>
-        <strong>Diagnostics par registre</strong>
+      <div style={{ marginBottom: '28px', padding: '20px', background: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+        <h3 style={{ marginBottom: '16px', color: '#333', fontSize: '1rem' }}>📋 Diagnostics par registre</h3>
         <div className="cards-grid" style={{ marginTop: '10px' }}>
           {diagnosticsByCategory.map((category) => (
             <article key={category.key} className="stat-card" style={{ borderTop: `4px solid ${category.color}` }}>
-              <h3>{category.label}</h3>
-              <div style={{ display: 'grid', gap: '4px', marginTop: '10px' }}>
+              <h4 style={{ marginBottom: '8px' }}>{category.label}</h4>
+              <div style={{ display: 'grid', gap: '6px', marginTop: '10px', maxHeight: '120px', overflowY: 'auto' }}>
                 {category.diagnostics.length > 0
                   ? category.diagnostics.map(([diagnostic, count]) => (
-                    <span key={diagnostic} style={{ fontSize: '0.92rem' }}>{diagnostic} : {count}</span>
+                    <span key={diagnostic} style={{ fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>{diagnostic}</span>
+                      <strong style={{ color: category.color }}>{count}</strong>
+                    </span>
                   ))
-                  : <span style={{ color: '#68818a', fontSize: '0.92rem' }}>Aucun diagnostic</span>}
+                  : <span style={{ color: '#888', fontSize: '0.9rem' }}>Aucun diagnostic</span>}
               </div>
             </article>
           ))}
         </div>
       </div>
 
-
-      <div className="cards-grid">
-        {categories.map((cat) => (
-          <article
-            key={cat.key}
-            className="stat-card"
-            style={{
-              borderTop: `5px solid ${cat.color}`
-            }}
-          >
-
-            <div className="stat-top">
-              <h3>{cat.label}</h3>
-
-              <div
-                className="stat-dot"
-                style={{ background: cat.color }}
-              />
-            </div>
-
-            <strong>{stats[cat.key] || 0}</strong>
-
-            <span className="stat-subtitle">
-              Dossiers enregistrés
-            </span>
-
-          </article>
-        ))}
-
-        <article className="stat-card" style={{ borderTop: '5px solid #4a90d9' }}>
-          <div className="stat-top">
-            <h3>Dispensations</h3>
-            <div className="stat-dot" style={{ background: '#4a90d9' }} />
-          </div>
-          <strong>{dispensationCount}</strong>
-          <span className="stat-subtitle">
-            Total : {Number(dispensationTotal || 0).toLocaleString()} Ar
-          </span>
-        </article>
+      <div style={{ padding: '20px', background: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+        <h3 style={{ marginBottom: '16px', color: '#333', fontSize: '1rem' }}>🏥 Registres</h3>
+        <div className="cards-grid" style={{ marginTop: '10px' }}>
+          {categories.map((cat) => (
+            <article
+              key={cat.key}
+              className="stat-card"
+              style={{
+                borderTop: `5px solid ${cat.color}`,
+                textAlign: 'center'
+              }}
+            >
+              <div style={{ fontSize: '1.5rem', marginBottom: '8px' }}>
+                {cat.key === 'consultation' && '🩺'}
+                {cat.key === 'cpn' && '🤰'}
+                {cat.key === 'pf' && '👨‍👩‍👧'}
+                {cat.key === 'analyse' && '🔬'}
+                {cat.key === 'soin' && '💊'}
+              </div>
+              <h4 style={{ marginBottom: '8px' }}>{cat.label}</h4>
+              <strong style={{ fontSize: '1.5rem', display: 'block' }}>{stats[cat.key] || 0}</strong>
+              <span style={{ fontSize: '0.8rem', color: '#888' }}>dossiers</span>
+            </article>
+          ))}
+        </div>
       </div>
     </section>
   );
