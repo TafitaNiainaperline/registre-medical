@@ -150,4 +150,7 @@ contextBridge.exposeInMainWorld('api', {
 
   deleteCashOutflow: (id) =>
     ipcRenderer.invoke('cashOutflows:delete', id),
+
+  updateCashOutflow: (id, data) =>
+    ipcRenderer.invoke('cashOutflows:update', id, data),
 });

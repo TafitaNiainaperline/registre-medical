@@ -11,6 +11,10 @@ export default function SortiesPage() {
   const [totalOutflows, setTotalOutflows] = useState(0);
   const [totalEntries, setTotalEntries] = useState(0);
   const [solde, setSolde] = useState(0);
+  const [editingOutflow, setEditingOutflow] = useState(null);
+  const [editDate, setEditDate] = useState('');
+  const [editDesignation, setEditDesignation] = useState('');
+  const [editAmount, setEditAmount] = useState('');
 
   useEffect(() => {
     loadData();
@@ -82,6 +86,48 @@ export default function SortiesPage() {
       loadData();
     } catch (err) {
       alert(err.message || 'Erreur lors de la suppression.');
+    }
+  };
+
+  const openEdit = (outflow) => {
+    setEditingOutflow(outflow);
+    setEditDate(outflow.outflow_date);
+    setEditDesignation(outflow.designation);
+    setEditAmount(String(outflow.amount));
+  };
+
+  const closeEdit = () => {
+    setEditingOutflow(null);
+    setEditDate('');
+    setEditDesignation('');
+    setEditAmount('');
+  };
+
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    if (!editDate) {
+      alert('Veuillez saisir la date.');
+      return;
+    }
+    if (!editDesignation.trim()) {
+      alert('Veuillez saisir la désignation.');
+      return;
+    }
+    if (!editAmount || Number(editAmount) <= 0) {
+      alert('Veuillez saisir un montant valide.');
+      return;
+    }
+
+    try {
+      await window.api.updateCashOutflow?.(editingOutflow.id, {
+        outflow_date: editDate,
+        designation: editDesignation.trim(),
+        amount: Number(editAmount),
+      });
+      closeEdit();
+      loadData();
+    } catch (err) {
+      alert(err.message || 'Erreur lors de la modification.');
     }
   };
 
@@ -210,6 +256,21 @@ export default function SortiesPage() {
                       </td>
                       <td style={{ padding: '12px 8px', textAlign: 'center' }}>
                         <button
+                          onClick={() => openEdit(outflow)}
+                          style={{
+                            padding: '6px 12px',
+                            background: 'transparent',
+                            color: '#007bff',
+                            border: '1px solid #007bff',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '0.8rem',
+                            marginRight: '6px'
+                          }}
+                        >
+                          Modifier
+                        </button>
+                        <button
                           onClick={() => handleDelete(outflow.id)}
                           style={{
                             padding: '6px 12px',
@@ -236,6 +297,89 @@ export default function SortiesPage() {
           )}
         </div>
       </div>
+
+      {editingOutflow && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{ background: '#fff', padding: '24px', borderRadius: '12px', width: '400px', maxWidth: '90%' }}>
+            <h3 style={{ marginBottom: '16px', color: '#333' }}>Modifier la sortie</h3>
+            <form onSubmit={handleUpdate}>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.9rem', fontWeight: 500, color: '#555' }}>Date</label>
+                <input
+                  type="date"
+                  value={editDate}
+                  onChange={(e) => setEditDate(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', border: '1px solid #c8d9df', borderRadius: '8px', font: 'inherit', fontSize: '0.95rem' }}
+                />
+              </div>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.9rem', fontWeight: 500, color: '#555' }}>Désignation</label>
+                <input
+                  type="text"
+                  value={editDesignation}
+                  onChange={(e) => setEditDesignation(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', border: '1px solid #c8d9df', borderRadius: '8px', font: 'inherit', fontSize: '0.95rem' }}
+                />
+              </div>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.9rem', fontWeight: 500, color: '#555' }}>Montant (Ar)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={editAmount}
+                  onChange={(e) => setEditAmount(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', border: '1px solid #c8d9df', borderRadius: '8px', font: 'inherit', fontSize: '0.95rem' }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  type="submit"
+                  style={{
+                    flex: 1,
+                    padding: '12px 20px',
+                    background: '#007bff',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontWeight: 600
+                  }}
+                >
+                  Enregistrer
+                </button>
+                <button
+                  type="button"
+                  onClick={closeEdit}
+                  style={{
+                    flex: 1,
+                    padding: '12px 20px',
+                    background: '#6c757d',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontWeight: 600
+                  }}
+                >
+                  Annuler
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

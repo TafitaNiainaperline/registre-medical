@@ -1811,6 +1811,23 @@ async function deleteCashOutflow(id) {
   saveDB();
 }
 
+async function updateCashOutflow(id, data) {
+  const d = await getDB();
+  const outflowDate = String(data.outflow_date || '').trim();
+  const designation = String(data.designation || '').trim();
+  const amount = Number(data.amount);
+
+  if (!outflowDate) throw new Error('La date est requise.');
+  if (!designation) throw new Error('La désignation est requise.');
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error('Le montant doit être supérieur à 0.');
+
+  d.run(
+    'UPDATE cash_outflows SET outflow_date = ?, designation = ?, amount = ? WHERE id = ?',
+    [outflowDate, designation, amount, id]
+  );
+  saveDB();
+}
+
 module.exports = {
    loginUser, registerUser,
    getAllUsers, toggleUserActive, resetUserPassword, deleteUser,
@@ -1833,5 +1850,6 @@ module.exports = {
    createCashOutflow,
    listCashOutflows,
    getCashOutflowTotal,
-   deleteCashOutflow
+   deleteCashOutflow,
+   updateCashOutflow
 };

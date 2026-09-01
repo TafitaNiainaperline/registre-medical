@@ -382,3 +382,7 @@ ipcMain.handle('cashOutflows:total', (_, filters) => {
 ipcMain.handle('cashOutflows:delete', (_, id) => {
   return db.deleteCashOutflow(id);
 });
+
+ipcMain.handle('cashOutflows:update', (_, id, data) => {
+  return db.updateCashOutflow(id, data);
+});
