@@ -324,14 +324,14 @@ export default function MedicamentsPage() {
             </div>
 
             <div style={{ flex: 1, overflow: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
                 <thead>
                   <tr style={{ position: 'sticky', top: 0, background: '#fff', boxShadow: '0 1px 0 #e6eff2' }}>
                     <th style={{ padding: '10px 12px', textAlign: 'left', color: '#555', fontWeight: 600 }}>Date</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'center', color: '#555', fontWeight: 600 }}>Mouvement</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'center', color: '#555', fontWeight: 600 }}>Qté</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'center', color: '#555', fontWeight: 600 }}>Type</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'center', color: '#28a745', fontWeight: 600 }}>Entrée</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'center', color: '#dc3545', fontWeight: 600 }}>Sortie</th>
                     <th style={{ padding: '10px 12px', textAlign: 'center', color: '#555', fontWeight: 600 }}>Stock</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'left', color: '#555', fontWeight: 600 }}>Par</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -344,12 +344,12 @@ export default function MedicamentsPage() {
                   )}
                   {stockHistory.map((h, index) => (
                     <tr key={h.id || 'initial'} style={{ background: index % 2 === 0 ? '#fff' : '#f8fafa', borderBottom: '1px solid #f0f0f0' }}>
-                      <td style={{ padding: '10px 12px', color: '#555', whiteSpace: 'nowrap' }}>{formatMadagascarDate(h.created_at)}</td>
-                      <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                      <td style={{ padding: '8px 12px', color: '#555', whiteSpace: 'nowrap' }}>{formatMadagascarDate(h.created_at)}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'center' }}>
                         <span style={{
-                          padding: '2px 8px',
+                          padding: '2px 6px',
                           borderRadius: '4px',
-                          fontSize: '0.7rem',
+                          fontSize: '0.65rem',
                           fontWeight: 600,
                           background: h.initial ? '#1a73e8' : (h.movement_type === 'entry' ? '#28a745' : '#dc3545'),
                           color: '#fff',
@@ -357,11 +357,13 @@ export default function MedicamentsPage() {
                           {h.initial ? 'Init.' : (h.movement_type === 'entry' ? 'In' : 'Out')}
                         </span>
                       </td>
-                      <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 600, color: h.movement_type === 'entry' ? '#28a745' : '#dc3545' }}>
-                        {h.movement_type === 'entry' ? '+' : '-'}{h.quantity}
+                      <td style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 600, color: '#28a745' }}>
+                        {h.movement_type === 'entry' ? `+${h.quantity}` : '-'}
                       </td>
-                      <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 600 }}>{h.stock_after}</td>
-                      <td style={{ padding: '10px 12px', color: '#888', fontSize: '0.8rem' }}>{h.created_by_name || '-'}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 600, color: '#dc3545' }}>
+                        {h.movement_type === 'exit' ? `-${h.quantity}` : '-'}
+                      </td>
+                      <td style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 600, color: '#1C96A4' }}>{h.stock_after}</td>
                     </tr>
                   ))}
                 </tbody>
