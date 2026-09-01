@@ -318,6 +318,8 @@ export default function RecordsPage({ category }) {
   const [medications, setMedications] = useState([]);
   const [archives, setArchives] = useState([]);
   const [activeArchive, setActiveArchive] = useState(null);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [availableYears, setAvailableYears] = useState([new Date().getFullYear()]);
   const [actionError, setActionError] = useState('');
   const [actionOk, setActionOk] = useState('');
   const [duplicateCase, setDuplicateCase] = useState(null);
@@ -354,12 +356,13 @@ export default function RecordsPage({ category }) {
 
   const load = (archive = activeArchive) => {
     const hasArchive = archive?.year && archive?.month;
+    const currentYear = archive?.year || selectedYear;
     const fetcher = hasArchive
       ? window.api.fetchRecordsByArchive({ category: category.key, year: archive.year, month: archive.month })
-      : window.api.fetchRecords(category.key);
+      : window.api.fetchRecordsByArchive({ category: category.key, year: currentYear });
     const suggestionsFetcher = hasArchive
       ? window.api.fetchRecordsByArchive({ year: archive.year, month: archive.month })
-      : Promise.all(categories.map((item) => window.api.fetchRecords(item.key))).then((results) => results.flat());
+      : window.api.fetchRecordsByArchive({ year: currentYear });
 
     return Promise.all([fetcher, suggestionsFetcher])
       .then(([result, suggestions]) => {
@@ -407,7 +410,20 @@ export default function RecordsPage({ category }) {
       });
 
     window.api.listArchives()
-      .then((r) => setArchives(r || []))
+      .then((r) => {
+        const archiveList = r || [];
+        setArchives(archiveList);
+        const years = [...new Set(archiveList.map((a) => a.year))].sort((a, b) => b - a);
+        if (years.length > 0) {
+          setAvailableYears(years);
+          const currentYear = new Date().getFullYear();
+          if (years.includes(currentYear)) {
+            setSelectedYear(currentYear);
+          } else {
+            setSelectedYear(years[0]);
+          }
+        }
+      })
       .catch((err) => {
         console.error('listArchives failed:', err);
         setArchives([]);
@@ -430,6 +446,14 @@ export default function RecordsPage({ category }) {
     setActionError('');
     setActionOk('');
   }, [category.key]);
+
+  useEffect(() => {
+    if (selectedYear) {
+      const currentYearArchive = { year: selectedYear, month: new Date().getMonth() + 1, label: `${selectedYear}` };
+      setActiveArchive(null);
+      load(currentYearArchive);
+    }
+  }, [selectedYear]);
 
   useEffect(() => {
     const checkAppointments = () => {
@@ -618,15 +642,35 @@ export default function RecordsPage({ category }) {
           <h1>Registre {category.label}</h1>
           {category.key === 'consultation' && <p>Médicaments et actes médicaux.</p>}
         </div>
-        <div className="dashboard-badge" style={{ background: category.color }}>
-          <FileText size={16} /> {category.label}
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '8px',
+              border: '1px solid #dceaf2',
+              background: '#fff',
+              color: '#184a6e',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            {availableYears.map((year) => (
+              <option key={year} value={year}>{year}</option>
+            ))}
+          </select>
+          <div className="dashboard-badge" style={{ background: category.color }}>
+            <FileText size={16} /> {category.label}
+          </div>
         </div>
       </div>
 
       <MonthlyArchiveBanner
         current={activeArchive}
-        archives={archives}
+        archives={archives.filter((a) => a.year === selectedYear)}
         onChange={(a) => { setActiveArchive(a); load(a); }}
+        allArchives={archives}
       />
 
       {diagnosticSummary.length > 0 && (

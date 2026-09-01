@@ -338,33 +338,32 @@ function patientIllnessKey(row) {
   ].join('|');
 }
 
-function nextRegistryNumber(d, category, year, month) {
+function nextRegistryNumber(d, category, year) {
   const prefix = registryPrefix(category);
-  const period = registryPeriod(year, month);
   const rows = toObjects(d.exec(
     `SELECT registry_number FROM medical_records
-     WHERE category = ? AND archive_year = ? AND archive_month = ?
+     WHERE category = ? AND archive_year = ?
        AND registry_number IS NOT NULL`,
-    [category, year, month]
+    [category, year]
   ));
   const maxSeq = rows.reduce((max, row) => {
     const match = String(row.registry_number || '').match(/-(\d+)$/);
     const value = match ? Number(match[1]) : 0;
     return Number.isFinite(value) && value > max ? value : max;
   }, 0);
-  return `${prefix}-${period}-${String(maxSeq + 1).padStart(3, '0')}`;
+  return `${prefix}-${year}-${String(maxSeq + 1).padStart(3, '0')}`;
 }
 
-function getRegistryNumberForRecord(d, data, year, month, existingId = null) {
+function getRegistryNumberForRecord(d, data, year, existingId = null) {
   const category = data.category;
   const key = patientIllnessKey(data);
   const rows = toObjects(d.exec(
     `SELECT id, registry_number, patient_nom, patient_prenom, diagnostic
      FROM medical_records
-     WHERE category = ? AND archive_year = ? AND archive_month = ?
+     WHERE category = ? AND archive_year = ?
        AND registry_number IS NOT NULL
      ORDER BY id ASC`,
-    [category, year, month]
+    [category, year]
   ));
 
   const same = rows.find((row) => Number(row.id) !== Number(existingId) && patientIllnessKey(row) === key);
@@ -375,7 +374,7 @@ function getRegistryNumberForRecord(d, data, year, month, existingId = null) {
     if (current?.registry_number && patientIllnessKey(current) === key) return current.registry_number;
   }
 
-  return nextRegistryNumber(d, category, year, month);
+  return nextRegistryNumber(d, category, year);
 }
 
 function findExistingMonthlyCase(d, data, year, month, existingId = null) {
@@ -407,7 +406,7 @@ function backfillRegistryNumbers(d) {
     }
 
     const key = `${row.category}|${row.archive_year}|${row.archive_month}|${patientIllnessKey(row)}`;
-    const number = assigned.get(key) || nextRegistryNumber(d, row.category, Number(row.archive_year), Number(row.archive_month));
+    const number = assigned.get(key) || nextRegistryNumber(d, row.category, Number(row.archive_year));
     assigned.set(key, number);
     d.run('UPDATE medical_records SET registry_number = ? WHERE id = ?', [number, row.id]);
     changed = true;
@@ -926,7 +925,7 @@ async function createRecord(data) {
   const hasTreatments = treatments.length > 0;
   const computedCost = hasTreatments ? computeTotalCostAr(treatments) : Number(data.cost) || 0;
   const traitementText = hasTreatments ? buildTraitementText(treatments) : (data.traitement || '');
-  const registryNumber = getRegistryNumberForRecord(d, data, year, month);
+  const registryNumber = getRegistryNumberForRecord(d, data, year);
 
   d.run('BEGIN');
   try {
@@ -1043,7 +1042,7 @@ async function addTreatmentsToRecord(recordId, data) {
   const visitCost = computeTotalCostAr(treatments);
   const traitementText = hasTreatments ? buildTraitementText(treatments) : (data.traitement || '');
   const dossierId = existing.dossier_id || null;
-  const registryNumber = existing.registry_number || getRegistryNumberForRecord(d, existing, Number(existing.archive_year), Number(existing.archive_month), recordId);
+  const registryNumber = existing.registry_number || getRegistryNumberForRecord(d, existing, Number(existing.archive_year), recordId);
 
   d.run('BEGIN');
   try {
@@ -1126,7 +1125,6 @@ async function updateRecord(id, data) {
     d,
     { ...data, category: recordCategory },
     recordYear,
-    recordMonth,
     id
   );
 

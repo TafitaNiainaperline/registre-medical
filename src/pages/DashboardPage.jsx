@@ -81,71 +81,75 @@ export default function DashboardPage() {
   const [actFilter, setActFilter] = useState('');
   const [pfFilter, setPfFilter] = useState('');
   const [cpnFilter, setCpnFilter] = useState('');
-
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [availableYears, setAvailableYears] = useState([new Date().getFullYear()]);
    useEffect(() => {
-    const load = async () => {
-      try {
-        const current = await window.api.getCurrentArchive?.();
-        if (current?.label) setArchiveLabel(current.label);
+     const load = async () => {
+       try {
+         setArchiveLabel(`${selectedYear}`);
 
-        const recordsForMonth = await window.api.fetchRecordsByArchive?.({ year: current?.year, month: current?.month });
-        const allRecords = recordsForMonth || [];
-        setRecords(allRecords);
+         const recordsForYear = await window.api.fetchRecordsByArchive?.({ year: selectedYear });
+         const allRecords = recordsForYear || [];
+         setRecords(allRecords);
 
-        const nextStats = allRecords.reduce((acc, row) => {
-          const category = row.category || 'unknown';
-          if (!acc[category]) acc[category] = new Set();
-          acc[category].add(getDossierKey(row));
-          return acc;
-        }, {});
-        const statsWithSizes = {};
-        Object.keys(nextStats).forEach(k => { statsWithSizes[k] = nextStats[k].size; });
-        setStats(statsWithSizes);
+         const nextStats = allRecords.reduce((acc, row) => {
+           const category = row.category || 'unknown';
+           if (!acc[category]) acc[category] = new Set();
+           acc[category].add(getDossierKey(row));
+           return acc;
+         }, {});
 
-        const dispTotal = await window.api.getDispensationTotal?.({ year: current?.year, month: current?.month });
-        setDispensationTotal(Number(dispTotal || 0));
+         const statsWithSizes = {};
+         Object.keys(nextStats).forEach(k => { statsWithSizes[k] = nextStats[k].size; });
+         setStats(statsWithSizes);
 
-        const dispCount = await window.api.getDispensations?.() || [];
-        setDispensationCount(dispCount.length);
+         const dispTotal = await window.api.getDispensationTotal?.({ year: selectedYear });
+         setDispensationTotal(Number(dispTotal || 0));
 
-        const outflowTotal = await window.api.getCashOutflowTotal?.({ year: current?.year, month: current?.month });
-        setCashOutflowTotal(Number(outflowTotal || 0));
+         const dispCount = await window.api.getDispensations?.() || [];
+         setDispensationCount(dispCount.length);
 
-        const archives = await window.api.listArchives?.() || [];
-        const sortedArchives = [...archives].sort((a, b) => {
-          if (Number(a.year) !== Number(b.year)) return Number(b.year) - Number(a.year);
-          return Number(b.month) - Number(a.month);
-        }).slice(0, 6);
+         const outflowTotal = await window.api.getCashOutflowTotal?.({ year: selectedYear });
+         setCashOutflowTotal(Number(outflowTotal || 0));
 
-        const archiveSummaries = await Promise.all(sortedArchives.map(async (archive) => {
-          const archiveRecords = await window.api.fetchRecordsByArchive?.({ year: archive.year, month: archive.month }) || [];
-          const groups = archiveRecords.reduce((acc, row) => {
-            const diagnostic = String(row.diagnostic || '').trim();
-            if (!diagnostic) return acc;
-            if (!acc[diagnostic]) acc[diagnostic] = new Set();
-            acc[diagnostic].add(getPatientId(row));
-            return acc;
-          }, {});
-          const topDiagnostics = Object.entries(groups)
-            .map(([diag, set]) => [diag, set.size])
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 3);
-          return {
-            label: archive.label || `${archive.month}/${archive.year}`,
-            topDiagnostics,
-          };
-        }));
-        setArchiveDiagnostics(archiveSummaries);
-      } catch {
-        setRecords([]);
-        setStats({});
-        setArchiveDiagnostics([]);
-        setDispensationTotal(0);
-        setCashOutflowTotal(0);
-      }
-    };
-    load();
-  }, []);
+         const archives = await window.api.listArchives?.() || [];
+         const years = [...new Set(archives.map((a) => a.year))].sort((a, b) => b - a);
+         if (years.length > 0) setAvailableYears(years);
+
+         const yearArchives = archives.filter((a) => a.year === selectedYear);
+         const sortedArchives = [...yearArchives].sort((a, b) => {
+           return Number(b.month) - Number(a.month);
+         }).slice(0, 6);
+
+         const archiveSummaries = await Promise.all(sortedArchives.map(async (archive) => {
+           const archiveRecords = await window.api.fetchRecordsByArchive?.({ year: archive.year, month: archive.month }) || [];
+           const groups = archiveRecords.reduce((acc, row) => {
+             const diagnostic = String(row.diagnostic || '').trim();
+             if (!diagnostic) return acc;
+             if (!acc[diagnostic]) acc[diagnostic] = new Set();
+             acc[diagnostic].add(getPatientId(row));
+             return acc;
+           }, {});
+           const topDiagnostics = Object.entries(groups)
+             .map(([diag, set]) => [diag, set.size])
+             .sort((a, b) => b[1] - a[1])
+             .slice(0, 3);
+           return {
+             label: archive.label || `${archive.month}/${archive.year}`,
+             topDiagnostics,
+           };
+         }));
+         setArchiveDiagnostics(archiveSummaries);
+       } catch {
+         setRecords([]);
+         setStats({});
+         setArchiveDiagnostics([]);
+         setDispensationTotal(0);
+         setCashOutflowTotal(0);
+       }
+     };
+     load();
+   }, [selectedYear]);
 
   const totalRecords = Object.values(stats).reduce((sum, count) => sum + count, 0);
   const totalAmount = records.reduce((sum, row) => sum + sumNumber(row.cost), 0) + (Number(dispensationTotal) || 0);
@@ -246,11 +250,30 @@ export default function DashboardPage() {
         <div>
           <h1>Tableau de bord</h1>
           <p>
-            Aperçu général des registres{archiveLabel ? ` — ${archiveLabel}` : ''}.
+            Aperçu général des registres — {selectedYear}.
           </p>
         </div>
-        <div className="dashboard-badge">
-          📊 Gestion Clinique
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '8px',
+              border: '1px solid #dceaf2',
+              background: '#fff',
+              color: '#184a6e',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            {availableYears.map((year) => (
+              <option key={year} value={year}>{year}</option>
+            ))}
+          </select>
+          <div className="dashboard-badge">
+            <Activity size={16} /> Gestion Clinique
+          </div>
         </div>
       </div>
 
