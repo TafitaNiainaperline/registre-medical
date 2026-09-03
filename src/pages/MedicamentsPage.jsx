@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pill, AlertTriangle, Download, FileSpreadsheet, FileText, Plus, Edit, Trash2, TrendingUp, Package, Search, X } from 'lucide-react';
+import { Pill, AlertTriangle, Download, FileSpreadsheet, FileText, Plus, Edit, Trash2, TrendingUp, Package, Search, X, Stethoscope } from 'lucide-react';
 
 function getToday() {
   const today = new Date();
@@ -67,6 +67,8 @@ export default function MedicamentsPage() {
   const [historyMedication, setHistoryMedication] = useState(null);
   const [stockHistory, setStockHistory] = useState([]);
   const [topSelling, setTopSelling] = useState([]);
+  const [records, setRecords] = useState([]);
+  const [actFilter, setActFilter] = useState('');
   
 
   const load = () =>
@@ -74,9 +76,14 @@ export default function MedicamentsPage() {
       .then((r) => setRows(r || []))
       .catch(() => setRows([]));
 
+  const loadRecords = () =>
+    window.api.fetchRecordsByArchive?.({})
+      .then((r) => setRecords(r || []))
+      .catch(() => setRecords([]));
+
    useEffect(() => {
      load();
-   
+     loadRecords();
      window.api.getTopSellingMedications()
        .then(setTopSelling);
    }, []);
@@ -224,6 +231,22 @@ export default function MedicamentsPage() {
     if (!q) return true;
     return normalizeSearch(r.name).includes(q);
   });
+
+  const actSummary = Object.entries(records.reduce((acc, row) => {
+    const treatments = Array.isArray(row.treatments) ? row.treatments : [];
+    treatments.forEach((t) => {
+      if (t.item_type === 'act') {
+        const name = String(t.name || '').trim();
+        if (!name) return;
+        if (!acc[name]) acc[name] = { count: 0, total: 0 };
+        acc[name].count += 1;
+        acc[name].total += (Number(t.unit_price) || 0) * (Number(t.quantity) || 1);
+      }
+    });
+    return acc;
+  }, {}))
+    .map(([name, data]) => ({ name, ...data }))
+    .sort((a, b) => b.count - a.count);
 
   return (
     <>
@@ -495,6 +518,43 @@ export default function MedicamentsPage() {
             <button type="submit">Ajouter l’acte</button>
           </div>
         </form>
+
+        <div style={{ marginTop: '28px', padding: '20px', background: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+          <h3 style={{ marginBottom: '12px', color: '#333', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Stethoscope size={20} color="#8f60d0" /> Actes médicaux
+          </h3>
+          <input
+            type="text"
+            placeholder="Filtrer les actes..."
+            value={actFilter}
+            onChange={(e) => setActFilter(e.target.value)}
+            style={{
+              width: '100%',
+              marginBottom: '10px',
+              padding: '10px 14px',
+              border: '1px solid #c8d9df',
+              borderRadius: '8px',
+              font: 'inherit',
+              fontSize: '0.85rem'
+            }}
+          />
+          <div style={{ display: 'grid', gap: '6px', maxHeight: '200px', overflowY: 'auto' }}>
+            {(() => {
+              if (!actFilter) return null;
+              const filtered = actSummary
+                .filter((act) => String(act.name).toLowerCase().includes(actFilter.toLowerCase()));
+              if (filtered.length === 0) {
+                return <span style={{ fontSize: '0.85rem', color: '#888' }}>Aucun résultat</span>;
+              }
+              return filtered.map((act) => (
+                <span key={act.name} style={{ fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', padding: '8px 12px', background: '#f8fafa', borderRadius: '8px' }}>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{act.name}</span>
+                  <strong style={{ whiteSpace: 'nowrap', background: '#8f60d0', color: '#fff', padding: '2px 8px', borderRadius: '999px', fontSize: '0.72rem' }}>{act.count} fois - {act.total.toLocaleString()}Ar</strong>
+                </span>
+              ));
+            })()}
+          </div>
+        </div>
 
         {/* Barre de recherche et export */}
         <div style={{ margin: '20px 0', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>

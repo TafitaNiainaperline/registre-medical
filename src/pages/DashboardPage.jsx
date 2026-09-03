@@ -78,7 +78,6 @@ export default function DashboardPage() {
   const [dispensationTotal, setDispensationTotal] = useState(0);
   const [dispensationCount, setDispensationCount] = useState(0);
   const [cashOutflowTotal, setCashOutflowTotal] = useState(0);
-  const [actFilter, setActFilter] = useState('');
   const [pfFilter, setPfFilter] = useState('');
   const [cpnFilter, setCpnFilter] = useState('');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -188,22 +187,6 @@ export default function DashboardPage() {
       summary[result] = (summary[result] || 0) + 1;
       return summary;
     }, {});
-
-  const actSummary = Object.entries(records.reduce((acc, row) => {
-    const treatments = Array.isArray(row.treatments) ? row.treatments : [];
-    treatments.forEach((t) => {
-      if (t.item_type === 'act') {
-        const name = String(t.name || '').trim();
-        if (!name) return;
-        if (!acc[name]) acc[name] = { count: 0, total: 0 };
-        acc[name].count += 1;
-        acc[name].total += (Number(t.unit_price) || 0) * (Number(t.quantity) || 1);
-      }
-    });
-    return acc;
-  }, {}))
-    .map(([name, data]) => ({ name, ...data }))
-    .sort((a, b) => b.count - a.count);
 
   const pfSummary = Object.entries(records.reduce((acc, row) => {
     if (row.category === 'pf') {
@@ -363,45 +346,6 @@ export default function DashboardPage() {
       </div>
 
       <div className="cards-grid" style={{ marginBottom: '28px' }}>
-        <article className="stat-card" style={{ borderTop: '5px solid #8f60d0' }}>
-          <div className="stat-top" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Stethoscope size={24} color="#8f60d0" />
-            <h3>Actes médicaux</h3>
-          </div>
-          <input
-            type="text"
-            placeholder="Filtrer les actes..."
-            value={actFilter}
-            onChange={(e) => setActFilter(e.target.value)}
-            style={{
-              width: '100%',
-              marginTop: '12px',
-              marginBottom: '8px',
-              padding: '10px 14px',
-              border: '1px solid #c8d9df',
-              borderRadius: '8px',
-              font: 'inherit',
-              fontSize: '0.85rem'
-            }}
-          />
-          <div style={{ display: 'grid', gap: '4px', maxHeight: '120px', overflowY: 'auto' }}>
-            {actFilter && actSummary
-              .filter((act) => String(act.name).toLowerCase().includes(actFilter.toLowerCase()))
-              .length > 0 ? (
-                actSummary
-                  .filter((act) => String(act.name).toLowerCase().includes(actFilter.toLowerCase()))
-                  .map((act) => (
-                    <span key={act.name} style={{ fontSize: '0.78rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{act.name}</span>
-                      <strong style={{ whiteSpace: 'nowrap', background: '#8f60d0', color: '#fff', padding: '2px 8px', borderRadius: '999px', fontSize: '0.72rem' }}>{act.count} fois - {act.total.toLocaleString()}Ar</strong>
-                    </span>
-                  ))
-              ) : actFilter ? (
-                <span style={{ fontSize: '0.8rem', color: '#888' }}>Aucun résultat</span>
-              ) : null}
-          </div>
-        </article>
-
         <article className="stat-card" style={{ borderTop: '5px solid #28a745' }}>
           <div className="stat-top">
             <Heart size={24} color="#28a745" />
