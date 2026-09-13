@@ -1,0 +1,26 @@
+@use '../../styles/variables' as *;
+
+.AppointmentsPage {
+  .counters { margin-bottom: 1.5em; }
+
+  .badge {
+    &.past { background: #fdecea; color: var(--danger); }
+    &.today { background: #e8f5e9; color: #2e7d32; }
+    &.upcoming { background: #e8f0fe; color: #1a4fa0; }
+  }
+
+  table {
+    .date { font-weight: 600; white-space: nowrap; }
+    .registry { color: var(--soft); }
+
+    .patient {
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+
+      .Icon { color: #888; }
+    }
+
+    .empty .Icon { display: block; margin: 0 auto 0.75em; opacity: 0.3; }
+  }
+}

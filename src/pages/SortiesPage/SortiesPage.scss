@@ -1,0 +1,59 @@
+@use '../../styles/variables' as *;
+
+.SortiesPage {
+  .totals { margin-bottom: 1.5em; }
+
+  .columns {
+    display: grid;
+    grid-template-columns: 25em 1fr;
+    gap: 1.5em;
+    align-items: start;
+
+    // Sans cela, la largeur mini du tableau élargit toute la colonne
+    > * { min-width: 0; }
+  }
+
+  form {
+    display: grid;
+    gap: 1em;
+
+    .submit { width: 100%; }
+  }
+
+  .list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1em;
+    margin-bottom: 1em;
+
+    h3 { margin: 0; }
+
+    .total {
+      padding: 0.375em 0.875em;
+      border-radius: 999px;
+      background: #fdecea;
+      color: var(--danger);
+      font-size: 0.9em;
+      font-weight: 600;
+    }
+  }
+
+  .scroll { max-height: 31em; overflow: auto; }
+
+  table th { border-bottom: 1px solid var(--hairline); }
+
+  .empty { padding: 2.5em; text-align: center; color: #888; }
+
+  .amount { color: var(--danger); font-weight: 600; }
+
+  .modal form { gap: 1em; }
+
+  body.dark-mode & {
+    .list-header .total { background: #3a1a22; color: #ffd6de; }
+  }
+}
+
+@media (max-width: 980px) {
+  .SortiesPage .columns { grid-template-columns: 1fr; }
+}

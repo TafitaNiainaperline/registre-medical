@@ -1,0 +1,91 @@
+@use '../../styles/variables' as *;
+
+.MedicamentsPage {
+  .add-actions {
+    display: flex;
+    gap: 0.75em;
+    flex-wrap: wrap;
+    margin-bottom: 1.5em;
+
+    button { padding: 0.75em 1.25em; }
+  }
+
+  .low-stock {
+    display: flex;
+    align-items: center;
+    gap: 0.625em;
+    margin-bottom: 1.125em;
+    padding: 0.875em 1.125em;
+    border-radius: 0.625em;
+    background: #fff4e5;
+    color: #7f4a00;
+  }
+
+  .acts { margin: 1.75em 0; }
+
+  table {
+    tr.low td { background: #fff7ea; }
+
+    .price { font-weight: 600; }
+    .date { color: var(--soft); font-size: 0.85em; }
+    .untracked { color: #888; }
+
+    .unit {
+      padding: 0.125em 0.5em;
+      border-radius: 0.25em;
+      background: #e8f4f6;
+      font-size: 0.8em;
+    }
+
+    .stock {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5em;
+
+      .value {
+        padding: 0.25em 0.5em;
+        background: none;
+        border: none;
+        box-shadow: none;
+        color: var(--brand);
+        font-size: 1em;
+        font-weight: 700;
+
+        &:hover { opacity: 0.7; transform: none; }
+      }
+    }
+  }
+
+  .best-sellers {
+    margin-top: 1.875em;
+
+    .empty { padding: 1.25em; text-align: center; color: #888; }
+    .list { display: grid; gap: 0.5em; }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.625em 0.875em;
+      border-radius: 0.5em;
+      background: #f8fafa;
+
+      .name { font-weight: 500; }
+    }
+
+    .count-badge.amber { background: #f59f00; }
+  }
+
+  body.dark-mode & {
+    .low-stock { background: #3a2a10; color: #ffd978; }
+    table tr.low td { background: #2a2317; }
+    table .unit { background: #1b2a34; }
+    .best-sellers .row { background: #111b23; }
+  }
+}
+
+// Sous cette largeur les colonnes deviennent illisibles : on fait défiler
+@media (max-width: 900px) {
+  .MedicamentsPage .table-wrap table { min-width: 52em; }
+}

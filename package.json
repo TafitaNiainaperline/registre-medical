@@ -2,19 +2,28 @@
   "name": "registre-medical-desktop",
   "private": true,
   "version": "1.0.0",
-  "main": "electron/main.js",
+  "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
-    "electron": "electron .",
-    "build": "vite build",
+    "postinstall": "node scripts/ensure-electron.js",
+    "dev": "node scripts/ensure-electron.js && concurrently \"vite\" \"tsc -p tsconfig.electron.json --watch --preserveWatchOutput\" \"wait-on http://localhost:5173 dist-electron/main.js && node scripts/dev-electron.js\"",
+    "electron": "node scripts/ensure-electron.js && electron .",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.electron.json --noEmit",
+    "build:renderer": "tsc -p tsconfig.json --noEmit && vite build",
+    "build:electron": "tsc -p tsconfig.electron.json",
+    "build": "yarn build:renderer && yarn build:electron",
     "lint": "eslint .",
     "preview": "vite preview",
-    "dist": "npm run build && electron-builder"
+    "dist": "node scripts/ensure-electron.js && yarn build && electron-builder",
+    "bun:dev": "node scripts/ensure-electron.js && concurrently \"bunx --bun vite\" \"bunx tsc -p tsconfig.electron.json --watch --preserveWatchOutput\" \"wait-on http://localhost:5173 dist-electron/main.js && node scripts/dev-electron.js\"",
+    "bun:electron": "node scripts/ensure-electron.js && bunx electron .",
+    "bun:build": "bunx tsc -p tsconfig.json --noEmit && bunx --bun vite build && bunx tsc -p tsconfig.electron.json",
+    "bun:lint": "bunx eslint .",
+    "bun:preview": "bunx --bun vite preview",
+    "bun:dist": "node scripts/ensure-electron.js && bun run bun:build && bunx electron-builder"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "exceljs": "^4.4.0",
-    "lucide-react": "^1.38.0",
     "pdfkit": "^0.18.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
@@ -23,8 +32,12 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/node": "^26.5.1",
+    "@types/pdfkit": "^0.17.6",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@types/sql.js": "^1.4.11",
     "@vitejs/plugin-react": "^6.0.1",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
@@ -34,6 +47,9 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
+    "sass": "^1.104.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.0",
     "vite": "^8.0.12",
     "wait-on": "^9.0.10"
   },
@@ -45,7 +61,7 @@
     },
     "files": [
       "dist/**/*",
-      "electron/**/*",
+      "dist-electron/**/*",
       "package.json"
     ],
     "extraResources": [
@@ -66,5 +82,8 @@
   "description": "Application desktop de gestion médicale développée avec **React**, **Electron** et **Node.js**.",
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "trustedDependencies": [
+    "electron"
+  ]
 }

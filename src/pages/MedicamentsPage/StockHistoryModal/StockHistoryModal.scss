@@ -1,0 +1,54 @@
+@use '../../../styles/variables' as *;
+
+.StockHistoryModal {
+  width: min(75em, 95vw);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+
+  .summary {
+    display: flex;
+    align-items: center;
+    gap: 2em;
+    flex-wrap: wrap;
+    padding: 0.875em 0;
+    border-bottom: 1px solid var(--hairline);
+    font-size: 0.8em;
+    color: #555;
+
+    .current { font-size: 1.6em; color: var(--brand); }
+    .entry strong { color: var(--success); }
+    .exit strong { color: var(--danger); }
+  }
+
+  .scroll { flex: 1; overflow: auto; }
+
+  table {
+    border-collapse: separate;
+    border-spacing: 0 0.375em;
+    font-size: 0.8em;
+
+    th, td { padding: 0.75em 1em; white-space: nowrap; }
+
+    th {
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      text-align: left;
+      text-transform: none;
+      letter-spacing: normal;
+    }
+
+    td { text-align: center; }
+
+    .date { th, td { background: #e8f4f6; color: #555; } }
+    .type { th, td { background: #f8fafa; } }
+    .entry { th, td { background: #e8f5e9; color: var(--success); font-weight: 600; } }
+    .exit { th, td { background: #fdecea; color: var(--danger); font-weight: 600; } }
+    .stock { th, td { background: #e8f0fe; color: var(--brand); font-weight: 700; } }
+
+    .badge.entry { background: var(--success); color: #fff; }
+    .badge.exit { background: var(--danger); color: #fff; }
+    .badge.info { background: #1a73e8; color: #fff; }
+  }
+}

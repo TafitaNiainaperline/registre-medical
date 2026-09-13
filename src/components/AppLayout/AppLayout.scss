@@ -1,0 +1,250 @@
+@use '../../styles/variables' as *;
+
+.AppLayout {
+  display: grid;
+  grid-template-columns: 16.25em 1fr;
+  min-height: 100vh;
+  align-items: start;
+
+  .sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow: hidden; // seule la navigation défile
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+    padding: 1.125em 0.875em;
+    background: linear-gradient(180deg, #fdfefe, #f1f7f9);
+    border-right: 1px solid var(--border);
+
+    .brand {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5em;
+      padding: 1.25em 1em 1em;
+      margin-bottom: 0.5em;
+      text-align: center;
+
+      .logo {
+        width: min(8.75em, 85%);
+        height: 5.25em;
+        background-image: url('/Logo.png');
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
+        filter: drop-shadow(0 4px 12px rgba(20, 140, 160, 0.2));
+      }
+
+      .name {
+        font-weight: 800;
+        font-size: 1.25em;
+        line-height: 1.3;
+        letter-spacing: 0.3px;
+        background: linear-gradient(135deg, #148ca0 0%, #0d7280 100%);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+    }
+
+    nav {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25em;
+
+      .section {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15em;
+        margin-bottom: 0.75em;
+
+        .title {
+          padding: 0 0.75em;
+          margin-bottom: 0.2em;
+          color: var(--soft);
+          font-size: 0.7em;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+      }
+
+      .link {
+        display: flex;
+        align-items: center;
+        gap: 0.75em;
+        padding: 0.625em 0.75em;
+        border-radius: $radius;
+        color: #24505d;
+        font-size: 0.9em;
+        text-decoration: none;
+        transition: background 0.2s ease, color 0.2s ease;
+
+        &:hover, &.active { background: #e2f4f7; color: var(--brand-dark); font-weight: 600; }
+        &.admin { margin-top: 0.5em; padding-top: 0.875em; border-top: 1px solid var(--border); }
+      }
+    }
+
+    .bottom {
+      flex-shrink: 0;
+      padding-top: 0.75em;
+      border-top: 1px solid var(--hairline);
+      display: flex;
+      flex-direction: column;
+      gap: 0.625em;
+
+      .user {
+        display: flex;
+        align-items: center;
+        gap: 0.625em;
+        padding: 0.625em 0.75em;
+        border-radius: $radius;
+        background: rgba(28, 150, 164, 0.08);
+        color: var(--soft);
+        font-size: 0.85em;
+      }
+
+      .theme, .logout {
+        width: 100%;
+        justify-content: flex-start;
+        padding: 0.625em 0.75em;
+        font-size: 0.9em;
+      }
+
+      .theme { background: linear-gradient(135deg, var(--brand), #15707a); }
+
+      // Action destructive : discrète au repos, franche au survol
+      .logout {
+        background: transparent;
+        border: 1px solid rgba(211, 74, 101, 0.35);
+        color: var(--danger);
+        box-shadow: none;
+
+        &:hover {
+          background: var(--danger);
+          border-color: var(--danger);
+          color: #fff;
+          opacity: 1;
+        }
+      }
+    }
+  }
+
+  // Barre supérieure et tiroir : mobile uniquement
+  .topbar { display: none; }
+  .backdrop { display: none; }
+  .sidebar .brand .close { display: none; }
+
+  .content {
+    min-width: 0; // sans quoi les tableaux élargissent la colonne
+    padding: 1.75em;
+  }
+
+  body.dark-mode & {
+    .sidebar {
+      background: linear-gradient(180deg, #13202a, #101a22);
+      border-right-color: #22333f;
+
+      .brand .name { background: linear-gradient(135deg, #4fd1e0 0%, #2bb3c4 100%); background-clip: text; -webkit-background-clip: text; }
+      nav .link { color: #c6d7dd; &:hover, &.active { background: #20313c; color: #fff; } }
+      .bottom .user { background: #1b2b35; color: #d6e7ec; }
+      .bottom .theme { background: linear-gradient(135deg, #33495a, #22313d); }
+    }
+  }
+}
+
+@media (max-width: 980px) {
+  .AppLayout {
+    grid-template-columns: 1fr;
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      gap: 0.75em;
+      padding: 0.625em 0.875em;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+
+      .burger {
+        padding: 0.4em 0.5em;
+        background: transparent;
+        color: var(--brand-dark);
+        box-shadow: none;
+
+        &:hover { background: #e2f4f7; opacity: 1; transform: none; }
+      }
+
+      .name {
+        font-weight: 800;
+        font-size: 1.05em;
+        background: linear-gradient(135deg, #148ca0 0%, #0d7280 100%);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+    }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: block;
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(2px);
+    }
+
+    // Tiroir : hors écran à gauche, amené par translation
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 60;
+      width: min(17em, 82vw);
+      height: 100vh;
+      transform: translateX(-100%);
+      transition: transform 0.25s ease;
+      box-shadow: none;
+
+      &.open { transform: translateX(0); box-shadow: 0 0 40px rgba(15, 35, 45, 0.25); }
+
+      .brand {
+        position: relative;
+        flex-direction: row;
+        align-items: center;
+        gap: 0.625em;
+        padding: 0.5em 0 1em;
+        text-align: left;
+
+        .logo { width: 2.75em; height: 2.75em; flex-shrink: 0; }
+        .name { font-size: 1.05em; }
+
+        .close {
+          display: flex;
+          margin-left: auto;
+          padding: 0.35em;
+          background: transparent;
+          color: var(--soft);
+          box-shadow: none;
+
+          &:hover { color: var(--danger); opacity: 1; transform: none; }
+        }
+      }
+    }
+
+    .content { padding: 1.25em; }
+  }
+}
+
+@media (max-width: 600px) {
+  .AppLayout .content { padding: 1em 0.75em; }
+}

@@ -1,0 +1,20 @@
+@use '../../styles/variables' as *;
+
+.AdminPage {
+  .protected { color: #aaa; font-size: 0.85em; }
+
+  .reset {
+    display: flex;
+    align-items: center;
+    gap: 0.375em;
+    max-width: 22em;
+
+    .pwd-field { flex: 1; }
+    .apply { flex-shrink: 0; background: #8f60d0; font-size: 0.85em; padding: 0.5em 0.75em; }
+  }
+}
+
+// Sous cette largeur les colonnes deviennent illisibles : on fait défiler
+@media (max-width: 900px) {
+  .AdminPage .table-wrap table { min-width: 52em; }
+}

@@ -1,0 +1,43 @@
+@use '../../styles/variables' as *;
+
+.SuggestionInput {
+  position: relative;
+  flex: 1;
+
+  .dropdown {
+    position: absolute;
+    top: calc(100% + 0.25em);
+    left: 0;
+    right: 0;
+    z-index: 20;
+    max-height: 12.5em;
+    overflow-y: auto;
+    background: #fff;
+    border-radius: $radius;
+    box-shadow: 0 10px 30px rgba(15, 35, 45, 0.16);
+
+    .option {
+      padding: 0.625em 0.75em;
+      border-bottom: 1px solid var(--hairline);
+      color: #0d2f3a;
+      font-size: 0.95em;
+      cursor: pointer;
+
+      &:last-child { border-bottom: none; }
+      &:hover { background: #f2f8fa; }
+    }
+  }
+
+  body.dark-mode & {
+    .dropdown {
+      background: #0f1920;
+      border-color: var(--border);
+
+      .option {
+        border-bottom-color: var(--border);
+        color: #e6f3f6;
+        &:hover { background: #1b2a34; }
+      }
+    }
+  }
+}

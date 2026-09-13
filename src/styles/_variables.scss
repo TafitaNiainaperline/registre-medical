@@ -1,0 +1,43 @@
+// Palette et tokens partagés
+:root {
+  --bg: #f3f7fa;
+  --panel: #ffffff;
+  --ink: #15323b;
+  --soft: #5f7b84;
+  --label: #33475b;
+  --brand: #1c96a4;
+  --brand-dark: #0d7280;
+  --border: #d8e4e8;
+  --field-border: #c8d9df;
+  --field-bg: #eef4f7;
+  --field-bg-hover: #e6eef2;
+  --hairline: #eaf1f4;
+  --danger: #d34a65;
+  --success: #28a745;
+}
+
+// Couleurs par registre, utilisées comme modificateurs
+$categories: (
+  'consultation': #1f9ea9,
+  'cpn': #d81b83,
+  'pf': #8f60d0,
+  'analyse': #e39d1f,
+  'soin': #e55f7a,
+);
+
+// Teintes d'accent réutilisables (cartes, badges, icônes)
+$tones: (
+  'brand': #1c96a4,
+  'blue': #3777cc,
+  'green': #28a745,
+  'purple': #6f42c1,
+  'pink': #d81b83,
+  'violet': #8f60d0,
+  'amber': #f59f00,
+  'red': #dc3545,
+  'sky': #4a90d9,
+);
+
+$radius: 0.75em;
+$radius-lg: 1.25em;
+$focus-ring: 0 0 0 3px rgba(28, 150, 164, 0.12);

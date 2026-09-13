@@ -1,0 +1,47 @@
+@use '../../styles/variables' as *;
+
+.DispensationPage {
+  .panel { margin-bottom: 1.5em; }
+
+  .form form {
+    display: grid;
+    gap: 1em;
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1em;
+      align-items: end;
+    }
+
+    .total {
+      display: grid;
+      gap: 0.125em;
+      padding: 0.75em 1em;
+      border-radius: 0.75em;
+      background: #e8f5e9;
+      text-align: center;
+
+      .label { font-size: 0.8em; color: #666; }
+      .value { font-size: 1.2em; font-weight: 700; color: var(--success); }
+    }
+
+    .actions { display: flex; justify-content: flex-end; }
+  }
+
+  .search-field { margin-bottom: 1em; }
+
+  table {
+    .date { white-space: nowrap; }
+    .amount { color: var(--success); font-weight: 600; }
+    .qty { width: 4.5em; }
+  }
+
+  body.dark-mode & {
+    .form .total { background: #123127; .label { color: #9bb2bb; } }
+  }
+}
+
+@media (max-width: 600px) {
+  .DispensationPage .form form .row { grid-template-columns: 1fr; }
+}

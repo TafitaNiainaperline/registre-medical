@@ -1,0 +1,81 @@
+@use 'variables' as *;
+
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  border: none;
+  border-radius: $radius;
+  padding: 0.625em 1em;
+  background: var(--brand);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(28, 150, 164, 0.18);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+
+  &:hover { opacity: 0.88; transform: translateY(-1px); }
+  &:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+}
+
+.btn-light {
+  background: #edf6f8;
+  color: #1e5c68;
+  box-shadow: none;
+
+  &:hover { background: #dff0f4; opacity: 1; }
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, var(--danger), #b93753);
+  box-shadow: 0 6px 14px rgba(211, 74, 101, 0.18);
+
+  &:hover { opacity: 1; }
+}
+
+.btn-success {
+  background: linear-gradient(135deg, var(--success), #1e7e34);
+  box-shadow: 0 6px 14px rgba(40, 167, 69, 0.18);
+}
+
+// Bouton carré ne portant qu'une icône
+.icon-btn {
+  width: 2.25em;
+  height: 2.25em;
+  padding: 0;
+  border: 1px solid transparent;
+  background: var(--field-bg);
+  color: #244955;
+  box-shadow: none;
+
+  &:hover { opacity: 0.9; }
+  &.danger { background: rgba(211, 74, 101, 0.12); color: var(--danger); }
+  &.edit { background: #007bff; border-color: #007bff; color: #fff; }
+  &.remove { background: var(--danger); border-color: var(--danger); color: #fff; }
+  &.add { background: var(--success); border-color: var(--success); color: #fff; }
+  &.confirm { background: var(--success); border-color: var(--success); color: #fff; }
+  &.cancel { background: #6c757d; border-color: #6c757d; color: #fff; }
+}
+
+// Pastille cliquable (archives, filtres)
+.chip {
+  border: 1px solid transparent;
+  background: var(--field-bg);
+  color: #244955;
+  padding: 0.5em 0.75em;
+  border-radius: 999px;
+  font-weight: 500;
+  box-shadow: none;
+
+  &.active { background: var(--brand); border-color: var(--brand); color: #fff; }
+}
+
+.link-btn {
+  width: 100%;
+  margin-top: 0.5em;
+  background: #e5f3f6;
+  color: #246174;
+  box-shadow: none;
+}

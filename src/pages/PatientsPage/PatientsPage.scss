@@ -1,0 +1,173 @@
+@use '../../styles/variables' as *;
+
+.PatientsPage {
+  .columns {
+    display: grid;
+    grid-template-columns: 22em 1fr;
+    gap: 1.5em;
+    align-items: start;
+
+    > * { min-width: 0; }
+  }
+
+  .list {
+    .new { width: 100%; margin: 0.75em 0; }
+
+    .rows {
+      display: grid;
+      gap: 0.25em;
+      max-height: 34em;
+      overflow-y: auto;
+
+      .empty { color: var(--soft); font-size: 0.9em; }
+
+      .row {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.1em;
+        padding: 0.55em 0.75em;
+        border-radius: $radius;
+        background: transparent;
+        color: var(--ink);
+        font-weight: 400;
+        text-align: left;
+        box-shadow: none;
+
+        &:hover { background: var(--field-bg); opacity: 1; transform: none; }
+        &.active { background: #e2f4f7; }
+
+        .meta { color: var(--soft); font-size: 0.8em; }
+      }
+    }
+  }
+
+  .detail {
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75em;
+      padding: 4em 1em;
+      color: var(--soft);
+
+      .Icon { opacity: 0.3; }
+      p { margin: 0; }
+    }
+
+    .identity {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1em;
+
+      h3 { margin: 0 0 0.25em; }
+      .meta { display: block; color: var(--soft); font-size: 0.88em; }
+      .tools { display: flex; gap: 0.375em; flex-shrink: 0; }
+    }
+
+    h4 {
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+      margin: 1.5em 0 0.75em;
+      color: #47616a;
+      font-size: 0.92em;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .empty { color: var(--soft); }
+  }
+
+  // Les consultations les plus récentes en premier
+  .timeline {
+    display: grid;
+    gap: 0.625em;
+
+    .visit {
+      padding: 0.875em 1em;
+      border-left: 4px solid var(--brand);
+      border-radius: $radius;
+      background: var(--field-bg);
+
+      @each $name, $tint in $categories {
+        &.#{$name} { border-left-color: $tint; }
+      }
+
+      .head {
+        display: flex;
+        align-items: center;
+        gap: 0.625em;
+        flex-wrap: wrap;
+        margin-bottom: 0.375em;
+        font-size: 0.82em;
+
+        .registry { font-weight: 700; color: var(--brand-dark); }
+        .category { padding: 0.1em 0.5em; border-radius: 999px; background: #fff; }
+        .date { color: var(--soft); margin-left: auto; }
+      }
+
+      .body {
+        display: grid;
+        gap: 0.2em;
+
+        .age { color: var(--soft); font-size: 0.85em; }
+        .treatments { font-size: 0.88em; }
+        .observation { color: var(--soft); font-size: 0.85em; font-style: italic; }
+      }
+
+      .foot {
+        display: flex;
+        gap: 1em;
+        margin-top: 0.5em;
+        font-size: 0.82em;
+        font-weight: 600;
+        color: #244955;
+      }
+    }
+  }
+
+  .addresses {
+    display: grid;
+    gap: 0.375em;
+
+    .entry {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75em;
+      padding: 0.5em 0.75em;
+      border-radius: $radius;
+      background: var(--field-bg);
+      font-size: 0.88em;
+
+      .meta { color: var(--soft); }
+    }
+  }
+
+  .fields {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75em;
+    margin-top: 1em;
+  }
+
+  .fields .age { grid-column: span 2; }
+
+
+  .actions { display: flex; justify-content: flex-end; gap: 0.5em; margin-top: 1.25em; }
+
+  body.dark-mode & {
+    .list .rows .row.active { background: #17333d; }
+    .timeline .visit .head .category { background: #0f1920; }
+  }
+}
+
+@media (max-width: 980px) {
+  .PatientsPage .columns { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  .PatientsPage .fields { grid-template-columns: 1fr; }
+  .PatientsPage .fields .age { grid-column: span 1; }
+}

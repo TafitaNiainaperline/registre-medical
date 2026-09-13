@@ -1,0 +1,15 @@
+.ItemModal {
+  width: min(34em, 92vw);
+
+  .fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75em;
+
+    .wide { grid-column: 1 / -1; }
+  }
+}
+
+@media (max-width: 600px) {
+  .ItemModal .fields { grid-template-columns: 1fr; }
+}

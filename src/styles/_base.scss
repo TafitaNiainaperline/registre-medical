@@ -1,0 +1,63 @@
+@use 'sass:color';
+@use 'variables' as *;
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: radial-gradient(circle at top right, #ebf9fc, var(--bg));
+  color: var(--ink);
+}
+
+h1 { margin: 0 0 0.5em; font-size: 2em; font-weight: 700; color: #12333d; }
+p { margin: 0 0 1.125em; color: var(--soft); font-size: 0.98em; }
+
+// En-tête commun à toutes les pages
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.25em;
+  margin-bottom: 1.5em;
+  flex-wrap: wrap;
+
+  h1 { margin: 0; font-size: 2.1em; }
+  p { margin-top: 0.375em; margin-bottom: 0; color: #68818a; }
+}
+
+.page-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  background: linear-gradient(135deg, var(--brand), #15707a);
+  color: #fff;
+  padding: 0.75em 1.125em;
+  border-radius: 0.875em;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 10px 24px rgba(28, 150, 164, 0.22);
+
+  @each $name, $tint in $categories {
+    &.#{$name} {
+      background: linear-gradient(135deg, $tint, color.adjust($tint, $lightness: -10%));
+    }
+  }
+
+  &.blue { background: linear-gradient(135deg, #4a90d9, #3574b5); }
+}
+
+@media (max-width: 700px) {
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75em;
+
+    h1 { font-size: 1.6em; }
+    .tools { display: flex; align-items: center; gap: 0.625em; }
+    .tools select { flex: 0 0 auto; }
+    .tools .page-badge { flex: 1; }
+  }
+
+  .page-badge { justify-content: center; }
+}

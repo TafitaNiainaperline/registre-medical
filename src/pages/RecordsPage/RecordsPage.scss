@@ -1,0 +1,212 @@
+@use 'sass:color';
+@use '../../styles/variables' as *;
+
+.RecordsPage {
+  .page-header .tools {
+    display: flex;
+    align-items: center;
+    gap: 0.625em;
+
+    select { width: auto; font-weight: 600; }
+  }
+
+  // Sélecteur entre la liste et la saisie
+  .tabs {
+    display: inline-flex;
+    gap: 0.25em;
+    margin-bottom: 1.25em;
+    padding: 0.3em;
+    border-radius: 999px;
+    background: var(--field-bg);
+
+    .tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5em;
+      padding: 0.55em 1.1em;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--soft);
+      font-weight: 600;
+      box-shadow: none;
+
+      &:hover { color: var(--ink); opacity: 1; transform: none; }
+
+      &.active {
+        background: #fff;
+        color: var(--brand);
+        box-shadow: 0 2px 8px rgba(22, 76, 89, 0.12);
+      }
+
+      .count {
+        padding: 0.1em 0.5em;
+        border-radius: 999px;
+        background: rgba(22, 76, 89, 0.1);
+        font-size: 0.8em;
+      }
+    }
+
+    // L'onglet actif reprend la couleur du registre
+    @each $name, $tint in $categories {
+      &.#{$name} .tab.active {
+        color: $tint;
+
+        .count { background: rgba(255, 255, 255, 0.25); background: color.change($tint, $alpha: 0.12); }
+      }
+    }
+  }
+
+  .diagnostics {
+    margin-bottom: 1em;
+
+    > strong { display: flex; align-items: center; gap: 0.375em; }
+
+    .list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.625em;
+      margin-top: 0.5em;
+    }
+
+    .tag {
+      display: flex;
+      align-items: center;
+      gap: 0.25em;
+      padding: 0.375em 0.75em;
+      border: 1px solid transparent;
+      border-radius: 0.5em;
+      background: #eef5fb;
+      color: #184a6e;
+      font-size: 0.85em;
+      font-weight: 400;
+      box-shadow: none;
+
+      &.active { background: #d3e6f6; border-color: #a8cbe8; font-weight: 600; }
+      .count { padding: 0.125em 0.375em; border-radius: 0.625em; background: #fff; font-weight: 600; }
+    }
+
+    .more {
+      padding: 0.375em 0.75em;
+      border-radius: 0.5em;
+      background: #eef5fb;
+      color: #184a6e;
+      font-size: 0.85em;
+    }
+  }
+
+  .record-form {
+    // Le liseré du bloc reprend la couleur du registre
+    @each $name, $tint in $categories {
+      &.#{$name} {
+        border-top: 5px solid $tint;
+
+        .block > legend { color: $tint; }
+      }
+    }
+
+    .block {
+      &.patient {
+        // Nom et âge sur la première ligne, sexe et domicile sur la seconde
+        .SuggestionInput:has(#patient-nom) { grid-column: span 2; }
+        .SuggestionInput:has(#domicile) { grid-column: span 3; }
+      }
+
+      .age-group {
+        grid-column: span 2;
+        display: flex;
+        align-items: center;
+        gap: 0.5em;
+        flex-wrap: wrap;
+
+        select { flex: 1 1 10em; }
+        input { flex: 1 1 5em; min-width: 0; }
+        .unit { color: var(--soft); font-size: 0.9em; white-space: nowrap; }
+      }
+
+      .treatments { grid-column: span 4; }
+    }
+  }
+
+  table {
+    font-size: 0.88em;
+
+    th { background: #e8f4f8; color: #184a6e; }
+
+    .registry { color: var(--soft); font-weight: 700; }
+    .reference { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .treatments { max-width: 12.5em; }
+    .cost { white-space: nowrap; font-weight: 600; }
+    .date { color: var(--soft); font-size: 0.94em; }
+
+    .badge.age {
+      &.ans { background: #e2f4f7; color: var(--brand-dark); }
+      &.mois { background: #fff3cd; color: #856404; }
+      &.jours { background: #fce7f3; color: #9d174d; }
+    }
+
+    .badge.tdr {
+      &.positif { background: #fff3e0; color: #e65100; }
+      &.negatif { background: #e8f5e9; color: #2e7d32; }
+    }
+
+    .appointment {
+      font-size: 0.94em;
+
+      strong { display: block; color: #184a6e; }
+      .status { font-size: 0.85em; color: var(--brand); }
+      .status.due { color: #e65100; }
+    }
+  }
+
+  body.dark-mode & {
+    .tabs { background: #101b23; }
+    .tabs .tab.active { background: #1d2b36; box-shadow: none; }
+    .tabs .tab .count { background: rgba(255, 255, 255, 0.12); }
+
+    .diagnostics .tag, .diagnostics .more { background: #1b2a34; color: #d7e7ec; }
+    .diagnostics .tag.active { background: #24404f; border-color: transparent; }
+    .diagnostics .tag .count { background: #0f1920; }
+    table th { background: #1b2a34; }
+
+    table .badge.age {
+      &.ans { background: #17333d; color: #8fe4ef; }
+      &.mois { background: #4d3d14; color: #ffd978; }
+      &.jours { background: #4a1830; color: #ff9bc5; }
+    }
+  }
+}
+
+@media (max-width: 980px) {
+  .RecordsPage .record-form .block {
+    .age-group { grid-column: span 2; }
+    .treatments { grid-column: span 2; }
+
+    &.patient .SuggestionInput { grid-column: span 2; }
+  }
+}
+
+@media (max-width: 600px) {
+  // Les onglets prennent toute la largeur et se partagent la place
+  .RecordsPage .tabs {
+    display: flex;
+    width: 100%;
+
+    .tab {
+      flex: 1;
+      justify-content: center;
+      padding: 0.55em 0.5em;
+      font-size: 0.9em;
+    }
+  }
+
+  .RecordsPage .record-form .block {
+    .age-group, .treatments { grid-column: span 1; }
+
+    &.patient .SuggestionInput { grid-column: span 1; }
+  }
+}
+
+// Sous cette largeur les colonnes deviennent illisibles : on fait défiler
+@media (max-width: 900px) {
+  .RecordsPage .table-wrap table { min-width: 52em; }
+}

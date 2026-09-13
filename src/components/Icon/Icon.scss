@@ -1,0 +1,59 @@
+.Icon[data-icon] {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 1em;
+  height: 1em;
+  background-color: currentColor;
+  mask-image: var(--icon);
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+
+  &.md { width: 1.15em; height: 1.15em; }
+  &.lg { width: 1.3em; height: 1.3em; }
+  &.xl { width: 1.55em; height: 1.55em; }
+  &.xxl { width: 1.85em; height: 1.85em; }
+
+  &[data-icon='activity'] { --icon: url('/icons/activity.svg'); }
+  &[data-icon='alert'] { --icon: url('/icons/alert.svg'); }
+  &[data-icon='archive'] { --icon: url('/icons/archive.svg'); }
+  &[data-icon='baby'] { --icon: url('/icons/baby.svg'); }
+  &[data-icon='bank'] { --icon: url('/icons/bank.svg'); }
+  &[data-icon='book'] { --icon: url('/icons/book.svg'); }
+  &[data-icon='bug'] { --icon: url('/icons/bug.svg'); }
+  &[data-icon='calendar'] { --icon: url('/icons/calendar.svg'); }
+  &[data-icon='check'] { --icon: url('/icons/check.svg'); }
+  &[data-icon='check-circle'] { --icon: url('/icons/check-circle.svg'); }
+  &[data-icon='clock'] { --icon: url('/icons/clock.svg'); }
+  &[data-icon='close'] { --icon: url('/icons/close.svg'); }
+  &[data-icon='dashboard'] { --icon: url('/icons/dashboard.svg'); }
+  &[data-icon='edit'] { --icon: url('/icons/edit.svg'); }
+  &[data-icon='excel'] { --icon: url('/icons/excel.svg'); }
+  &[data-icon='eye'] { --icon: url('/icons/eye.svg'); }
+  &[data-icon='eye-off'] { --icon: url('/icons/eye-off.svg'); }
+  &[data-icon='file'] { --icon: url('/icons/file.svg'); }
+  &[data-icon='folder'] { --icon: url('/icons/folder.svg'); }
+  &[data-icon='hash'] { --icon: url('/icons/hash.svg'); }
+  &[data-icon='heart'] { --icon: url('/icons/heart.svg'); }
+  &[data-icon='help'] { --icon: url('/icons/help.svg'); }
+  &[data-icon='history'] { --icon: url('/icons/history.svg'); }
+  &[data-icon='lock'] { --icon: url('/icons/lock.svg'); }
+  &[data-icon='login'] { --icon: url('/icons/login.svg'); }
+  &[data-icon='logout'] { --icon: url('/icons/logout.svg'); }
+  &[data-icon='menu'] { --icon: url('/icons/menu.svg'); }
+  &[data-icon='microscope'] { --icon: url('/icons/microscope.svg'); }
+  &[data-icon='money'] { --icon: url('/icons/money.svg'); }
+  &[data-icon='moon'] { --icon: url('/icons/moon.svg'); }
+  &[data-icon='package'] { --icon: url('/icons/package.svg'); }
+  &[data-icon='pill'] { --icon: url('/icons/pill.svg'); }
+  &[data-icon='plus'] { --icon: url('/icons/plus.svg'); }
+  &[data-icon='search'] { --icon: url('/icons/search.svg'); }
+  &[data-icon='settings'] { --icon: url('/icons/settings.svg'); }
+  &[data-icon='stethoscope'] { --icon: url('/icons/stethoscope.svg'); }
+  &[data-icon='sun'] { --icon: url('/icons/sun.svg'); }
+  &[data-icon='trash'] { --icon: url('/icons/trash.svg'); }
+  &[data-icon='trending'] { --icon: url('/icons/trending.svg'); }
+  &[data-icon='user'] { --icon: url('/icons/user.svg'); }
+  &[data-icon='user-plus'] { --icon: url('/icons/user-plus.svg'); }
+  &[data-icon='users'] { --icon: url('/icons/users.svg'); }
+}

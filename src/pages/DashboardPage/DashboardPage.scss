@@ -1,0 +1,82 @@
+@use '../../styles/variables' as *;
+
+.DashboardPage {
+  .page-header .tools {
+    display: flex;
+    align-items: center;
+    gap: 0.625em;
+
+    select { width: auto; font-weight: 600; }
+  }
+
+  .cards-grid { margin-bottom: 1.75em; }
+
+  .muted { color: #888; font-size: 0.9em; }
+
+  .stat-card {
+    .positive { color: var(--danger); }
+    .negative { color: #007bff; }
+
+    .count-badge {
+      &.red { background: var(--danger); }
+      &.blue { background: #007bff; }
+    }
+
+    .rows.scroll { max-height: 7.5em; overflow-y: auto; font-size: 0.78em; }
+
+    &.register {
+      text-align: center;
+
+      > .Icon { margin-bottom: 0.5em; }
+      .value { font-size: 1.5em; }
+    }
+  }
+
+  .panel { margin-bottom: 1.75em; }
+
+  .age-groups {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75em;
+
+    .group {
+      padding: 0.625em 1em;
+      background: #eef5fb;
+      border-radius: 0.625em;
+      color: #184a6e;
+      font-weight: 500;
+
+      strong { color: #3777cc; }
+    }
+  }
+
+  .months {
+    display: grid;
+    gap: 0.875em;
+
+    .month {
+      padding: 1em;
+      background: #f6fafb;
+      border-radius: 0.625em;
+
+      .label { margin-bottom: 0.625em; font-weight: 600; color: #333; }
+      .tags { display: flex; flex-wrap: wrap; gap: 0.5em; }
+
+      .tag {
+        padding: 0.375em 0.75em;
+        border-radius: 999px;
+        background: #e8f4f6;
+        color: var(--brand);
+        font-size: 0.9em;
+        font-weight: 500;
+      }
+    }
+  }
+
+  body.dark-mode & {
+    .age-groups .group { background: #1b2a34; color: #d7e7ec; }
+    .months .month { background: #111b23; }
+    .months .month .label { color: #e6f3f6; }
+    .months .month .tag { background: #1b2a34; }
+  }
+}

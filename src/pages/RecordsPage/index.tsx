@@ -1,0 +1,363 @@
+import Icon from '../../components/Icon'
+import MonthlyArchiveBanner from '../../components/MonthlyArchiveBanner'
+import SuggestionInput from '../../components/SuggestionInput'
+import TreatmentSelector from '../../components/TreatmentSelector'
+import PatientPicker from '../../components/PatientPicker'
+import DatePicker from '../../components/DatePicker'
+import DossierHistory from './DossierHistory'
+import type { Category } from '../../constants'
+import { formatDate, formatDay } from '../../utils/date'
+import { capitalize } from '../../utils/text'
+import { ageUnit, displayAge, displayRegistryNumber, treatmentsLabel } from '../../utils/record'
+import { appointmentStatus, useRecordsPage } from './useRecordsPage'
+import './RecordsPage.scss'
+
+type Props = {
+  category: Category
+}
+
+const RecordsPage = ({ category }: Props) => {
+  const {
+    activeTab, setActiveTab, records,
+    medications, archives, activeArchive, setActiveArchive, selectedYear, setSelectedYear, availableYears,
+    form, setForm, editingId, filters, setFilters, actionError, actionOk, toast,
+    duplicate, historyRow, dossierHistory, historyLoading, isAdmin,
+    change, submit, edit, viewHistory, continueTreatment, loadDuplicate, downloadReceipt, remove, load,
+    cancelEdit, clearFilters, diagnosticOptions, selectPatient, clearPatient, setIdentity,
+    filteredRecords, diagnosticSummary,
+  } = useRecordsPage(category)
+
+  const isConsultation = category.key === 'consultation'
+  // CPN et PF ne concernent que des adultes : âge en années
+  const isAdultRegistry = category.key === 'cpn' || category.key === 'pf'
+
+  // Chaque registre affiche sa donnée propre dans la liste
+  const extraColumn =
+    category.key === 'consultation' ? { label: 'TDR', value: null }
+    : category.key === 'cpn' ? { label: 'CPN', value: 'cpn_type' as const }
+    : category.key === 'pf' ? { label: 'Produit PF', value: 'pf_method' as const }
+    : null
+
+  const columnCount = 12 + (isConsultation ? 1 : 0) + (extraColumn ? 1 : 0)
+  const hasFilters = Object.values(filters).some(Boolean)
+
+  return (
+    <section className="RecordsPage">
+      <div className="page-header">
+        <div>
+          <h1>Registre {category.label}</h1>
+          {isConsultation && <p>Médicaments et actes médicaux.</p>}
+        </div>
+
+        <div className="tools">
+          <select value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))}>
+            {availableYears.map((year) => <option key={year} value={year}>{year}</option>)}
+          </select>
+
+          <div className={`page-badge ${category.key}`}>
+            <Icon name={category.icon} /> {category.label}
+          </div>
+        </div>
+      </div>
+
+      <MonthlyArchiveBanner
+        current={activeArchive}
+        archives={archives.filter((a) => a.year === selectedYear)}
+        allArchives={archives}
+        onChange={(archive) => { setActiveArchive(archive); load(archive) }}
+      />
+
+      <div className={`tabs ${category.key}`} role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'liste'}
+          className={activeTab === 'liste' ? 'tab active' : 'tab'}
+          onClick={() => setActiveTab('liste')}
+        >
+          <Icon name="history" size="md" />
+          Liste
+          <span className="count">{records.length}</span>
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'nouveau'}
+          className={activeTab === 'nouveau' ? 'tab active' : 'tab'}
+          onClick={() => setActiveTab('nouveau')}
+        >
+          <Icon name={editingId ? 'edit' : 'plus'} size="md" />
+          {editingId ? 'Modifier le dossier' : 'Nouveau dossier'}
+        </button>
+      </div>
+
+      {actionError && <p className="error-msg"><Icon name="alert" /> {actionError}</p>}
+      {actionOk && <p className="success-msg"><Icon name="check-circle" /> {actionOk}</p>}
+      {toast && <div className="toast" role="status"><Icon name="calendar" /> {toast}</div>}
+
+      {activeTab === 'liste' && (
+      <div className="panel-liste" role="tabpanel">
+
+      {diagnosticSummary.length > 0 && (
+        <div className="diagnostics">
+          <strong><Icon name="check-circle" /> Synthèse diagnostics ce mois :</strong>
+
+          <div className="list">
+            {diagnosticSummary.slice(0, 6).map(([diagnostic, count]) => (
+              <button
+                key={diagnostic}
+                type="button"
+                className={filters.diagnostic === diagnostic ? 'tag active' : 'tag'}
+                onClick={() => setFilters({ ...filters, diagnostic })}
+              >
+                {diagnostic} <span className="count">{count}</span>
+              </button>
+            ))}
+
+            {diagnosticSummary.length > 6 && (
+              <span className="more">+{diagnosticSummary.length - 6} autres diagnostics</span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {historyRow && !duplicate && <DossierHistory rows={dossierHistory} loading={historyLoading} />}
+
+      <div className="search-bar">
+        <div className="search-field">
+          <Icon name="search" />
+          <input
+            type="text"
+            placeholder="Recherche par nom, diagnostic ou N° registre..."
+            value={filters.search}
+            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+          />
+        </div>
+
+        <input
+          type="text"
+          placeholder="Filtrer par âge"
+          value={filters.age}
+          onChange={(e) => setFilters({ ...filters, age: e.target.value })}
+        />
+
+        <input
+          type="date"
+          value={filters.date}
+          onChange={(e) => setFilters({ ...filters, date: e.target.value })}
+        />
+
+        <input
+          type="text"
+          placeholder="Filtrer par acte médical..."
+          value={filters.act}
+          onChange={(e) => setFilters({ ...filters, act: e.target.value })}
+        />
+
+        {hasFilters && (
+          <button type="button" className="btn-light" onClick={clearFilters}>
+            <Icon name="close" /> Effacer
+          </button>
+        )}
+
+        <span className="count">
+          {filteredRecords.length} résultat{filteredRecords.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+
+
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>N° registre</th>
+              {isConsultation && <th>Référence</th>}
+              <th>Patient</th>
+              <th>Sexe</th>
+              <th>Âge</th>
+              <th>Domicile</th>
+              <th>Diagnostic</th>
+              <th>Traitement</th>
+              <th>Observation</th>
+              {extraColumn && <th>{extraColumn.label}</th>}
+              <th>Coût</th>
+              <th>Date</th>
+              <th>Rendez-vous</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredRecords.length === 0 && (
+              <tr>
+                <td className="empty" colSpan={columnCount}>Aucune donnée enregistrée.</td>
+              </tr>
+            )}
+
+            {filteredRecords.map((row) => (
+              <tr key={row.id}>
+                <td className="registry">{displayRegistryNumber(row.registry_number)}</td>
+                {isConsultation && <td className="reference">{row.reference || '-'}</td>}
+                <td><strong>{row.patient_nom}</strong> {row.patient_prenom}</td>
+                <td>{row.sexe || '-'}</td>
+                <td><span className={`badge age ${ageUnit(row.age_months)}`}>{displayAge(row.age)}</span></td>
+                <td>{row.domicile}</td>
+                <td>{row.diagnostic}</td>
+                <td className="treatments">{treatmentsLabel(row.treatments) || row.traitement}</td>
+                <td>{row.observation || '-'}</td>
+
+                {extraColumn && (
+                  <td>
+                    {extraColumn.value
+                      ? (row[extraColumn.value] || '-')
+                      : row.tdr_result
+                        ? <span className={`badge tdr ${row.tdr_result}`}>{row.tdr_result === 'positif' ? 'Positif' : 'Négatif'}</span>
+                        : '-'}
+                  </td>
+                )}
+
+                <td className="cost">{row.cost} Ar</td>
+                <td className="date">{formatDate(row.created_at)}</td>
+                <td className="appointment">
+                  {row.appointment_date ? (
+                    <>
+                      <strong>{formatDay(row.appointment_date, { weekday: true })}</strong>
+                      <span className={row.appointment_date <= new Date().toISOString().slice(0, 10) ? 'status due' : 'status'}>
+                        {appointmentStatus(row.appointment_date)}
+                      </span>
+                    </>
+                  ) : '-'}
+                </td>
+                <td className="actions">
+                  <div>
+                    <button className="icon-btn" title="Modifier" aria-label="Modifier" onClick={() => edit(row)}>
+                      <Icon name="edit" />
+                    </button>
+                    <button className="icon-btn" title="Voir l'historique" aria-label="Voir l'historique" onClick={() => viewHistory(row)}>
+                      <Icon name="history" />
+                    </button>
+                    <button className="icon-btn" title="Télécharger le reçu" aria-label="Télécharger le reçu" onClick={() => downloadReceipt(row)}>
+                      <Icon name="file" />
+                    </button>
+                    {isAdmin && (
+                      <button className="icon-btn danger" title="Supprimer" aria-label="Supprimer" onClick={() => remove(row.id)}>
+                        <Icon name="trash" />
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      </div>
+      )}
+
+      {activeTab === 'nouveau' && (
+      <div className="panel-nouveau" role="tabpanel">
+
+        {duplicate && (
+          <div className="info-msg">
+            <span><Icon name="alert" /> Dossier N° {displayRegistryNumber(duplicate.registry_number)} déjà ouvert ce mois</span>
+            <button type="button" className="btn-light" onClick={loadDuplicate}>Charger le dossier</button>
+            <button type="button" className="btn-light" onClick={continueTreatment}>Continuer le traitement</button>
+            <button type="button" onClick={(e) => submit(e, true)}>Nouvelle consultation</button>
+          </div>
+        )}
+
+        {duplicate && <DossierHistory rows={dossierHistory} loading={historyLoading} />}
+
+        <form className={`record-form ${category.key}`} onSubmit={submit}>
+          <fieldset className="block patient">
+          <legend>Patient</legend>
+          <PatientPicker
+            patient={form.patient}
+            identity={form.identity}
+            onIdentityChange={setIdentity}
+            onSelect={selectPatient}
+            onClear={clearPatient}
+            yearsOnly={isAdultRegistry}
+          />
+        </fieldset>
+
+        <fieldset className="block diagnostic">
+            <legend>Diagnostic et suivi</legend>
+
+            <SuggestionInput
+              value={form.diagnostic}
+              onChange={(value) => setForm({ ...form, diagnostic: capitalize(value, true) })}
+              suggestions={diagnosticOptions}
+              placeholder="Diagnostic"
+              id="diagnostic"
+            />
+
+            <div className="field appointment">
+              <span>Rendez-vous</span>
+              <DatePicker
+                value={form.appointment_date}
+                onChange={(value) => setForm({ ...form, appointment_date: value })}
+                label="Ajouter un prochain rendez-vous"
+                weekday
+              />
+            </div>
+
+            {isConsultation && (
+              <input name="reference" placeholder="Référence (optionnel)" value={form.reference} onChange={change} />
+            )}
+
+            {isConsultation && (
+              <select name="tdr_result" value={form.tdr_result} onChange={change}>
+                <option value="">TDR (optionnel)</option>
+                <option value="positif">Positif</option>
+                <option value="negatif">Négatif</option>
+              </select>
+            )}
+
+            {category.key === 'pf' && (
+              <input name="pf_method" placeholder="Produits PF" value={form.pf_method} onChange={change} />
+            )}
+
+            {category.key === 'cpn' && (
+              <select name="cpn_type" value={form.cpn_type} onChange={change}>
+                <option value="">CPN (optionnel)</option>
+                <option value="CPN1">CPN1</option>
+                <option value="CPN2">CPN2</option>
+                <option value="CPN3">CPN3</option>
+                <option value="CPN4">CPN4</option>
+                <option value="CPN5">CPN5</option>
+              </select>
+            )}
+          </fieldset>
+
+          <fieldset className="block traitement">
+            <legend>Traitement</legend>
+
+            <div className="treatments">
+              <TreatmentSelector
+                medications={medications}
+                value={form.treatments}
+                onChange={(treatments) => setForm({ ...form, treatments })}
+              />
+            </div>
+          </fieldset>
+
+          <fieldset className="block observation">
+            <legend>Observation</legend>
+
+            <textarea name="observation" placeholder="Observation" value={form.observation} onChange={change} />
+          </fieldset>
+
+          <div className="actions">
+            <button type="submit">{editingId ? 'Modifier' : 'Ajouter'}</button>
+            {editingId && <button type="button" className="btn-light" onClick={cancelEdit}>Annuler</button>}
+          </div>
+        </form>
+
+      </div>
+      )}
+    </section>
+  )
+}
+
+export default RecordsPage

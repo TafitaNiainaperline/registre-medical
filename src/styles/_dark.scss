@@ -1,0 +1,59 @@
+@use 'variables' as *;
+
+// Thème sombre : uniquement les primitives globales.
+// Chaque composant gère ses propres surcharges dans son SCSS.
+body.dark-mode {
+  --bg: #0f1720;
+  --panel: #16212b;
+  --ink: #ecf3f6;
+  --soft: #9bb2bb;
+  --border: #243542;
+  --field-border: #304554;
+  --field-bg: #101b23;
+  --field-bg-hover: #16232d;
+  --hairline: #22323d;
+  --label: #c6d7dd;
+
+  background: radial-gradient(circle at top right, #1b2c36, #0f1720);
+  color: var(--ink);
+
+  h1, h2, h3, strong { color: #f1f7fa; }
+  // Pas de `span` ici : il écraserait la couleur propre des boutons et étiquettes
+  p, td { color: #c6d7dd; }
+
+  input, textarea, select {
+    color: var(--ink);
+
+    &::placeholder { color: #7f98a1; }
+    option { background: #0f1920; color: var(--ink); }
+  }
+
+  .stat-card, .panel, .record-form, .table-wrap, .search-bar, .modal {
+    background: linear-gradient(145deg, #16212b, #111b23);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
+  }
+
+  table {
+    th { background: #1b2a34; color: #d7e7ec; border-bottom-color: var(--hairline); }
+    tbody tr:nth-child(even) td { background: #131e26; }
+    tbody tr:hover td { background: #1c2b35; }
+  }
+
+  .error-msg { background: #3a1a22; color: #ffd6de; }
+  .success-msg { background: #123127; color: #d1fae5; }
+  .info-msg { background: #1b2a34; color: #d7e7ec; }
+
+  .icon-btn { background: var(--field-bg); color: var(--ink); }
+  .icon-btn.danger { background: rgba(211, 74, 101, 0.18); }
+  .btn-light { background: #233543; color: #e6f0f3; }
+
+  .chip { background: var(--field-bg); color: #d7e7ec; }
+  .chip.active { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+  .badge.brand { background: #17333d; color: #8fe4ef; }
+  .badge.neutral { background: #1b2a34; color: #c6d7dd; }
+
+  .modal .close { color: #c6d7dd; }
+
+  ::-webkit-scrollbar-thumb { background: var(--field-border); }
+}

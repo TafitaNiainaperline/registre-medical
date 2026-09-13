@@ -1,0 +1,136 @@
+@use 'variables' as *;
+
+// Champs de saisie partagés
+// Le champ se signale par son fond ; la bordure n'apparaît qu'au focus
+%field {
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: $radius;
+  padding: 0.625em 0.75em;
+  font: inherit;
+  color: var(--ink);
+  background: var(--field-bg);
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &::placeholder { color: #68818a; opacity: 1; }
+  &:hover { background: var(--field-bg-hover); }
+  &:focus {
+    outline: none;
+    border-color: var(--brand);
+    background: #fff;
+    box-shadow: $focus-ring;
+  }
+}
+
+input, textarea, select { @extend %field; }
+
+select { cursor: pointer; }
+textarea { min-height: 4.875em; }
+
+// Libellé au-dessus d'un champ
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
+  color: var(--label);
+  font-size: 0.85em;
+  font-weight: 600;
+
+  small { color: #68818a; font-size: 0.75em; font-weight: 400; }
+
+  // Le champ ne reprend ni le gras ni la taille réduite du libellé
+  input, select, textarea { font-weight: 400; font-size: 1.06em; }
+}
+
+// Formulaire principal en grille
+.record-form {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.625em;
+  align-items: end; // les champs étiquetés restent alignés sur les autres
+  background: linear-gradient(145deg, #ffffff, #f8fbfc);
+  border-radius: $radius-lg;
+  padding: 1.25em;
+  box-shadow: 0 10px 24px rgba(22, 76, 89, 0.06);
+
+  // Sans min-width, un enfant large élargit toute la grille
+  > * { min-width: 0; }
+
+  // Bloc thématique : un intitulé et de l'espace suffisent à regrouper
+  .block {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.625em;
+    align-items: end;
+    margin: 0;
+    border: none;
+    padding: 0;
+
+    // Un seul filet entre deux groupes, au lieu d'un cadre autour de chacun
+    + .block {
+      margin-top: 0.5em;
+      padding-top: 1em;
+      border-top: 1px solid var(--hairline);
+    }
+
+    > legend {
+      grid-column: 1 / -1;
+      margin-bottom: 0.25em;
+      padding: 0;
+      color: var(--label);
+      font-size: 0.8em;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    > * { min-width: 0; }
+  }
+
+  textarea { grid-column: span 4; }
+  .actions { grid-column: span 4; display: flex; gap: 0.5em; justify-content: flex-end; }
+}
+
+// Champ mot de passe avec œil
+.pwd-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  input { padding-right: 2.625em; }
+}
+
+.eye-btn {
+  position: absolute;
+  right: 0.5em;
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0.25em;
+  color: var(--soft);
+  cursor: pointer;
+
+  &:hover { color: var(--brand); transform: none; opacity: 1; }
+}
+
+@media (max-width: 980px) {
+  .record-form {
+    grid-template-columns: 1fr 1fr;
+    textarea, .actions { grid-column: span 2; }
+
+    .block { grid-template-columns: 1fr 1fr; }
+  }
+}
+
+@media (max-width: 600px) {
+  .record-form {
+    grid-template-columns: 1fr;
+    padding: 1em;
+    textarea, .actions { grid-column: span 1; }
+
+    .block { grid-template-columns: 1fr; padding: 0 0.75em 0.75em; }
+  }
+}

@@ -1,0 +1,125 @@
+@use '../../styles/variables' as *;
+
+.PatientPicker {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.625em;
+
+  .hint {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin: 0;
+    color: var(--soft);
+    font-size: 0.85em;
+  }
+
+  .banner {
+    display: flex;
+    align-items: center;
+    gap: 0.625em;
+    padding: 0.625em 0.75em;
+    border-radius: $radius;
+    background: #e2f4f7;
+    font-size: 0.9em;
+
+    > span { flex: 1; }
+  }
+
+  .fields {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.625em;
+
+    > * { min-width: 0; }
+    .name { grid-column: span 2; position: relative; }
+    .age { grid-column: span 2; }
+  }
+
+
+  // Un patient retenu : les champs sont repris et ne se modifient plus ici
+  &.locked .fields {
+    input, select {
+      background: #f4f8f9;
+      color: var(--soft);
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+  }
+
+  .matches {
+    position: absolute;
+    top: calc(100% + 0.25em);
+    left: 0;
+    right: 0;
+    z-index: 25;
+    max-height: 15em;
+    overflow-y: auto;
+    padding: 0.25em;
+    border-radius: $radius;
+    background: #fff;
+    box-shadow: 0 12px 32px rgba(15, 35, 45, 0.18);
+
+    .match, .dismiss {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      padding: 0.5em 0.625em;
+      border-radius: 0.5em;
+      background: transparent;
+      color: var(--ink);
+      font-weight: 400;
+      text-align: left;
+      box-shadow: none;
+
+      &:hover { background: var(--field-bg); opacity: 1; transform: none; }
+    }
+
+    .match {
+      justify-content: space-between;
+      gap: 0.75em;
+
+      .who { display: flex; flex-direction: column; }
+      .meta { color: var(--soft); font-size: 0.8em; }
+
+      .score {
+        flex-shrink: 0;
+        padding: 0.15em 0.6em;
+        border-radius: 999px;
+        background: #e8eef1;
+        color: var(--soft);
+        font-size: 0.8em;
+        font-weight: 700;
+
+        &.high { background: #d1fae5; color: #065f46; }
+      }
+    }
+
+    .dismiss {
+      gap: 0.5em;
+      margin-top: 0.25em;
+      border-top: 1px solid var(--hairline);
+      border-radius: 0;
+      color: var(--brand);
+      font-weight: 600;
+    }
+  }
+
+  body.dark-mode & {
+    .banner { background: #17333d; }
+    &.locked .fields input, &.locked .fields select { background: #16212b; }
+    .matches { background: #16212b; }
+    .matches .match:hover, .matches .dismiss:hover { background: #1b2a34; }
+  }
+}
+
+@media (max-width: 980px) {
+  .PatientPicker .fields { grid-template-columns: repeat(2, 1fr); }
+  .PatientPicker .fields .name { grid-column: span 2; }
+  .PatientPicker .banner { flex-wrap: wrap; }
+}
+
+@media (max-width: 600px) {
+  .PatientPicker .fields { grid-template-columns: 1fr; }
+  .PatientPicker .fields .name { grid-column: span 1; }
+}
