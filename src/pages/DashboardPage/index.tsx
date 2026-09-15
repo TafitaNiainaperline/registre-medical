@@ -1,11 +1,11 @@
 import Icon from '../../components/Icon'
-import FilterCard from '../../components/FilterCard'
 import { useDashboardPage } from './useDashboardPage'
 import './DashboardPage.scss'
 
 const DashboardPage = () => {
   const {
-    selectedYear, setSelectedYear, availableYears, stats, archiveDiagnostics, dispensations,
+    selectedYear, setSelectedYear, selectedMonth, setSelectedMonth, availableYears, stats, dispensations,
+    periodLabel, loading, error, ready,
     totalRecords, totalAmount, cashOutflowTotal, balance, tdr,
     sexSummary, ageGroupSummary, diagnosticSummary, pfSummary, cpnSummary, diagnosticsByCategory,
   } = useDashboardPage()
@@ -15,11 +15,16 @@ const DashboardPage = () => {
       <div className="page-header">
         <div>
           <h1>Tableau de bord</h1>
-          <p>Aperçu général des registres — {selectedYear}.</p>
+          <p>Aperçu mensuel des registres — {periodLabel}.</p>
         </div>
 
         <div className="tools">
-          <select value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))}>
+          <select aria-label="Mois du tableau de bord" disabled={!ready} value={selectedMonth} onChange={(e) => setSelectedMonth(Number(e.target.value))}>
+            {Array.from({ length: 12 }, (_, index) => (
+              <option key={index + 1} value={index + 1}>{new Date(2026, index, 1).toLocaleDateString('fr-FR', { month: 'long' })}</option>
+            ))}
+          </select>
+          <select aria-label="Année du tableau de bord" disabled={!ready} value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))}>
             {availableYears.map((year) => <option key={year} value={year}>{year}</option>)}
           </select>
 
@@ -29,23 +34,25 @@ const DashboardPage = () => {
         </div>
       </div>
 
-      <div className="cards-grid">
+      {loading ? <p role="status">Chargement du mois…</p> : error ? <p className="error-msg" role="alert">{error}</p> : (
+      <>
+      <div className="cards-grid overview">
         <article className="stat-card blue">
           <div className="top">
             <Icon name="folder" size="xl" />
             <h3>Total dossiers</h3>
           </div>
           <strong className="value">{totalRecords}</strong>
-          <span className="subtitle">Cette année</span>
+          <span className="subtitle">{periodLabel}</span>
         </article>
 
         <article className="stat-card green">
           <div className="top">
-            <Icon name="money" size="xl" />
+            <span className="currency-icon" aria-hidden="true">Ar</span>
             <h3>Montant facturé</h3>
           </div>
           <strong className="value">{totalAmount.toLocaleString()} Ar</strong>
-          <span className="subtitle">Total des coûts</span>
+          <span className="subtitle">Total du mois</span>
         </article>
 
         <article className="stat-card red">
@@ -59,6 +66,9 @@ const DashboardPage = () => {
           </span>
         </article>
 
+      </div>
+
+      <div className="cards-grid">
         <article className="stat-card amber">
           <div className="top">
             <Icon name="users" size="xl" />
@@ -109,21 +119,27 @@ const DashboardPage = () => {
       </div>
 
       <div className="cards-grid">
-        <FilterCard
-          title="Produits PF"
-          icon="heart"
-          tone="green"
-          placeholder="Filtrer les produits..."
-          entries={pfSummary.map(([label, value]) => ({ label, value }))}
-        />
-
-        <FilterCard
-          title="CPN"
-          icon="baby"
-          tone="pink"
-          placeholder="Filtrer les CPN..."
-          entries={cpnSummary.map(([label, value]) => ({ label, value }))}
-        />
+        {([
+          { title: 'Produits PF', icon: 'heart', tone: 'violet', entries: pfSummary },
+          { title: 'CPN', icon: 'baby', tone: 'pink', entries: cpnSummary },
+        ] as const).map((summary) => (
+          <article className={`stat-card registry-counts ${summary.tone}`} key={summary.title}>
+            <div className="top">
+              <Icon name={summary.icon} size="md" />
+              <h3>{summary.title}</h3>
+            </div>
+            <p className="scope">{periodLabel}</p>
+            {summary.entries.length === 0 ? <span className="muted">Aucun produit PF enregistré pour ce mois</span> : (
+              <dl className="summary-chips">
+                {summary.entries.map(([label, count]) => (
+                  <div className="summary-chip" key={label}>
+                    <dt>{label}</dt><dd>{count.toLocaleString('fr-FR')}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+          </article>
+        ))}
 
         <article className="stat-card sky">
           <div className="top">
@@ -143,29 +159,6 @@ const DashboardPage = () => {
               <span className="group" key={group}>
                 {group} <strong>({count})</strong>
               </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {archiveDiagnostics.length > 0 && (
-        <div className="panel">
-          <h3><Icon name="calendar" size="md" /> Diagnostics par mois</h3>
-          <div className="months">
-            {archiveDiagnostics.map((archive) => (
-              <div className="month" key={archive.label}>
-                <div className="label">{archive.label}</div>
-
-                {archive.topDiagnostics.length === 0 ? (
-                  <span className="muted">Aucun diagnostic enregistré</span>
-                ) : (
-                  <div className="tags">
-                    {archive.topDiagnostics.map(([diagnostic, count]) => (
-                      <span className="tag" key={diagnostic}>{diagnostic} ({count})</span>
-                    ))}
-                  </div>
-                )}
-              </div>
             ))}
           </div>
         </div>
@@ -205,6 +198,8 @@ const DashboardPage = () => {
           ))}
         </div>
       </div>
+      </>
+      )}
     </section>
   )
 }
