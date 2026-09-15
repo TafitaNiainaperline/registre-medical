@@ -152,3 +152,39 @@ export function mergeRecords(records: MedicalRecord[]): MergedRecord[] {
   return Array.from(grouped.values()).sort((a, b) =>
     (b.created_at || '').localeCompare(a.created_at || '') || b.id - a.id)
 }
+
+// Chaque consultation CPN renseignée compte, comme dans les pastilles du registre.
+export function summarizeCpnRecords(rows: MedicalRecord[]): [string, number][] {
+  const counts = new Map<string, number>(['CPN1', 'CPN2', 'CPN3', 'CPN4', 'CPN5'].map((label) => [label, 0]))
+  rows.forEach((row) => {
+    if (row.category !== 'cpn') return
+    const label = String(row.cpn_type || '').trim().toUpperCase()
+    if (label) counts.set(label, (counts.get(label) || 0) + 1)
+  })
+  return Array.from(counts.entries()).sort((a, b) => a[0].localeCompare(b[0], 'fr', { numeric: true }))
+}
+
+// Les variantes d'espacement d'un même produit PF partagent le même compteur.
+export function pfProductKey(value: string | null | undefined): string {
+  return normalize(value).replace(/\s/g, '')
+}
+
+// Compte les lignes du registre (dernière visite du patient pour chaque mois).
+export function summarizePfRecords(rows: MergedRecord[]): [string, number][] {
+  const counts = new Map<string, { label: string; count: number }>()
+  rows.forEach((row) => {
+    if (row.category !== 'pf') return
+    const label = String(row.pf_method || '').trim().replace(/\s+/g, ' ')
+    if (!label) return
+    const key = pfProductKey(label)
+    const entry = counts.get(key)
+    if (entry) {
+      entry.count++
+      // Préférer la forme espacée pour garder un libellé lisible et stable.
+      if (label.length > entry.label.length || (label.length === entry.label.length && label < entry.label)) entry.label = label
+    } else counts.set(key, { label, count: 1 })
+  })
+  return Array.from(counts.values())
+    .sort((a, b) => a.label.localeCompare(b.label, 'fr', { numeric: true }))
+    .map(({ label, count }) => [label, count])
+}
