@@ -11,8 +11,10 @@ import { capitalize, matches, normalize } from '../../utils/text'
 import { todayIso } from '../../utils/date'
 import { appointmentDateError } from '../../../electron/appointmentDate'
 import { buildTreatmentsFromText } from '../../utils/treatments'
+import { rememberPfPeriod } from '../../utils/pfRegistry'
+import { rememberCpnPeriod } from '../../utils/cpnRegistry'
 import {
-  displayRegistryNumber, mergeRecords, toTreatment,
+  displayRegistryNumber, mergeRecords, toTreatment, pfProductKey, summarizePfRecords, summarizeCpnRecords,
 } from '../../utils/record'
 import type { HistoryRow, MergedRecord } from '../../utils/record'
 import type { RecordForm } from './types'
@@ -76,6 +78,8 @@ export const useRecordsPage = (category: Category) => {
       window.api.fetchRecordsByArchive(period),
     ])
       .then(([result, suggestions]) => {
+        if (category.key === 'pf') rememberPfPeriod(period)
+        if (category.key === 'cpn') rememberCpnPeriod(period)
         setRecords((result || []).map((row) => ({ ...row, treatments: row.treatments || [] })))
         setSuggestionRecords((suggestions || []).map((row) => ({ ...row, treatments: row.treatments || [] })))
       })
@@ -346,32 +350,9 @@ export const useRecordsPage = (category: Category) => {
 
   const groupedRecords = useMemo(() => mergeRecords(records), [records])
 
-  const cpnSummary = useMemo(() => {
-    const counts = new Map<string, number>(['CPN1', 'CPN2', 'CPN3', 'CPN4', 'CPN5'].map((label) => [label, 0]))
-    // Chaque consultation compte, même si plusieurs visites sont regroupées dans la liste.
-    records.forEach((row) => {
-      if (row.category !== 'cpn') return
-      const label = String(row.cpn_type || '').trim().toUpperCase()
-      if (label) counts.set(label, (counts.get(label) || 0) + 1)
-    })
-    return Array.from(counts.entries()).sort((a, b) => a[0].localeCompare(b[0], 'fr', { numeric: true }))
-  }, [records])
+  const cpnSummary = useMemo(() => summarizeCpnRecords(records), [records])
 
-  const pfSummary = useMemo(() => {
-    const counts = new Map<string, { label: string; count: number }>()
-    records.forEach((row) => {
-      if (row.category !== 'pf') return
-      const label = String(row.pf_method || '').trim().replace(/\s+/g, ' ')
-      if (!label) return
-      const key = normalize(label)
-      const entry = counts.get(key)
-      if (entry) entry.count++
-      else counts.set(key, { label, count: 1 })
-    })
-    return Array.from(counts.values())
-      .sort((a, b) => a.label.localeCompare(b.label, 'fr', { numeric: true }))
-      .map(({ label, count }): [string, number] => [label, count])
-  }, [records])
+  const pfSummary = useMemo(() => summarizePfRecords(groupedRecords), [groupedRecords])
 
   const filteredRecords = groupedRecords.filter((row) => {
     const registryValues = category.key === 'cpn' ? [row.cpn_type]
@@ -385,7 +366,9 @@ export const useRecordsPage = (category: Category) => {
       && (!filters.diagnostic || normalize(row.diagnostic).includes(normalize(filters.diagnostic)))
       && (!filters.age || normalize(row.age).includes(normalize(filters.age)))
       && (!filters.date || row.created_at?.slice(0, 10) === filters.date)
-      && matches(filters.act, registryValues)
+      && (category.key === 'pf'
+        ? pfProductKey(row.pf_method).includes(pfProductKey(filters.act))
+        : matches(filters.act, registryValues))
   })
 
   const diagnosticSummary = useMemo(() => {

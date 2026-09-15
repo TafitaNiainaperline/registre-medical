@@ -75,7 +75,7 @@ const RecordsPage = ({ category }: Props) => {
 
       {isAdultRegistry && (
         <section className={`registry-summary ${category.key}`} aria-label={category.key === 'cpn' ? 'Compteurs CPN' : 'Compteurs produits PF'}>
-          <h2 title="Nombre de consultations pour la période sélectionnée"><Icon name={category.icon} /> {category.key === 'cpn' ? 'CPN de la période' : 'Produits PF de la période'}</h2>
+          <h2 title={category.key === 'cpn' ? 'Nombre de consultations pour la période sélectionnée' : 'Nombre de dossiers mensuels par produit, selon la dernière visite du patient'}><Icon name={category.icon} /> {category.key === 'cpn' ? 'CPN de la période' : 'Produits PF de la période'}</h2>
           <dl className="summary-cards">
             {registrySummary.map(([label, count]) => (
               <div key={label} className={count === 0 ? 'summary-card zero' : 'summary-card'}>
