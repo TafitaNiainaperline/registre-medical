@@ -206,7 +206,7 @@ ipcMain.handle('receipt:pdf', async (_e, id: number): Promise<SaveResult> => {
   if (!record) throw new Error('Dossier introuvable.')
 
   const safeNumber = String(record.registry_number || record.id).replace(/[^\w.-]+/g, '_')
-  const defaultName = `recu_${safeNumber}.pdf`
+  const defaultName = `recu_${safeNumber}_visite_${record.id}.pdf`
   const result = await showSaveDialog({
     title: 'Telecharger le recu',
     defaultPath: defaultName,
