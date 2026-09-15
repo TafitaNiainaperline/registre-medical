@@ -9,6 +9,7 @@ type Props = {
   label: string
   // Nom du jour affiché uniquement là où il compte (rendez-vous)
   weekday?: boolean
+  disablePast?: boolean
 }
 
 const MONTHS = [
@@ -18,9 +19,9 @@ const MONTHS = [
 
 const WEEKDAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
 
-const DatePicker = ({ value, onChange, label, weekday = false }: Props) => {
+const DatePicker = ({ value, onChange, label, weekday = false, disablePast = false }: Props) => {
   const { open, setOpen, wrapperRef, days, year, month, previous, next, select, selectToday, clear, closeOnBackdrop } =
-    useDatePicker(value, onChange)
+    useDatePicker(value, onChange, disablePast)
 
   return (
     <div className="DatePicker" ref={wrapperRef}>
@@ -64,6 +65,7 @@ const DatePicker = ({ value, onChange, label, weekday = false }: Props) => {
                 <button
                   key={day.iso}
                   type="button"
+                  disabled={day.disabled}
                   className={[
                     'day',
                     day.outside ? 'outside' : '',

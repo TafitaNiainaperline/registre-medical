@@ -113,6 +113,15 @@
 
       &.selected { background: var(--brand); color: #fff; box-shadow: none; }
       &.today.selected { box-shadow: inset 0 0 0 2px var(--brand-dark); }
+
+      &:disabled {
+        color: var(--soft);
+        background: transparent;
+        box-shadow: none;
+        opacity: 0.35;
+        cursor: not-allowed;
+        transform: none;
+      }
     }
 
     .foot { display: flex; justify-content: flex-end; margin-top: 0.75em; }

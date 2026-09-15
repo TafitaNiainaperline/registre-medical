@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 import initSqlJs from 'sql.js'
 import type { Database, QueryExecResult, SqlValue } from 'sql.js'
 import { app } from 'electron'
+import { appointmentDateError } from './appointmentDate'
 import type {
   Appointment,
   Archive,
@@ -1320,6 +1321,8 @@ function computeTotalCostAr(treatments: Treatment[]): number {
 }
 
 async function createRecord(data: RecordInput): Promise<number | undefined> {
+  const dateError = appointmentDateError(data.appointment_date)
+  if (dateError) throw new Error(dateError)
   const d = await getDB()
 
   // Defensive: older DB may miss columns (ex: "sexe")
@@ -1479,6 +1482,8 @@ async function addTreatmentsToRecord(recordId: number, data: ContinueRecordInput
 }
 
 async function updateRecord(id: number, data: RecordUpdateInput): Promise<void> {
+  const dateError = appointmentDateError(data.appointment_date)
+  if (dateError) throw new Error(dateError)
   const d = await getDB()
 
   if (ensureMedicalRecordsSchema(d)) {

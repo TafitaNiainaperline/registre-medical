@@ -298,6 +298,7 @@ const RecordsPage = ({ category }: Props) => {
                 value={form.appointment_date}
                 onChange={(value) => setForm({ ...form, appointment_date: value })}
                 label="Ajouter un prochain rendez-vous"
+                disablePast
                 weekday
               />
             </div>

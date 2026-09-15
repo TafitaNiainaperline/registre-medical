@@ -9,6 +9,7 @@ import { getCurrentUser } from '../../utils/currentUser'
 import { errorMessage } from '../../utils/error'
 import { capitalize, matches, normalize } from '../../utils/text'
 import { todayIso } from '../../utils/date'
+import { appointmentDateError } from '../../../electron/appointmentDate'
 import { buildTreatmentsFromText } from '../../utils/treatments'
 import {
   displayRegistryNumber, mergeRecords, toTreatment,
@@ -171,6 +172,8 @@ export const useRecordsPage = (category: Category) => {
     setActionOk('')
 
     const identity = form.identity
+    const dateError = appointmentDateError(form.appointment_date)
+    if (dateError) { setActionError(dateError); return }
     if (!form.patient) {
       if (!identity.nom.trim()) { setActionError('Le nom du patient est requis.'); return }
       if (!identity.domicile.trim()) { setActionError('L’adresse identifie le patient, elle est requise.'); return }
