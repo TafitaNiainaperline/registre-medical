@@ -134,41 +134,21 @@ export function toTreatment(treatment: MergedTreatment): Treatment {
   }
 }
 
-// Regroupe les visites d'un même dossier (même n° de registre, même mois)
+// Une ligne par patient et par mois ; les champs restent ceux de sa dernière visite.
 export function mergeRecords(records: MedicalRecord[]): MergedRecord[] {
   const grouped = new Map<string, MergedRecord>()
 
-  const addTreatment = (group: MergedRecord, treatment: MergedTreatment) => {
-    if (!treatment?.name) return
-    const known = group.treatments.some((existing) => (
-      normalize(existing.name) === normalize(treatment.name)
-      && String(existing.quantity) === String(treatment.quantity)
-      && normalize(existing.unit) === normalize(treatment.unit)
-    ))
-    if (!known) group.treatments.push(treatment)
-  }
-
   records.forEach((record) => {
-    const period = `${record.archive_year || ''}|${record.archive_month || ''}`
-    const key = record.registry_number
-      ? `${record.registry_number}|${period}`
-      : `${patientIllnessKey(record)}|${period}`
-
-    let group = grouped.get(key)
-    if (!group) {
-      group = { ...record, treatments: [], cost: Number(record.cost) || 0 }
-      grouped.set(key, group)
+    const period = `${record.category}|${record.archive_year || ''}|${record.archive_month || ''}`
+    const patient = record.patient_id ? `patient:${record.patient_id}` : `registry:${record.registry_number || record.id}`
+    const key = `${patient}|${period}`
+    const previous = grouped.get(key)
+    const dateOrder = (record.created_at || '').localeCompare(previous?.created_at || '')
+    if (!previous || dateOrder > 0 || (dateOrder === 0 && record.id > previous.id)) {
+      grouped.set(key, { ...record, treatments: record.treatments || [], cost: Number(record.cost) || 0 })
     }
-
-    // La visite la plus récente porte les informations affichées
-    if (record.created_at && (!group.created_at || record.created_at > group.created_at)) {
-      group = { ...group, ...record, treatments: group.treatments, cost: Number(record.cost) || 0 }
-      grouped.set(key, group)
-    }
-
-    if (record.treatments?.length) record.treatments.forEach((t) => addTreatment(group, t))
-    else if (record.traitement) addTreatment(group, { name: record.traitement })
   })
 
-  return Array.from(grouped.values())
+  return Array.from(grouped.values()).sort((a, b) =>
+    (b.created_at || '').localeCompare(a.created_at || '') || b.id - a.id)
 }

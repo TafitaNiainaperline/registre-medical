@@ -7,11 +7,17 @@ import './DossierHistory.scss'
 type Props = {
   rows: HistoryRow[]
   loading: boolean
+  patientName: string
+  onReceipt: (row: HistoryRow) => void
+  onClose: () => void
 }
 
-const DossierHistory = ({ rows, loading }: Props) => (
+const DossierHistory = ({ rows, loading, patientName, onReceipt, onClose }: Props) => (
   <div className="DossierHistory">
-    <h3><Icon name="history" size="md" /> Historique du dossier</h3>
+    <div className="history-header">
+      <h3><Icon name="history" size="md" /> Visites de {patientName}</h3>
+      <button type="button" className="btn-light" onClick={onClose} aria-label="Fermer l’historique"><Icon name="close" /></button>
+    </div>
 
     {loading && <p>Chargement de l'historique...</p>}
     {!loading && rows.length === 0 && <p className="empty">Aucun historique de dossier disponible.</p>}
@@ -26,8 +32,8 @@ const DossierHistory = ({ rows, loading }: Props) => (
               <th>Date / Heure</th>
               <th>Traitement</th>
               <th>Observation</th>
-              <th>Coût ancien</th>
-              <th>Coût présent</th>
+              <th>Montant de la visite</th>
+              <th>Reçu</th>
             </tr>
           </thead>
           <tbody>
@@ -36,14 +42,18 @@ const DossierHistory = ({ rows, loading }: Props) => (
               return (
                 <tr key={row.id}>
                   <td className={isCurrent ? 'visit current' : 'visit'}>
-                    {isCurrent ? 'Présent' : `Ancien ${index + 1}`}
+                    {`Visite ${index + 1}`}{isCurrent && <small> · Dernière</small>}
                   </td>
                   <td className="registry">{displayRegistryNumber(row.registry_number)}</td>
                   <td className="date">{formatDateTime(row.created_at)}</td>
                   <td>{treatmentsLabel(row.treatments) || row.traitement || '-'}</td>
                   <td>{row.observation || '-'}</td>
-                  <td className="date">{isCurrent ? '-' : `${row.cost} Ar`}</td>
-                  <td className="current">{isCurrent ? `${row.cost} Ar` : '-'}</td>
+                  <td className="current">{row.cost} Ar</td>
+                  <td>
+                    <button type="button" className="btn-light" onClick={() => onReceipt(row)} aria-label={`Télécharger le reçu de la visite ${index + 1}`}>
+                      <Icon name="file" /> PDF
+                    </button>
+                  </td>
                 </tr>
               )
             })}

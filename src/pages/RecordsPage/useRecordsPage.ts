@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
-import type { Archive, Medication, Patient } from '../../../electron/types'
+import type { Archive, MedicalRecord, Medication, Patient } from '../../../electron/types'
 import type { PatientIdentity } from '../../components/PatientPicker/usePatientPicker'
 import { emptyIdentity, identityFromPatient } from '../../components/PatientPicker/usePatientPicker'
 import { ageEntryError, ageEntryToBirthDate } from '../../utils/record'
@@ -38,7 +38,7 @@ export type RecordsTab = 'liste' | 'nouveau'
 export const useRecordsPage = (category: Category) => {
   // La saisie d'un nouveau dossier est l'usage courant : c'est l'onglet d'entrée
   const [activeTab, setActiveTab] = useState<RecordsTab>('nouveau')
-  const [records, setRecords] = useState<MergedRecord[]>([])
+  const [records, setRecords] = useState<MedicalRecord[]>([])
   const [suggestionRecords, setSuggestionRecords] = useState<MergedRecord[]>([])
   const [medications, setMedications] = useState<Medication[]>([])
   const [archives, setArchives] = useState<Archive[]>([])
@@ -52,10 +52,15 @@ export const useRecordsPage = (category: Category) => {
 
   const [actionError, setActionError] = useState('')
   const [actionOk, setActionOk] = useState('')
-  const [duplicate, setDuplicate] = useState<MergedRecord | null>(null)
-  const [historyRow, setHistoryRow] = useState<MergedRecord | null>(null)
+  const [saving, setSaving] = useState(false)
+  const savingRef = useRef(false)
+  const [pendingConfirmation, setPendingConfirmation] = useState<{
+    form: RecordForm; editingId: number | null; category: string
+  } | null>(null)
+  const [historyRow, setHistoryRow] = useState<HistoryRow | null>(null)
   const [dossierHistory, setDossierHistory] = useState<HistoryRow[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
+  const historyRequest = useRef(0)
   const [toast, setToast] = useState('')
   const notifiedAppointments = useRef(new Set<number>())
 
@@ -71,8 +76,8 @@ export const useRecordsPage = (category: Category) => {
       window.api.fetchRecordsByArchive(period),
     ])
       .then(([result, suggestions]) => {
-        setRecords(mergeRecords(result || []))
-        setSuggestionRecords(mergeRecords(suggestions || []))
+        setRecords((result || []).map((row) => ({ ...row, treatments: row.treatments || [] })))
+        setSuggestionRecords((suggestions || []).map((row) => ({ ...row, treatments: row.treatments || [] })))
       })
       .catch((err: unknown) => {
         console.error('fetchRecords failed:', err)
@@ -81,23 +86,23 @@ export const useRecordsPage = (category: Category) => {
       })
   }
 
-  const loadDossierHistory = async (dossierId: number | null, fallback: MergedRecord | null) => {
-    if (!dossierId) {
-      if (!fallback) { setDossierHistory([]); return }
-      setDossierHistory(records.filter((row) => Number(row.patient_id) === Number(fallback.patient_id)))
-      setHistoryRow(fallback)
-      return
-    }
-
+  const loadPatientHistory = async (row: HistoryRow) => {
+    const request = ++historyRequest.current
+    setHistoryRow(row)
+    setDossierHistory([])
     setHistoryLoading(true)
     try {
-      setDossierHistory(await window.api.fetchRecordsByDossier(dossierId) || [])
+      const visits = row.patient_id ? await window.api.fetchRecordsByPatient(row.patient_id) : [row]
+      if (request !== historyRequest.current) return
+      setDossierHistory(visits.filter((visit) => visit.category === category.key)
+        .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || '') || a.id - b.id))
     } catch (err) {
-      console.error('fetchRecordsByDossier failed:', err)
-      setActionError('Impossible de charger l’historique du dossier.')
+      if (request !== historyRequest.current) return
+      console.error('fetchRecordsByPatient failed:', err)
+      setActionError('Impossible de charger l’historique du patient.')
       setDossierHistory([])
     } finally {
-      setHistoryLoading(false)
+      if (request === historyRequest.current) setHistoryLoading(false)
     }
   }
 
@@ -123,6 +128,8 @@ export const useRecordsPage = (category: Category) => {
 
     setForm(emptyForm)
     setEditingId(null)
+    historyRequest.current++
+    setHistoryRow(null)
     setActiveTab('nouveau')
     setFilters({ search: '', diagnostic: '', age: '', date: '', act: '' })
     setActionError('')
@@ -155,19 +162,19 @@ export const useRecordsPage = (category: Category) => {
     setForm({ ...form, [name]: TEXT_FIELDS.has(name) ? capitalize(value, true) : value })
   }
 
-  // Même patient, même registre, même mois : c'est le même dossier
-  const findMonthDuplicate = () => {
-    if (!form.patient) return undefined
-    return records.find((row) => (
-      Number(row.id) !== Number(editingId)
-      && Number(row.patient_id) === Number(form.patient?.id)
-      && (!activeArchive?.year || Number(row.archive_year) === Number(activeArchive.year))
-      && (!activeArchive?.month || Number(row.archive_month) === Number(activeArchive.month))
-    ))
-  }
+  const patientVisits = records.filter((row) => form.patient
+    && row.patient_id === form.patient.id
+    && Number(row.archive_year) === (activeArchive?.year || new Date().getFullYear())
+    && Number(row.archive_month) === (activeArchive?.month || new Date().getMonth() + 1))
 
-  const submit = async (e: { preventDefault: () => void }, force = false) => {
+  const needsTreatmentConfirmation = pendingConfirmation?.form === form
+    && pendingConfirmation.editingId === editingId && pendingConfirmation.category === category.key
+
+  useEffect(() => { setPendingConfirmation(null) }, [activeTab])
+
+  const submit = async (e: { preventDefault: () => void }, confirmed = false) => {
     e.preventDefault()
+    if (savingRef.current) return
     setActionError('')
     setActionOk('')
 
@@ -182,16 +189,6 @@ export const useRecordsPage = (category: Category) => {
       if (ageError) { setActionError(ageError); return }
     }
 
-    if (!editingId && !force) {
-      const existing = findMonthDuplicate()
-      if (existing) {
-        setDuplicate(existing)
-        loadDossierHistory(existing.dossier_id, existing)
-        setActionError(`Ce patient a déjà un dossier ce mois dans ce registre (N° ${displayRegistryNumber(existing.registry_number)}). Une nouvelle consultation reprendra ce même numéro.`)
-        return
-      }
-    }
-
     let treatments = form.treatments
     try {
       if (!treatments.length && form.traitement.trim()) {
@@ -203,11 +200,20 @@ export const useRecordsPage = (category: Category) => {
     }
 
     if (!treatments.length) {
-      setActionError('Veuillez sélectionner au moins un médicament ou un acte médical.')
-      return
+      if (category.key !== 'consultation') {
+        setActionError('Veuillez sélectionner au moins un médicament ou un acte médical.')
+        return
+      }
+      if (!confirmed || !needsTreatmentConfirmation) {
+        setPendingConfirmation({ form, editingId, category: category.key })
+        return
+      }
     }
 
+    setPendingConfirmation(null)
     // Sans sélection, le patient est créé avant l'enregistrement du dossier
+    savingRef.current = true
+    setSaving(true)
     let patient = form.patient
     if (!patient) {
       try {
@@ -222,6 +228,8 @@ export const useRecordsPage = (category: Category) => {
         setForm({ ...form, patient, identity: identityFromPatient(patient) })
       } catch (err) {
         setActionError(errorMessage(err, 'Impossible de créer le patient.'))
+        savingRef.current = false
+        setSaving(false)
         return
       }
     }
@@ -244,7 +252,7 @@ export const useRecordsPage = (category: Category) => {
     try {
       if (editingId) {
         await window.api.updateRecord(editingId, payload)
-        setActionOk('Dossier modifié.')
+        setActionOk('Visite modifiée.')
       } else {
         await window.api.createRecord({
           category: category.key,
@@ -252,18 +260,26 @@ export const useRecordsPage = (category: Category) => {
           archive_month: activeArchive?.month,
           ...payload,
         })
-        setActionOk('Dossier ajouté.')
+        setActionOk('Visite enregistrée. Son reçu reste disponible dans la liste.')
       }
       setForm(emptyForm)
       setEditingId(null)
+      historyRequest.current++
+      setHistoryRow(null)
+      setActiveTab('liste')
       await load()
     } catch (err) {
       console.error('submit failed:', err)
       setActionError(errorMessage(err, 'Erreur lors de l’enregistrement.'))
+    } finally {
+      savingRef.current = false
+      setSaving(false)
     }
   }
 
   const edit = (row: MergedRecord) => {
+    historyRequest.current++
+    setHistoryRow(null)
     setEditingId(row.id)
     setActiveTab('nouveau')
     const patient = row.patient_id ? {
@@ -296,51 +312,12 @@ export const useRecordsPage = (category: Category) => {
     })
   }
 
-  const viewHistory = async (row: MergedRecord) => {
+  const viewHistory = async (row: HistoryRow) => {
     setActionError('')
-    setActionOk('')
-    setDuplicate(null)
-    setHistoryRow(row)
-    await loadDossierHistory(row.dossier_id, row)
+    await loadPatientHistory(row)
   }
 
-  const continueTreatment = async () => {
-    if (!duplicate) return
-    setActionError('')
-    setActionOk('')
-
-    // Les lignes du sélecteur font foi : jamais le texte repris d'un ancien dossier
-    if (!form.treatments.length) {
-      setActionError('Veuillez sélectionner au moins un médicament ou un acte médical.')
-      return
-    }
-
-    try {
-      await window.api.continueRecord(duplicate.id, {
-        treatments: form.treatments,
-        observation: form.observation,
-        created_by: currentUser.id || null,
-      })
-      setActionOk('Traitement ajouté au dossier existant.')
-      setForm(emptyForm)
-      setDuplicate(null)
-      setDossierHistory([])
-      await load()
-    } catch (err) {
-      console.error('continueRecord failed:', err)
-      setActionError(errorMessage(err, 'Impossible d\'ajouter le traitement.'))
-    }
-  }
-
-  const loadDuplicate = () => {
-    if (!duplicate) return
-    edit(duplicate)
-    setDuplicate(null)
-    setActionError('')
-    setDossierHistory([])
-  }
-
-  const downloadReceipt = async (row: MergedRecord) => {
+  const downloadReceipt = async (row: { id: number }) => {
     setActionError('')
     setActionOk('')
     try {
@@ -367,7 +344,9 @@ export const useRecordsPage = (category: Category) => {
       .map(([diagnostic]) => diagnostic)
   }, [suggestionRecords])
 
-  const filteredRecords = records.filter((row) => {
+  const groupedRecords = useMemo(() => mergeRecords(records), [records])
+
+  const filteredRecords = groupedRecords.filter((row) => {
     const acts = row.treatments.filter((t) => t.item_type === 'act').map((t) => normalize(t.name))
     return matches(filters.search, [
       `${row.patient_nom || ''} ${row.patient_prenom || ''}`, row.diagnostic,
@@ -381,23 +360,37 @@ export const useRecordsPage = (category: Category) => {
 
   const diagnosticSummary = useMemo(() => {
     const counts = new Map<string, number>()
-    records.forEach((row) => {
+    groupedRecords.forEach((row) => {
       const diagnostic = String(row.diagnostic || '').trim()
       if (diagnostic) counts.set(diagnostic, (counts.get(diagnostic) || 0) + 1)
     })
     return Array.from(counts.entries()).sort((a, b) => b[1] - a[1])
-  }, [records])
+  }, [groupedRecords])
 
   return {
     activeTab, setActiveTab,
-    records, medications, archives, activeArchive, setActiveArchive, selectedYear, setSelectedYear,
+    records: groupedRecords, medications, archives, activeArchive, setActiveArchive, selectedYear, setSelectedYear,
     availableYears, form, setForm, editingId, filters, setFilters, actionError, actionOk, toast,
-    duplicate, historyRow, dossierHistory, historyLoading,
+    patientVisits, saving, historyRow, dossierHistory, historyLoading,
+    needsTreatmentConfirmation,
+    dismissTreatmentConfirmation: () => setPendingConfirmation(null),
+    confirmWithoutTreatment: () => {
+      if (needsTreatmentConfirmation) return submit({ preventDefault() {} }, true)
+    },
     isAdmin: currentUser.role === 'admin',
-    change, submit, edit, viewHistory, continueTreatment, loadDuplicate, downloadReceipt, remove, load,
-    selectPatient: (patient: Patient) => setForm({ ...form, patient, identity: identityFromPatient(patient) }),
+    change, submit, edit, viewHistory, downloadReceipt, remove, load,
+    closeHistory: () => { historyRequest.current++; setHistoryRow(null) },
+    selectPatient: (patient: Patient) => {
+      historyRequest.current++
+      setHistoryRow(null)
+      setForm({ ...form, patient, identity: identityFromPatient(patient) })
+    },
     // On repart d'une identité vierge : aucun mélange possible entre deux fiches
-    clearPatient: () => setForm({ ...form, patient: null, identity: emptyIdentity }),
+    clearPatient: () => {
+      historyRequest.current++
+      setHistoryRow(null)
+      setForm({ ...form, patient: null, identity: emptyIdentity })
+    },
     setIdentity: (identity: PatientIdentity) => setForm({ ...form, identity }),
     cancelEdit: () => { setEditingId(null); setForm(emptyForm) },
     clearFilters: () => setFilters({ search: '', diagnostic: '', age: '', date: '', act: '' }),

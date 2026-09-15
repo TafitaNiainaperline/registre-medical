@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import Icon from '../Icon'
 import { formatDay } from '../../utils/date'
 import { useDatePicker } from './useDatePicker'
@@ -10,6 +11,7 @@ type Props = {
   // Nom du jour affiché uniquement là où il compte (rendez-vous)
   weekday?: boolean
   disablePast?: boolean
+  clearLabel?: string
 }
 
 const MONTHS = [
@@ -19,7 +21,7 @@ const MONTHS = [
 
 const WEEKDAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
 
-const DatePicker = ({ value, onChange, label, weekday = false, disablePast = false }: Props) => {
+const DatePicker = ({ value, onChange, label, weekday = false, disablePast = false, clearLabel = 'Retirer le rendez-vous' }: Props) => {
   const { open, setOpen, wrapperRef, days, year, month, previous, next, select, selectToday, clear, closeOnBackdrop } =
     useDatePicker(value, onChange, disablePast)
 
@@ -29,20 +31,21 @@ const DatePicker = ({ value, onChange, label, weekday = false, disablePast = fal
         <div className="chosen">
           <Icon name="calendar" />
           <span>{formatDay(value, { weekday })}</span>
-          <button type="button" className="change" onClick={() => setOpen(!open)}>Changer</button>
-          <button type="button" className="remove" onClick={clear} title="Retirer le rendez-vous">
+          <button type="button" className="change" onClick={() => setOpen(!open)} aria-haspopup="dialog" aria-expanded={open}>Changer</button>
+          <button type="button" className="remove" onClick={clear} title={clearLabel} aria-label={clearLabel}>
             <Icon name="close" />
           </button>
         </div>
       ) : (
-        <button type="button" className="trigger" onClick={() => setOpen(!open)}>
+        <button type="button" className="trigger" onClick={() => setOpen(!open)} aria-haspopup="dialog" aria-expanded={open}>
           <Icon name="calendar" /> {label}
         </button>
       )}
 
-      {open && (
+      {open && createPortal(
+        <div className="DatePicker">
         <div className="modal-overlay" onMouseDown={closeOnBackdrop}>
-          <div className="modal calendar">
+          <div className="modal calendar" role="dialog" aria-modal="true" aria-label={label}>
             <div className="header">
               <h3>{label}</h3>
               <button type="button" className="close" onClick={() => setOpen(false)} aria-label="Fermer">
@@ -84,6 +87,7 @@ const DatePicker = ({ value, onChange, label, weekday = false, disablePast = fal
             </div>
           </div>
         </div>
+        </div>, document.body
       )}
     </div>
   )

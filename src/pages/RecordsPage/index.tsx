@@ -5,8 +5,9 @@ import TreatmentSelector from '../../components/TreatmentSelector'
 import PatientPicker from '../../components/PatientPicker'
 import DatePicker from '../../components/DatePicker'
 import DossierHistory from './DossierHistory'
+import TreatmentConfirmation from './TreatmentConfirmation'
 import type { Category } from '../../constants'
-import { formatDate, formatDay } from '../../utils/date'
+import { formatDateTime, formatDay } from '../../utils/date'
 import { capitalize } from '../../utils/text'
 import { ageUnit, displayAge, displayRegistryNumber, treatmentsLabel } from '../../utils/record'
 import { appointmentStatus, useRecordsPage } from './useRecordsPage'
@@ -21,8 +22,9 @@ const RecordsPage = ({ category }: Props) => {
     activeTab, setActiveTab, records,
     medications, archives, activeArchive, setActiveArchive, selectedYear, setSelectedYear, availableYears,
     form, setForm, editingId, filters, setFilters, actionError, actionOk, toast,
-    duplicate, historyRow, dossierHistory, historyLoading, isAdmin,
-    change, submit, edit, viewHistory, continueTreatment, loadDuplicate, downloadReceipt, remove, load,
+    patientVisits, saving, historyRow, dossierHistory, historyLoading, isAdmin, closeHistory,
+    needsTreatmentConfirmation, dismissTreatmentConfirmation, confirmWithoutTreatment,
+    change, submit, edit, viewHistory, downloadReceipt, remove, load,
     cancelEdit, clearFilters, diagnosticOptions, selectPatient, clearPatient, setIdentity,
     filteredRecords, diagnosticSummary,
   } = useRecordsPage(category)
@@ -88,13 +90,14 @@ const RecordsPage = ({ category }: Props) => {
           onClick={() => setActiveTab('nouveau')}
         >
           <Icon name={editingId ? 'edit' : 'plus'} size="md" />
-          {editingId ? 'Modifier le dossier' : 'Nouveau dossier'}
+          {editingId ? 'Modifier la visite' : 'Nouvelle visite'}
         </button>
       </div>
 
       {actionError && <p className="error-msg"><Icon name="alert" /> {actionError}</p>}
       {actionOk && <p className="success-msg"><Icon name="check-circle" /> {actionOk}</p>}
       {toast && <div className="toast" role="status"><Icon name="calendar" /> {toast}</div>}
+      {needsTreatmentConfirmation && <TreatmentConfirmation onConfirm={confirmWithoutTreatment} onCancel={dismissTreatmentConfirmation} />}
 
       {activeTab === 'liste' && (
       <div className="panel-liste" role="tabpanel">
@@ -122,7 +125,7 @@ const RecordsPage = ({ category }: Props) => {
         </div>
       )}
 
-      {historyRow && !duplicate && <DossierHistory rows={dossierHistory} loading={historyLoading} />}
+      {historyRow && <DossierHistory rows={dossierHistory} loading={historyLoading} patientName={historyRow.patient_nom || ''} onReceipt={downloadReceipt} onClose={closeHistory} />}
 
       <div className="search-bar">
         <div className="search-field">
@@ -142,11 +145,14 @@ const RecordsPage = ({ category }: Props) => {
           onChange={(e) => setFilters({ ...filters, age: e.target.value })}
         />
 
-        <input
-          type="date"
-          value={filters.date}
-          onChange={(e) => setFilters({ ...filters, date: e.target.value })}
-        />
+        <div className="date-filter">
+          <DatePicker
+            value={filters.date}
+            onChange={(date) => setFilters({ ...filters, date })}
+            label="Rechercher par date"
+            clearLabel="Effacer le filtre de date"
+          />
+        </div>
 
         <input
           type="text"
@@ -182,7 +188,7 @@ const RecordsPage = ({ category }: Props) => {
               <th>Observation</th>
               {extraColumn && <th>{extraColumn.label}</th>}
               <th>Coût</th>
-              <th>Date</th>
+              <th>Date / Heure</th>
               <th>Rendez-vous</th>
               <th>Actions</th>
             </tr>
@@ -217,7 +223,7 @@ const RecordsPage = ({ category }: Props) => {
                 )}
 
                 <td className="cost">{row.cost} Ar</td>
-                <td className="date">{formatDate(row.created_at)}</td>
+                <td className="date">{formatDateTime(row.created_at)}</td>
                 <td className="appointment">
                   {row.appointment_date ? (
                     <>
@@ -230,14 +236,11 @@ const RecordsPage = ({ category }: Props) => {
                 </td>
                 <td className="actions">
                   <div>
-                    <button className="icon-btn" title="Modifier" aria-label="Modifier" onClick={() => edit(row)}>
+                    <button className="icon-btn" title="Modifier cette visite" aria-label="Modifier cette visite" onClick={() => edit(row)}>
                       <Icon name="edit" />
                     </button>
                     <button className="icon-btn" title="Voir l'historique" aria-label="Voir l'historique" onClick={() => viewHistory(row)}>
                       <Icon name="history" />
-                    </button>
-                    <button className="icon-btn" title="Télécharger le reçu" aria-label="Télécharger le reçu" onClick={() => downloadReceipt(row)}>
-                      <Icon name="file" />
                     </button>
                     {isAdmin && (
                       <button className="icon-btn danger" title="Supprimer" aria-label="Supprimer" onClick={() => remove(row.id)}>
@@ -257,16 +260,20 @@ const RecordsPage = ({ category }: Props) => {
       {activeTab === 'nouveau' && (
       <div className="panel-nouveau" role="tabpanel">
 
-        {duplicate && (
-          <div className="info-msg">
-            <span><Icon name="alert" /> Dossier N° {displayRegistryNumber(duplicate.registry_number)} déjà ouvert ce mois</span>
-            <button type="button" className="btn-light" onClick={loadDuplicate}>Charger le dossier</button>
-            <button type="button" className="btn-light" onClick={continueTreatment}>Continuer le traitement</button>
-            <button type="button" onClick={(e) => submit(e, true)}>Nouvelle consultation</button>
+        {!editingId && form.patient && (
+          <div className="visit-context" role="status">
+            <Icon name="history" />
+            <div>
+              <strong>{patientVisits.length ? `Nouvelle visite · ${form.patient.nom}` : `Première visite du mois · ${form.patient.nom}`}</strong>
+              <p>{patientVisits.length
+                ? `${patientVisits.length} visite(s) enregistrée(s) ce mois · N° ${displayRegistryNumber(patientVisits[0].registry_number)}. Chaque visite possède son propre reçu.`
+                : 'Cette saisie sera ajoutée à l’historique du patient avec son propre reçu.'}</p>
+            </div>
+            {patientVisits.length > 0 && <button type="button" className="btn-light" onClick={() => viewHistory(patientVisits[0])}>Voir l’historique</button>}
           </div>
         )}
 
-        {duplicate && <DossierHistory rows={dossierHistory} loading={historyLoading} />}
+        {historyRow && <DossierHistory rows={dossierHistory} loading={historyLoading} patientName={historyRow.patient_nom || ''} onReceipt={downloadReceipt} onClose={closeHistory} />}
 
         <form className={`record-form ${category.key}`} onSubmit={submit}>
           <fieldset className="block patient">
@@ -332,7 +339,7 @@ const RecordsPage = ({ category }: Props) => {
           </fieldset>
 
           <fieldset className="block traitement">
-            <legend>Traitement</legend>
+            <legend>{isConsultation ? 'Traitement (facultatif)' : 'Traitement'}</legend>
 
             <div className="treatments">
               <TreatmentSelector
@@ -350,7 +357,7 @@ const RecordsPage = ({ category }: Props) => {
           </fieldset>
 
           <div className="actions">
-            <button type="submit">{editingId ? 'Modifier' : 'Ajouter'}</button>
+            <button type="submit" disabled={saving}>{saving ? 'Enregistrement…' : editingId ? 'Modifier' : 'Ajouter'}</button>
             {editingId && <button type="button" className="btn-light" onClick={cancelEdit}>Annuler</button>}
           </div>
         </form>

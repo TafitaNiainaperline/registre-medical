@@ -27,8 +27,8 @@ const guideSections: GuideSection[] = [
     tone: 'purple',
     items: [
       'Le tableau affiche le numéro de registre à la place de l\'ID technique.',
-      'Même patient, même diagnostic, même registre et même mois : le même numéro est réutilisé.',
-      'Si le patient revient pour une autre maladie, un nouveau numéro est généré.',
+      'Même patient, même registre et même mois : le même numéro est réutilisé pour toutes ses visites.',
+      'La liste affiche une seule ligne par patient et par mois, avec les informations de sa dernière visite.',
       'La numérotation recommence naturellement avec le nouveau mois archivé.',
     ],
   },
@@ -59,8 +59,9 @@ const guideSections: GuideSection[] = [
     icon: 'file',
     tone: 'brand',
     items: [
-      'Dans le tableau du registre, cliquez sur l\'icône reçu près de Modifier et Supprimer.',
-      'Le reçu PDF contient le numéro de registre, les informations du patient, le diagnostic, les soins ou médicaments, les quantités et le total payé.',
+      'Ouvrez l’historique du patient depuis la liste du registre pour retrouver ses reçus.',
+      'Cliquez sur PDF à côté du passage souhaité pour télécharger son reçu.',
+      'Chaque reçu PDF contient uniquement les soins et le montant de la visite sélectionnée.',
       'Choisissez l\'emplacement du fichier PDF au moment du téléchargement.',
     ],
   },

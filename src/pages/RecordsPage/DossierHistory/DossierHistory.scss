@@ -1,6 +1,15 @@
 @use '../../../styles/variables' as *;
 
 .DossierHistory {
+  .history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1em;
+    margin-bottom: 0.75em;
+
+    h3 { margin: 0; }
+  }
   margin-bottom: 1.125em;
   padding: 1em;
   border-radius: 0.75em;
