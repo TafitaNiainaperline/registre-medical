@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import type { CategoryStats, MedicalRecord } from '../../../electron/types'
 import { categories } from '../../constants'
 import { normalize } from '../../utils/text'
-import type { ArchiveSummary, Counted } from './types'
+import { mergeRecords, summarizePfRecords, summarizeCpnRecords } from '../../utils/record'
+import { loadDashboardMonth } from './loadDashboardMonth'
+import type { Counted } from './types'
 
 // Tranches d'âge officielles, exprimées en mois
 const AGE_GROUPS: [limit: number, label: string][] = [
@@ -23,8 +25,6 @@ function getAgeGroup(months: number | null | undefined): string {
 const patientId = (row: MedicalRecord) =>
   normalize(`${String(row.patient_nom || '').trim()} ${String(row.patient_prenom || '').trim()}`)
 
-const dossierKey = (row: MedicalRecord) => `${patientId(row)}|${normalize(row.diagnostic)}`
-
 // Compte les patients distincts par clé ; une clé nulle exclut la ligne
 function countDistinctPatients(records: MedicalRecord[], keyOf: (row: MedicalRecord) => string | null): Counted[] {
   const groups = new Map<string, Set<string>>()
@@ -44,61 +44,62 @@ const diagnosticOf = (row: MedicalRecord) => String(row.diagnostic || '').trim()
 export const useDashboardPage = () => {
   const [records, setRecords] = useState<MedicalRecord[]>([])
   const [stats, setStats] = useState<CategoryStats>({})
-  const [archiveDiagnostics, setArchiveDiagnostics] = useState<ArchiveSummary[]>([])
   const [dispensations, setDispensations] = useState({ total: 0, count: 0 })
   const [cashOutflowTotal, setCashOutflowTotal] = useState(0)
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
   const [availableYears, setAvailableYears] = useState<number[]>([new Date().getFullYear()])
+  const [ready, setReady] = useState(false)
+  const [loadedPeriod, setLoadedPeriod] = useState('')
+  const [error, setError] = useState('')
+  const periodKey = `${selectedYear}-${selectedMonth}`
+  const loading = !ready || loadedPeriod !== periodKey
+  const periodLabel = new Date(selectedYear, selectedMonth - 1, 1)
+    .toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const allRecords = await window.api.fetchRecordsByArchive({ year: selectedYear }) || []
-        setRecords(allRecords)
+    let canceled = false
+    Promise.allSettled([window.api.listArchives(), window.api.getCurrentArchive()])
+      .then(([archives, current]) => {
+        if (canceled) return
+        const archive = current.status === 'fulfilled' ? current.value : null
+        const year = archive?.year || new Date().getFullYear()
+        const years = archives.status === 'fulfilled' ? (archives.value || []).map((a) => a.year) : []
+        setAvailableYears([...new Set([...years, year, new Date().getFullYear()])].sort((a, b) => b - a))
+        setSelectedYear(year)
+        setSelectedMonth(archive?.month || new Date().getMonth() + 1)
+        setReady(true)
+      })
+    return () => { canceled = true }
+  }, [])
 
-        const dossiers = new Map<string, Set<string>>()
-        allRecords.forEach((row) => {
-          const key = row.category || 'unknown'
-          const set = dossiers.get(key) || new Set<string>()
-          set.add(dossierKey(row))
-          dossiers.set(key, set)
-        })
+  useEffect(() => {
+    if (!ready) return
+    let canceled = false
+    loadDashboardMonth({ year: selectedYear, month: selectedMonth })
+      .then(({ records: monthRecords, dispensations: monthDispensations, cashOutflowTotal: monthOutflows }) => {
+        if (canceled) return
+        setRecords(monthRecords)
         const nextStats: CategoryStats = {}
-        dossiers.forEach((set, key) => { nextStats[key] = set.size })
+        mergeRecords(monthRecords).forEach((row) => {
+          nextStats[row.category] = (nextStats[row.category] || 0) + 1
+        })
         setStats(nextStats)
-
-        const total = Number(await window.api.getDispensationTotal({ year: selectedYear }) || 0)
-        const list = await window.api.getDispensations() || []
-        setDispensations({ total, count: list.length })
-
-        setCashOutflowTotal(Number(await window.api.getCashOutflowTotal({ year: selectedYear }) || 0))
-
-        const archives = await window.api.listArchives() || []
-        const years = [...new Set(archives.map((a) => a.year))].sort((a, b) => b - a)
-        if (years.length > 0) setAvailableYears(years)
-
-        const recentMonths = archives
-          .filter((a) => a.year === selectedYear)
-          .sort((a, b) => Number(b.month) - Number(a.month))
-          .slice(0, 6)
-
-        setArchiveDiagnostics(await Promise.all(recentMonths.map(async (archive): Promise<ArchiveSummary> => {
-          const monthRecords = await window.api.fetchRecordsByArchive({ year: archive.year, month: archive.month }) || []
-          return {
-            label: archive.label || `${archive.month}/${archive.year}`,
-            topDiagnostics: countDistinctPatients(monthRecords, diagnosticOf).sort(byCountDesc).slice(0, 3),
-          }
-        })))
-      } catch {
+        setDispensations(monthDispensations)
+        setCashOutflowTotal(monthOutflows)
+        setError('')
+      })
+      .catch(() => {
+        if (canceled) return
         setRecords([])
         setStats({})
-        setArchiveDiagnostics([])
         setDispensations({ total: 0, count: 0 })
         setCashOutflowTotal(0)
-      }
-    }
-    load()
-  }, [selectedYear])
+        setError('Impossible de charger les données du mois. Réessayez en sélectionnant une autre période.')
+      })
+      .finally(() => { if (!canceled) setLoadedPeriod(periodKey) })
+    return () => { canceled = true }
+  }, [ready, selectedYear, selectedMonth, periodKey])
 
   const totalAmount = records.reduce((sum, row) => sum + (Number(row.cost) || 0), 0) + dispensations.total
 
@@ -111,7 +112,8 @@ export const useDashboardPage = () => {
     }, {})
 
   return {
-    selectedYear, setSelectedYear, availableYears, stats, archiveDiagnostics, dispensations,
+    selectedYear, setSelectedYear, selectedMonth, setSelectedMonth, availableYears, stats, dispensations,
+    periodLabel, loading, error, ready,
     totalRecords: Object.values(stats).reduce((sum, count) => sum + count, 0),
     totalAmount,
     cashOutflowTotal,
@@ -121,10 +123,8 @@ export const useDashboardPage = () => {
     ageGroupSummary: countDistinctPatients(records, (row) => getAgeGroup(row.age_months))
       .sort((a, b) => a[0].localeCompare(b[0], 'fr', { numeric: true })),
     diagnosticSummary: countDistinctPatients(records, diagnosticOf).sort(byCountDesc),
-    pfSummary: countDistinctPatients(records, (row) =>
-      row.category === 'pf' ? String(row.pf_method || '').trim() || null : null).sort(byCountDesc),
-    cpnSummary: countDistinctPatients(records, (row) =>
-      row.category === 'cpn' ? String(row.cpn_type || '').trim() || null : null).sort(byCountDesc),
+    pfSummary: summarizePfRecords(mergeRecords(records)),
+    cpnSummary: summarizeCpnRecords(records),
     diagnosticsByCategory: categories.map((category) => ({
       ...category,
       diagnostics: countDistinctPatients(records.filter((row) => row.category === category.key), diagnosticOf)
