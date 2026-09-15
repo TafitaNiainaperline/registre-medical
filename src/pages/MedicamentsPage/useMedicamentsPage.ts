@@ -15,7 +15,7 @@ const emptyForm: MedicationForm = {
 }
 
 export const isLowStock = (medication: Medication): boolean =>
-  medication.stock !== null && medication.stock !== undefined
+  medication.item_type !== 'act' && medication.stock !== null && medication.stock !== undefined
   && Number(medication.stock) <= Number(medication.stock_threshold ?? DEFAULT_THRESHOLD)
 
 export const useMedicamentsPage = () => {
@@ -29,6 +29,7 @@ export const useMedicamentsPage = () => {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [modalType, setModalType] = useState<ItemType | null>(null)
   const [search, setSearch] = useState('')
+  const [typeFilter, setTypeFilter] = useState<ItemType | 'all'>('all')
   const [message, setMessage] = useState<{ type: MessageType; text: string }>({ type: 'ok', text: '' })
   const [toast, setToast] = useState<{ type: MessageType; text: string }>({ type: 'ok', text: '' })
   const [stockTarget, setStockTarget] = useState<Medication | null>(null)
@@ -54,7 +55,7 @@ export const useMedicamentsPage = () => {
 
   const openCreate = (itemType: ItemType) => {
     setEditingId(null)
-    setForm({ ...emptyForm, item_type: itemType })
+    setForm({ ...emptyForm, date: todayIso(), item_type: itemType })
     setModalType(itemType)
   }
 
@@ -90,7 +91,7 @@ export const useMedicamentsPage = () => {
       unit: isAct ? null : (form.unit || 'comprimé'),
       stock: isAct || !isAdmin || form.stock === '' ? null : Number(form.stock),
       stock_threshold: isAct ? DEFAULT_THRESHOLD : (form.stock_threshold === '' ? DEFAULT_THRESHOLD : Number(form.stock_threshold)),
-      date: form.date,
+      date: isAct ? undefined : form.date,
       created_by: currentUser.id || null,
     }
 
@@ -165,13 +166,23 @@ export const useMedicamentsPage = () => {
     })
   })
 
+  const query = normalize(search)
+  const matchingRows = rows.filter((row) => normalize(row.name).includes(query))
+  const counts = {
+    all: matchingRows.length,
+    medication: matchingRows.filter((row) => row.item_type !== 'act').length,
+    act: matchingRows.filter((row) => row.item_type === 'act').length,
+  }
+
   return {
     currentUser, isAdmin, rows, topSelling, form, setForm, editingId, modalType, search, setSearch, message, toast,
     openCreate, openEdit, closeModal, submit, notify,
     stockTarget, stockQuantity, setStockQuantity, stockDate, setStockDate, openStock, closeStock, confirmStock,
     historyTarget, stockHistory, openHistory, closeHistory: () => setHistoryTarget(null),
-    filtered: rows.filter((row) => normalize(row.name).includes(normalize(search))),
+    typeFilter, setTypeFilter, counts,
+    filtered: matchingRows.filter((row) => typeFilter === 'all' || (row.item_type || 'medication') === typeFilter),
+    filteredTopSelling: topSelling.filter((row) => normalize(row.medication_name).includes(query)),
     lowStockCount: rows.filter(isLowStock).length,
-    actSummary: Array.from(actTotals.values()).sort((a, b) => b.count - a.count),
+    actSummary: Array.from(actTotals.values()).filter((act) => normalize(act.name).includes(query)).sort((a, b) => b.count - a.count),
   }
 }

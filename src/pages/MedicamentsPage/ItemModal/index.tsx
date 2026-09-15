@@ -31,10 +31,13 @@ const ItemModal = ({ itemType, editing, form, isAdmin, onChange, onSubmit, onClo
 
   return (
     <div className="modal-overlay">
-      <div className="ItemModal modal">
+      <div className="ItemModal modal" role="dialog" aria-modal="true" aria-label={title}>
         <div className="header">
-          <h3>{title}</h3>
-          <button className="close" onClick={onClose}><Icon name="close" /></button>
+          <div className="item-heading">
+            <span className="item-icon"><Icon name={isAct ? 'stethoscope' : 'pill'} size="lg" /></span>
+            <div><h3>{title}</h3><p>{isAct ? 'Définissez le nom et le tarif de l’acte.' : 'Renseignez le médicament, son prix et son stock.'}</p></div>
+          </div>
+          <button type="button" className="close" onClick={onClose} aria-label="Fermer"><Icon name="close" /></button>
         </div>
 
         <div className="fields">
@@ -48,7 +51,7 @@ const ItemModal = ({ itemType, editing, form, isAdmin, onChange, onSubmit, onClo
           </label>
 
           <label className="field">
-            <span>Prix (Ar)</span>
+            <span>{isAct ? 'Tarif de l’acte (Ar)' : 'Prix par unité (Ar)'}</span>
             <input type="number" min="0" placeholder="0" value={form.price} onChange={(e) => set({ price: e.target.value })} />
           </label>
 
@@ -61,18 +64,20 @@ const ItemModal = ({ itemType, editing, form, isAdmin, onChange, onSubmit, onClo
                 </select>
               </label>
 
+              <fieldset className="stock-fields wide">
+              <legend>Suivi du stock</legend>
               <label className="field">
-                <span>Stock {isAdmin ? '' : '(réservé à l’administrateur)'}</span>
+                <span>{editing ? 'Stock actuel' : 'Stock initial'} {isAdmin ? '' : '(administrateur)'}</span>
                 <input
                   type="number"
                   min="0"
-                  placeholder="0"
+                  placeholder="Non suivi"
                   value={form.stock}
                   onChange={(e) => set({ stock: e.target.value })}
                   readOnly={!isAdmin}
                 />
+                <small>Laissez vide si le stock n’est pas suivi.</small>
               </label>
-
               <label className="field">
                 <span>Seuil d’alerte</span>
                 <input
@@ -83,13 +88,14 @@ const ItemModal = ({ itemType, editing, form, isAdmin, onChange, onSubmit, onClo
                 />
                 <small>Alerte lorsque le stock atteint ou descend sous cette valeur.</small>
               </label>
+              </fieldset>
             </>
           )}
 
-          {!editing && (
+          {!editing && !isAct && (
             <div className="field wide">
               <span>Date d’ajout</span>
-              <DatePicker value={form.date} onChange={(date) => set({ date })} label="Choisir une date" />
+              <DatePicker value={form.date} onChange={(date) => set({ date })} label="Choisir une date" clearLabel="Effacer la date d’ajout" />
             </div>
           )}
         </div>

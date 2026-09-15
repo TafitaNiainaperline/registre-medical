@@ -1,6 +1,50 @@
 @use '../../styles/variables' as *;
 
 .MedicamentsPage {
+  .catalogue-search {
+    .search-field { flex: 1 1 23rem; }
+    .stock-exports {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      > span { color: var(--soft); font-size: 0.85rem; margin-right: 0.25rem; }
+    }
+  }
+
+  .catalogue-filters {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    flex-basis: 100%;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+
+    button {
+      gap: 0.5rem;
+      padding: 0.45rem 0.8rem;
+      border-radius: 999px;
+      color: var(--soft);
+      background: var(--field-bg);
+      box-shadow: none;
+      font-size: 0.85rem;
+      &.active { background: var(--brand); color: #fff; }
+      span { padding: 0.1rem 0.4rem; border-radius: 999px; background: rgba(128, 128, 128, 0.15); }
+    }
+    .result-count { margin-left: auto; font-size: 0.85rem; color: var(--soft); }
+  }
+
+  .activity-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+    .panel { min-width: 0; margin: 0; }
+    h3 { display: flex; align-items: center; gap: 0.6rem; margin: 0 0 1rem; font-size: 1rem; }
+    .list { max-height: 19rem; overflow-y: auto; }
+    .name { min-width: 0; overflow-wrap: anywhere; }
+  }
+
   .add-actions {
     display: flex;
     gap: 0.75em;
@@ -21,9 +65,8 @@
     color: #7f4a00;
   }
 
-  .acts { margin: 1.75em 0; }
-
   table {
+    .empty .btn-light { display: flex; margin: 0.75rem auto 0; }
     tr.low td { background: #fff7ea; }
 
     .price { font-weight: 600; }
@@ -57,9 +100,7 @@
     }
   }
 
-  .best-sellers {
-    margin-top: 1.875em;
-
+  .best-sellers, .act-activity {
     .empty { padding: 1.25em; text-align: center; color: #888; }
     .list { display: grid; gap: 0.5em; }
 
@@ -67,6 +108,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 1rem;
       padding: 0.625em 0.875em;
       border-radius: 0.5em;
       background: #f8fafa;
@@ -75,13 +117,30 @@
     }
 
     .count-badge.amber { background: #f59f00; }
+    .act-totals {
+      display: grid;
+      gap: 0.2rem;
+      text-align: right;
+      flex-shrink: 0;
+      strong { color: var(--brand); }
+      small { color: var(--soft); }
+    }
   }
 
   body.dark-mode & {
     .low-stock { background: #3a2a10; color: #ffd978; }
     table tr.low td { background: #2a2317; }
     table .unit { background: #1b2a34; }
-    .best-sellers .row { background: #111b23; }
+    .best-sellers .row, .act-activity .row { background: #111b23; }
+  }
+}
+
+@media (max-width: 600px) {
+  .MedicamentsPage {
+    .catalogue-search .search-field { flex: initial; width: 100%; min-width: 0; }
+    .catalogue-filters { flex-basis: auto; }
+    .catalogue-filters .result-count { width: 100%; margin: 0.25rem 0 0; }
+    .add-actions button { flex: 1 1 100%; }
   }
 }
 

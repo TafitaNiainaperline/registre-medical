@@ -1,20 +1,20 @@
 import Icon from '../../components/Icon'
-import FilterCard from '../../components/FilterCard'
 import { formatDate } from '../../utils/date'
 import StockModal from './StockModal'
 import StockHistoryModal from './StockHistoryModal'
 import ItemModal from './ItemModal'
+import ActActivity from './ActActivity'
 import { isLowStock, useMedicamentsPage } from './useMedicamentsPage'
 import './MedicamentsPage.scss'
 
 
 const MedicamentsPage = () => {
   const {
-    currentUser, isAdmin, topSelling, form, setForm, editingId, modalType, search, setSearch, message, toast,
+    currentUser, isAdmin, filteredTopSelling, form, setForm, editingId, modalType, search, setSearch, message, toast,
     openCreate, openEdit, closeModal, submit,
     stockTarget, stockQuantity, setStockQuantity, stockDate, setStockDate, openStock, closeStock, confirmStock,
     historyTarget, stockHistory, openHistory, closeHistory,
-    filtered, lowStockCount, actSummary,
+    filtered, lowStockCount, actSummary, typeFilter, setTypeFilter, counts,
   } = useMedicamentsPage()
 
   return (
@@ -58,8 +58,8 @@ const MedicamentsPage = () => {
       <section className="MedicamentsPage">
         <div className="page-header">
           <div>
-            <h1>Gestion des médicaments</h1>
-            <p>Ajoutez, modifiez et supprimez les médicaments utilisés dans les traitements.</p>
+            <h1>Médicaments et actes médicaux</h1>
+            <p>Retrouvez vos médicaments et actes, leurs tarifs et le stock disponible.</p>
           </div>
           <div className="page-badge">
             <Icon name="pill" /> Médicaments
@@ -90,29 +90,22 @@ const MedicamentsPage = () => {
           </button>
         </div>
 
-        <div className="cards-grid acts">
-          <FilterCard
-            title="Actes médicaux"
-            icon="stethoscope"
-            tone="violet"
-            placeholder="Filtrer les actes..."
-            entries={actSummary.map((act) => ({
-              label: act.name,
-              value: `${act.count} fois - ${act.total.toLocaleString()} Ar`,
-            }))}
-          />
-        </div>
-
-        <div className="search-bar">
+        <div className="search-bar catalogue-search">
           <div className="search-field">
             <Icon name="search" />
             <input
-              type="text"
-              placeholder="Rechercher un médicament..."
+              type="search"
+              aria-label="Rechercher un médicament ou un acte médical"
+              placeholder="Rechercher un médicament ou un acte médical…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+
+          {search && <button type="button" className="btn-light" onClick={() => setSearch('')} aria-label="Effacer la recherche"><Icon name="close" /></button>}
+
+          <div className="stock-exports" role="group" aria-label="Exporter le stock">
+          <span>Stock</span>
 
           <button className="btn-success" onClick={() => window.api.exportStockExcel()}>
             <Icon name="excel" /> Excel
@@ -121,6 +114,19 @@ const MedicamentsPage = () => {
           <button className="btn-danger" onClick={() => window.api.exportStockPdf()}>
             <Icon name="file" /> PDF
           </button>
+          </div>
+
+          <div className="catalogue-filters" role="group" aria-label="Type de résultat">
+            {([
+              ['all', 'Tous'], ['medication', 'Médicaments'], ['act', 'Actes médicaux'],
+            ] as const).map(([type, label]) => (
+              <button type="button" key={type} aria-pressed={typeFilter === type}
+                className={typeFilter === type ? 'active' : ''} onClick={() => setTypeFilter(type)}>
+                {label} <span>{counts[type]}</span>
+              </button>
+            ))}
+            <span className="result-count" role="status">{filtered.length} résultat{filtered.length !== 1 ? 's' : ''}</span>
+          </div>
         </div>
 
         <div className="table-wrap">
@@ -139,7 +145,10 @@ const MedicamentsPage = () => {
             </thead>
             <tbody>
               {filtered.length === 0 && (
-                <tr><td className="empty" colSpan={8}>Aucun médicament trouvé.</td></tr>
+                <tr><td className="empty" colSpan={8}>
+                  Aucun médicament ou acte ne correspond à votre recherche.
+                  {(search || typeFilter !== 'all') && <button type="button" className="btn-light" onClick={() => { setSearch(''); setTypeFilter('all') }}>Réinitialiser les filtres</button>}
+                </td></tr>
               )}
 
               {filtered.map((row) => {
@@ -191,14 +200,15 @@ const MedicamentsPage = () => {
           </table>
         </div>
 
-        <div className="panel best-sellers">
+        <div className="activity-grid">
+        {typeFilter !== 'act' && <div className="panel best-sellers">
           <h3><Icon name="trending" size="lg" /> Médicaments les plus vendus</h3>
 
-          {topSelling.length === 0 ? (
-            <div className="empty">Aucune vente enregistrée.</div>
+          {filteredTopSelling.length === 0 ? (
+            <div className="empty">{search ? 'Aucune vente pour cette recherche.' : 'Aucune vente enregistrée.'}</div>
           ) : (
             <div className="list">
-              {topSelling.map((medication) => (
+              {filteredTopSelling.map((medication) => (
                 <div className="row" key={medication.medication_name}>
                   <span className="name">{medication.medication_name}</span>
                   <span className="count-badge amber">{medication.total_sold}</span>
@@ -206,6 +216,8 @@ const MedicamentsPage = () => {
               ))}
             </div>
           )}
+        </div>}
+        {typeFilter !== 'medication' && <ActActivity entries={actSummary} search={search} />}
         </div>
       </section>
     </>

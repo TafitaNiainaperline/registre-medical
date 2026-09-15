@@ -1,0 +1,59 @@
+.act-activity-trigger {
+  align-self: start;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.85rem;
+  width: 100%;
+  padding: 1.15rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  color: var(--ink);
+  background: var(--panel);
+  box-shadow: 0 4px 16px rgba(22, 76, 89, 0.05);
+  text-align: left;
+
+  &:hover { border-color: var(--brand); opacity: 1; transform: none; background: var(--field-bg); }
+  &:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
+  .activity-symbol { display: grid; place-items: center; padding: 0.65rem; border-radius: 0.8rem; color: var(--brand); background: var(--field-bg); }
+  .activity-label { display: grid; gap: 0.35rem; min-width: 0; }
+  .activity-label small { font-size: 0.8rem; font-weight: 400; color: var(--soft); }
+  .activity-open { display: inline-flex; align-items: center; gap: 0.4rem; margin-left: auto; color: var(--brand); font-size: 0.8rem; }
+}
+
+.ActDetails {
+  display: flex;
+  flex-direction: column;
+  width: min(42rem, 92vw);
+  max-height: calc(100dvh - 2rem);
+  box-sizing: border-box;
+  background: var(--panel);
+  color: var(--ink);
+
+  .header h3 { display: flex; align-items: center; gap: 0.5rem; color: var(--ink); }
+  .scope { margin: 0 0 1rem; color: var(--soft); font-size: 0.85rem; overflow-wrap: anywhere; }
+  .act-details-scroll { min-height: 0; overflow: auto; }
+  table { width: 100%; min-width: 22rem; font-size: 0.9rem; }
+  th { position: sticky; top: 0; background: var(--field-bg); color: var(--ink); }
+  th:not(:first-child), td:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+  td:first-child { overflow-wrap: anywhere; }
+  .empty { padding: 1rem; text-align: center; color: var(--soft); }
+  .act-pagination {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.85rem;
+    > span { color: var(--soft); }
+    > div { display: flex; gap: 0.5rem; }
+  }
+}
+
+@media (max-width: 600px) {
+  .act-activity-trigger { flex-wrap: wrap; }
+  .act-activity-trigger .activity-open { flex-basis: 100%; padding-left: 3.8rem; }
+}
