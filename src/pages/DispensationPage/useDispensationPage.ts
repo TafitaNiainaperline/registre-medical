@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { Dispensation, Medication } from '../../../electron/types'
 import { errorMessage } from '../../utils/error'
@@ -13,6 +13,9 @@ export const useDispensationPage = () => {
   const [dispensations, setDispensations] = useState<Dispensation[]>([])
   const [selectedId, setSelectedId] = useState('')
   const [quantity, setQuantity] = useState('')
+  const [creating, setCreating] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const savingRef = useRef(false)
   const [search, setSearch] = useState('')
   const [message, setMessage] = useState<{ type: MessageType; text: string }>({ type: 'ok', text: '' })
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -37,6 +40,7 @@ export const useDispensationPage = () => {
 
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    if (savingRef.current) return
 
     const medicationId = Number(selectedId)
     const qty = Number(quantity)
@@ -51,6 +55,8 @@ export const useDispensationPage = () => {
       return
     }
 
+    savingRef.current = true
+    setSaving(true)
     try {
       await window.api.createDispensation({ medication_id: medicationId, quantity: qty })
 
@@ -64,9 +70,13 @@ export const useDispensationPage = () => {
       notify(`Dispensation enregistrée. Total : ${total.toLocaleString()} Ar.${warning}`)
       setSelectedId('')
       setQuantity('')
+      setCreating(false)
       load()
     } catch (err) {
       notify(errorMessage(err, 'Erreur lors de l\'enregistrement.'), 'err')
+    } finally {
+      savingRef.current = false
+      setSaving(false)
     }
   }
 
@@ -107,6 +117,15 @@ export const useDispensationPage = () => {
   const filtered = dispensations.filter((d) => matches(search, [d.medication_name, d.unit, d.quantity]))
 
   return {
+    creating, saving,
+    openCreate: () => {
+      setSelectedId('')
+      setQuantity('')
+      setMessage({ text: '', type: 'ok' })
+      setEditingId(null)
+      setCreating(true)
+    },
+    closeCreate: () => { if (!savingRef.current) setCreating(false) },
     medications, filtered, selectedId, setSelectedId, quantity, setQuantity, search, setSearch,
     message, submit, remove, editingId, setEditingId, editForm, setEditForm, startEdit, saveEdit,
     unit: selected?.unit || 'comprimé',

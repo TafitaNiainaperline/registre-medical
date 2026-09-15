@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import Icon from '../../components/Icon'
 import { formatDateTime } from '../../utils/date'
 import { useDispensationPage } from './useDispensationPage'
@@ -7,8 +8,25 @@ const DispensationPage = () => {
   const {
     medications, filtered, selectedId, setSelectedId, quantity, setQuantity, search, setSearch,
     message, submit, remove, editingId, setEditingId, editForm, setEditForm, startEdit, saveEdit,
-    unit, totalPrice, unitOf,
+    unit, totalPrice, unitOf, creating, saving, openCreate, closeCreate,
   } = useDispensationPage()
+  const dialogRef = useRef<HTMLDialogElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!creating) return
+    const dialog = dialogRef.current
+    const previous = document.activeElement
+    const overflow = document.body.style.overflow
+    dialog?.showModal()
+    dialog?.querySelector('select')?.focus()
+    document.body.style.overflow = 'hidden'
+    return () => {
+      dialog?.close()
+      document.body.style.overflow = overflow
+      if (previous instanceof HTMLElement && previous.isConnected) previous.focus()
+    }
+  }, [creating])
 
   return (
     <section className="DispensationPage">
@@ -22,20 +40,35 @@ const DispensationPage = () => {
         </div>
       </div>
 
-      {message.text && (
+      {!creating && message.text && (
         <div className={message.type === 'err' ? 'error-msg' : 'success-msg'}>
           <Icon name={message.type === 'err' ? 'alert' : 'check-circle'} />
           {message.text}
         </div>
       )}
 
-      <div className="panel form">
-        <h3><Icon name="plus" size="md" /> Nouvelle dispensation</h3>
+      <div className="dispensation-actions">
+        <button type="button" className="btn-light" onClick={() => listRef.current?.scrollIntoView({ block: 'start' })}>
+          <Icon name="history" /> Liste des dispensations
+        </button>
+        <button type="button" aria-haspopup="dialog" aria-expanded={creating} onClick={openCreate}>
+          <Icon name="plus" /> Nouvelle dispensation
+        </button>
+      </div>
+
+      <dialog ref={dialogRef} className="modal form creation-modal" aria-labelledby="dispensation-create-title"
+        onCancel={(event) => { event.preventDefault(); closeCreate() }}>
+        <div className="header">
+          <h3 id="dispensation-create-title"><Icon name="plus" size="md" /> Nouvelle dispensation</h3>
+          <button type="button" className="close" aria-label="Fermer la nouvelle dispensation" disabled={saving} onClick={closeCreate}><Icon name="close" /></button>
+        </div>
+
+        {creating && message.text && <div className={message.type === 'err' ? 'error-msg' : 'success-msg'} role="alert">{message.text}</div>}
 
         <form onSubmit={submit}>
           <label className="field">
             <span>Médicament</span>
-            <select value={selectedId} onChange={(e) => { setSelectedId(e.target.value); setQuantity('') }} required>
+            <select value={selectedId} disabled={saving} onChange={(e) => { setSelectedId(e.target.value); setQuantity('') }} required>
               <option value="">-- Sélectionner un médicament --</option>
               {medications.map((med) => (
                 <option key={med.id} value={med.id}>
@@ -53,6 +86,7 @@ const DispensationPage = () => {
                 min="1"
                 placeholder="0"
                 value={quantity}
+                disabled={saving}
                 onChange={(e) => setQuantity(e.target.value)}
                 required
               />
@@ -65,12 +99,13 @@ const DispensationPage = () => {
           </div>
 
           <div className="actions">
-            <button type="submit"><Icon name="plus" /> Enregistrer</button>
+            <button type="button" className="btn-light" disabled={saving} onClick={closeCreate}>Annuler</button>
+            <button type="submit" disabled={saving}><Icon name="plus" /> {saving ? 'Enregistrement…' : 'Enregistrer'}</button>
           </div>
         </form>
-      </div>
+      </dialog>
 
-      <div className="panel">
+      <div className="panel" ref={listRef}>
         <h3><Icon name="file" size="md" /> Historique des dispensations</h3>
 
         <div className="search-field">

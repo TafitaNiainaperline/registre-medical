@@ -1,6 +1,28 @@
 @use '../../styles/variables' as *;
 
 .DispensationPage {
+  .dispensation-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .creation-modal {
+    width: min(32rem, calc(100vw - 2rem));
+    max-height: calc(100dvh - 2rem);
+    box-sizing: border-box;
+    margin: auto;
+    border: 1px solid var(--border);
+    color: var(--ink);
+    background: var(--panel);
+    overflow-y: auto;
+
+    &::backdrop { background: rgba(15, 30, 40, 0.5); }
+    .header h3 { display: flex; align-items: center; gap: 0.5rem; color: var(--ink); }
+    .actions { flex-wrap: wrap; gap: 0.625rem; }
+  }
+
   .panel { margin-bottom: 1.5em; }
 
   .form form {
