@@ -30,6 +30,8 @@ const DossierHistory = ({ rows, loading, patientName, onReceipt, onClose }: Prop
               <th>Visite</th>
               <th>N°</th>
               <th>Date / Heure</th>
+              {rows[0].category === 'cpn' && <th>N° CPN</th>}
+              {rows[0].category === 'pf' && <th>Produit PF</th>}
               <th>Traitement</th>
               <th>Observation</th>
               <th>Montant de la visite</th>
@@ -46,6 +48,8 @@ const DossierHistory = ({ rows, loading, patientName, onReceipt, onClose }: Prop
                   </td>
                   <td className="registry">{displayRegistryNumber(row.registry_number)}</td>
                   <td className="date">{formatDateTime(row.created_at)}</td>
+                  {rows[0].category === 'cpn' && <td>{row.cpn_type || '-'}</td>}
+                  {rows[0].category === 'pf' && <td>{row.pf_method || '-'}</td>}
                   <td>{treatmentsLabel(row.treatments) || row.traitement || '-'}</td>
                   <td>{row.observation || '-'}</td>
                   <td className="current">{row.cost} Ar</td>

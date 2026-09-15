@@ -346,16 +346,46 @@ export const useRecordsPage = (category: Category) => {
 
   const groupedRecords = useMemo(() => mergeRecords(records), [records])
 
+  const cpnSummary = useMemo(() => {
+    const counts = new Map<string, number>(['CPN1', 'CPN2', 'CPN3', 'CPN4', 'CPN5'].map((label) => [label, 0]))
+    // Chaque consultation compte, même si plusieurs visites sont regroupées dans la liste.
+    records.forEach((row) => {
+      if (row.category !== 'cpn') return
+      const label = String(row.cpn_type || '').trim().toUpperCase()
+      if (label) counts.set(label, (counts.get(label) || 0) + 1)
+    })
+    return Array.from(counts.entries()).sort((a, b) => a[0].localeCompare(b[0], 'fr', { numeric: true }))
+  }, [records])
+
+  const pfSummary = useMemo(() => {
+    const counts = new Map<string, { label: string; count: number }>()
+    records.forEach((row) => {
+      if (row.category !== 'pf') return
+      const label = String(row.pf_method || '').trim().replace(/\s+/g, ' ')
+      if (!label) return
+      const key = normalize(label)
+      const entry = counts.get(key)
+      if (entry) entry.count++
+      else counts.set(key, { label, count: 1 })
+    })
+    return Array.from(counts.values())
+      .sort((a, b) => a.label.localeCompare(b.label, 'fr', { numeric: true }))
+      .map(({ label, count }): [string, number] => [label, count])
+  }, [records])
+
   const filteredRecords = groupedRecords.filter((row) => {
-    const acts = row.treatments.filter((t) => t.item_type === 'act').map((t) => normalize(t.name))
+    const registryValues = category.key === 'cpn' ? [row.cpn_type]
+      : category.key === 'pf' ? [row.pf_method]
+      : row.treatments.filter((t) => t.item_type === 'act').map((t) => t.name)
     return matches(filters.search, [
       `${row.patient_nom || ''} ${row.patient_prenom || ''}`, row.diagnostic,
       displayRegistryNumber(row.registry_number), row.registry_number, row.reference,
+      row.cpn_type, row.pf_method,
     ])
       && (!filters.diagnostic || normalize(row.diagnostic).includes(normalize(filters.diagnostic)))
       && (!filters.age || normalize(row.age).includes(normalize(filters.age)))
       && (!filters.date || row.created_at?.slice(0, 10) === filters.date)
-      && (!filters.act || acts.some((name) => name.includes(normalize(filters.act))))
+      && matches(filters.act, registryValues)
   })
 
   const diagnosticSummary = useMemo(() => {
@@ -397,5 +427,7 @@ export const useRecordsPage = (category: Category) => {
     diagnosticOptions,
     filteredRecords,
     diagnosticSummary,
+    cpnSummary,
+    pfSummary,
   }
 }

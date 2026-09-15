@@ -26,7 +26,7 @@ const RecordsPage = ({ category }: Props) => {
     needsTreatmentConfirmation, dismissTreatmentConfirmation, confirmWithoutTreatment,
     change, submit, edit, viewHistory, downloadReceipt, remove, load,
     cancelEdit, clearFilters, diagnosticOptions, selectPatient, clearPatient, setIdentity,
-    filteredRecords, diagnosticSummary,
+    filteredRecords, diagnosticSummary, cpnSummary, pfSummary,
   } = useRecordsPage(category)
 
   const isConsultation = category.key === 'consultation'
@@ -36,12 +36,16 @@ const RecordsPage = ({ category }: Props) => {
   // Chaque registre affiche sa donnée propre dans la liste
   const extraColumn =
     category.key === 'consultation' ? { label: 'TDR', value: null }
-    : category.key === 'cpn' ? { label: 'CPN', value: 'cpn_type' as const }
+    : category.key === 'cpn' ? { label: 'N° CPN', value: 'cpn_type' as const }
     : category.key === 'pf' ? { label: 'Produit PF', value: 'pf_method' as const }
     : null
 
   const columnCount = 12 + (isConsultation ? 1 : 0) + (extraColumn ? 1 : 0)
   const hasFilters = Object.values(filters).some(Boolean)
+  const registrySummary = category.key === 'cpn' ? cpnSummary : pfSummary
+  const registryFilterLabel = category.key === 'cpn'
+    ? 'Filtrer par CPN (CPN1, CPN2...)'
+    : category.key === 'pf' ? 'Filtrer par produit PF...' : 'Filtrer par acte médical...'
 
   return (
     <section className="RecordsPage">
@@ -68,6 +72,21 @@ const RecordsPage = ({ category }: Props) => {
         allArchives={archives}
         onChange={(archive) => { setActiveArchive(archive); load(archive) }}
       />
+
+      {isAdultRegistry && (
+        <section className={`registry-summary ${category.key}`} aria-label={category.key === 'cpn' ? 'Compteurs CPN' : 'Compteurs produits PF'}>
+          <h2 title="Nombre de consultations pour la période sélectionnée"><Icon name={category.icon} /> {category.key === 'cpn' ? 'CPN de la période' : 'Produits PF de la période'}</h2>
+          <dl className="summary-cards">
+            {registrySummary.map(([label, count]) => (
+              <div key={label} className={count === 0 ? 'summary-card zero' : 'summary-card'}>
+                <dt>{label}</dt>
+                <dd>{count}</dd>
+              </div>
+            ))}
+          </dl>
+          {registrySummary.length === 0 && <p>Aucun produit PF renseigné pour cette période.</p>}
+        </section>
+      )}
 
       <div className={`tabs ${category.key}`} role="tablist">
         <button
@@ -156,7 +175,8 @@ const RecordsPage = ({ category }: Props) => {
 
         <input
           type="text"
-          placeholder="Filtrer par acte médical..."
+          placeholder={registryFilterLabel}
+          aria-label={registryFilterLabel}
           value={filters.act}
           onChange={(e) => setFilters({ ...filters, act: e.target.value })}
         />
@@ -327,8 +347,8 @@ const RecordsPage = ({ category }: Props) => {
             )}
 
             {category.key === 'cpn' && (
-              <select name="cpn_type" value={form.cpn_type} onChange={change}>
-                <option value="">CPN (optionnel)</option>
+              <select name="cpn_type" aria-label="Numéro de consultation prénatale" value={form.cpn_type} onChange={change}>
+                <option value="">N° CPN (optionnel)</option>
                 <option value="CPN1">CPN1</option>
                 <option value="CPN2">CPN2</option>
                 <option value="CPN3">CPN3</option>

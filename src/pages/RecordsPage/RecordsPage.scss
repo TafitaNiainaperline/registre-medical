@@ -2,6 +2,64 @@
 @use '../../styles/variables' as *;
 
 .RecordsPage {
+  .registry-summary {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+    margin-bottom: 1rem;
+
+    h2 { display: flex; align-items: center; gap: 0.375rem; margin: 0; color: var(--soft); font-size: 0.8rem; font-weight: 600; }
+    p { margin: 0; color: var(--soft); font-size: 0.8rem; }
+
+    .summary-cards {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.375rem;
+      min-width: 0;
+      max-width: 100%;
+      margin: 0;
+    }
+
+    .summary-card {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      max-width: 100%;
+      box-sizing: border-box;
+      padding: 0.25rem 0.5rem 0.25rem 0.625rem;
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      background: var(--summary-bg);
+
+      dt { min-width: 0; color: var(--ink); font-size: 0.8rem; font-weight: 500; overflow-wrap: anywhere; }
+      dd {
+        flex-shrink: 0;
+        min-width: 1.25rem;
+        margin: 0;
+        padding: 0.125rem 0.25rem;
+        border-radius: 0.25rem;
+        background: var(--panel);
+        color: var(--ink);
+        text-align: center;
+        font-size: 0.8rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+      }
+
+      &.zero {
+        background: var(--field-bg);
+        dt, dd { color: var(--soft); }
+      }
+    }
+
+    @each $name, $tint in $categories {
+      &.#{$name} {
+        --summary-bg: #{color.mix($tint, #fff, 7%)};
+      }
+    }
+  }
+
   .date-filter {
     flex: 1 1 15rem;
     min-width: 0;
@@ -249,6 +307,8 @@
   }
 
   body.dark-mode & {
+    .registry-summary .summary-card { background: var(--panel); }
+    .registry-summary .summary-card.zero { background: var(--field-bg); }
     .tabs { background: #101b23; }
     .tabs .tab.active { background: #1d2b36; box-shadow: none; }
     .tabs .tab .count { background: rgba(255, 255, 255, 0.12); }
