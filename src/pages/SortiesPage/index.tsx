@@ -1,13 +1,28 @@
+import { useEffect, useRef } from 'react'
 import Icon from '../../components/Icon'
+import DatePicker from '../../components/DatePicker'
 import { formatDay } from '../../utils/date'
 import { useSortiesPage } from './useSortiesPage'
 import './SortiesPage.scss'
 
 const SortiesPage = () => {
   const {
-    outflows, totals, archiveLabel, form, setForm, error, success, submit, remove,
+    creating, openCreate, closeCreate, outflows, totals, archiveLabel, form, setForm, error, success, submit, remove,
     editing, editForm, setEditForm, openEdit, closeEdit, update,
   } = useSortiesPage()
+  const createDialogRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!creating) return
+    const previous = document.activeElement
+    const overflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    createDialogRef.current?.querySelector<HTMLInputElement>('input')?.focus()
+    return () => {
+      document.body.style.overflow = overflow
+      if (previous instanceof HTMLElement && previous.isConnected) previous.focus()
+    }
+  }, [creating])
 
   return (
     <section className="SortiesPage">
@@ -41,25 +56,37 @@ const SortiesPage = () => {
         </article>
       </div>
 
-      <div className="columns">
-        <div className="panel">
-          <h3>Enregistrer une sortie</h3>
+      <div className="outflow-tools">
+        <button type="button" aria-haspopup="dialog" onClick={openCreate}>
+          <Icon name="plus" /> Nouvelle sortie
+        </button>
+      </div>
 
-          <form onSubmit={submit}>
-            <label className="field">
+      {success && <div className="success-msg" role="status"><Icon name="check-circle" /> {success}</div>}
+
+      {creating && <div className="modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) closeCreate() }}>
+        <div className="modal creation-modal" ref={createDialogRef} role="dialog" aria-modal="true" aria-labelledby="outflow-create-title"
+          onKeyDown={(event) => {
+            if (!event.currentTarget.contains(event.target as Node)) return
+            if (event.key === 'Escape') { event.preventDefault(); closeCreate() }
+            if (event.key !== 'Tab') return
+            const controls = event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), select:not(:disabled)')
+            const first = controls[0]
+            const last = controls[controls.length - 1]
+            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
+            if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
+          }}>
+          <div className="form-heading">
+            <span className="form-icon"><Icon name="bank" size="lg" /></span>
+            <div><h3 id="outflow-create-title">Nouvelle sortie</h3><p>Renseignez la date, le montant et le motif de la dépense.</p></div>
+            <button type="button" className="close" aria-label="Fermer la nouvelle sortie" onClick={closeCreate}><Icon name="close" /></button>
+          </div>
+
+          <form className="entry-form" onSubmit={submit}>
+            <div className="field">
               <span>Date</span>
-              <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
-            </label>
-
-            <label className="field">
-              <span>Désignation</span>
-              <input
-                type="text"
-                placeholder="Ex: Achat matériel, Frais de transport..."
-                value={form.designation}
-                onChange={(e) => setForm({ ...form, designation: e.target.value })}
-              />
-            </label>
+              <DatePicker value={form.date} onChange={(date) => setForm({ ...form, date })} label="Date de la dépense" clearLabel="Effacer la date de la dépense" />
+            </div>
 
             <label className="field">
               <span>Montant (Ar)</span>
@@ -73,21 +100,29 @@ const SortiesPage = () => {
               />
             </label>
 
-            {error && <div className="error-msg"><Icon name="alert" /> {error}</div>}
-            {success && <div className="success-msg"><Icon name="check-circle" /> {success}</div>}
+            <label className="field wide">
+              <span>Désignation</span>
+              <input type="text" placeholder="Ex. Achat de matériel, frais de transport…"
+                value={form.designation} onChange={(e) => setForm({ ...form, designation: e.target.value })} />
+            </label>
 
-            <button type="submit" className="btn-danger submit">Enregistrer la sortie</button>
+            {error && <div className="error-msg wide" role="alert"><Icon name="alert" /> {error}</div>}
+            <div className="form-actions wide">
+              <button type="button" className="btn-light" onClick={closeCreate}>Annuler</button>
+              <button type="submit" className="btn-danger"><Icon name="check" /> Enregistrer la sortie</button>
+            </div>
           </form>
         </div>
+      </div>}
 
-        <div className="panel">
+        <div className="panel list-panel">
           <div className="list-header">
             <h3>Liste des sorties</h3>
             <span className="total">Total : {totals.outflows.toLocaleString()} Ar</span>
           </div>
 
           {outflows.length === 0 ? (
-            <div className="empty">Aucune sortie enregistrée ce mois</div>
+            <div className="empty"><Icon name="bank" size="xl" /><p>Aucune sortie enregistrée ce mois.</p><button type="button" className="btn-light" onClick={openCreate}><Icon name="plus" /> Ajouter une sortie</button></div>
           ) : (
             <div className="scroll">
               <table>
@@ -122,7 +157,6 @@ const SortiesPage = () => {
             </div>
           )}
         </div>
-      </div>
 
       {editing && (
         <div className="modal-overlay">
@@ -133,10 +167,10 @@ const SortiesPage = () => {
             </div>
 
             <form onSubmit={update}>
-              <label className="field">
+              <div className="field">
                 <span>Date</span>
-                <input type="date" value={editForm.date} onChange={(e) => setEditForm({ ...editForm, date: e.target.value })} />
-              </label>
+                <DatePicker value={editForm.date} onChange={(date) => setEditForm({ ...editForm, date })} label="Date de la dépense" clearLabel="Effacer la date de la dépense" />
+              </div>
 
               <label className="field">
                 <span>Désignation</span>

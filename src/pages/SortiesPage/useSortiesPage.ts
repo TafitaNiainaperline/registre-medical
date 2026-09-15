@@ -11,6 +11,7 @@ type Totals = {
 }
 
 export const useSortiesPage = () => {
+  const [creating, setCreating] = useState(false)
   const [outflows, setOutflows] = useState<CashOutflow[]>([])
   const [totals, setTotals] = useState<Totals>({ entries: 0, outflows: 0, balance: 0 })
   const [archiveLabel, setArchiveLabel] = useState('')
@@ -67,6 +68,7 @@ export const useSortiesPage = () => {
       })
       setForm({ ...form, designation: '', amount: '' })
       setSuccess('Sortie enregistrée avec succès.')
+      setCreating(false)
       setTimeout(() => setSuccess(''), 3000)
       loadData()
     } catch (err) {
@@ -115,6 +117,9 @@ export const useSortiesPage = () => {
   }
 
   return {
+    creating,
+    openCreate: () => { setError(''); setCreating(true) },
+    closeCreate: () => { setError(''); setCreating(false) },
     outflows, totals, archiveLabel, form, setForm, error, success, submit, remove,
     editing, editForm, setEditForm, openEdit, closeEdit, update,
   }
