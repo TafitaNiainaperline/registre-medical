@@ -201,22 +201,8 @@ const MedicamentsPage = () => {
         </div>
 
         <div className="activity-grid">
-        {typeFilter !== 'act' && <div className="panel best-sellers">
-          <h3><Icon name="trending" size="lg" /> Médicaments les plus vendus</h3>
-
-          {filteredTopSelling.length === 0 ? (
-            <div className="empty">{search ? 'Aucune vente pour cette recherche.' : 'Aucune vente enregistrée.'}</div>
-          ) : (
-            <div className="list">
-              {filteredTopSelling.map((medication) => (
-                <div className="row" key={medication.medication_name}>
-                  <span className="name">{medication.medication_name}</span>
-                  <span className="count-badge amber">{medication.total_sold}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>}
+        {typeFilter !== 'act' && <ActActivity kind="medication" search={search}
+          entries={filteredTopSelling.map((medication) => ({ name: medication.medication_name, count: medication.total_sold }))} />}
         {typeFilter !== 'medication' && <ActActivity entries={actSummary} search={search} />}
         </div>
       </section>
