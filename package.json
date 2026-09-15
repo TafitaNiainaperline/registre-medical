@@ -8,6 +8,7 @@
     "dev": "node scripts/ensure-electron.js && concurrently \"vite\" \"tsc -p tsconfig.electron.json --watch --preserveWatchOutput\" \"wait-on http://localhost:5173 dist-electron/main.js && node scripts/dev-electron.js\"",
     "electron": "node scripts/ensure-electron.js && electron .",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.electron.json --noEmit",
+    "test:visits": "node --test scripts/visits.test.cjs",
     "build:renderer": "tsc -p tsconfig.json --noEmit && vite build",
     "build:electron": "tsc -p tsconfig.electron.json",
     "build": "yarn build:renderer && yarn build:electron",
