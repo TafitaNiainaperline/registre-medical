@@ -10,7 +10,7 @@ const HelpPage = () => {
       <div className="page-header">
         <div>
           <h1>Guide d'utilisation</h1>
-          <p>Repères essentiels pour utiliser le registre médical, le stock, les reçus et les archives.</p>
+          <p>Visites, compteurs CPN et PF, médicaments, dispensations, reçus et archives : retrouvez les étapes essentielles.</p>
         </div>
         <div className="page-badge">
           <Icon name="book" /> Assistance
@@ -23,7 +23,7 @@ const HelpPage = () => {
             <Icon name="hash" size="xl" />
             <h3>Numéro mensuel</h3>
           </div>
-          <strong className="value">01</strong>
+          <strong className="value">001</strong>
           <span className="subtitle">Identifiant patient lisible dans les registres.</span>
         </article>
 
@@ -42,7 +42,7 @@ const HelpPage = () => {
             <h3>Reçu PDF</h3>
           </div>
           <strong className="value small">Téléchargement</strong>
-          <span className="subtitle">Facture détaillée pour chaque patient payé.</span>
+          <span className="subtitle">Un reçu par visite, disponible dans l’historique du patient.</span>
         </article>
       </div>
 
