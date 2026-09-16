@@ -24,6 +24,22 @@ function loader(mocks = {}) {
   }
 }
 
+test('archives group visits without mixing patients, registers or periods and retain every amount', () => {
+  const { groupArchiveVisits } = loader()('src/pages/ArchivesPage/groupArchiveVisits.ts')
+  const first = { id: 1, patient_id: 1, category: 'consultation', registry_number: 'CONS-001', archive_year: 2026, archive_month: 9, created_at: '2026-09-01', cost: 1000 }
+  const latest = { ...first, id: 2, created_at: '2026-09-02', cost: 2000 }
+  const others = [{ ...first, id: 3, patient_id: 2 }, { ...first, id: 4, category: 'soin' }, { ...first, id: 5, archive_month: 8 }]
+  for (const rows of [[first, latest, ...others], [...others, latest, first]]) {
+    const groups = groupArchiveVisits(rows)
+    assert.equal(groups.length, 4)
+    const group = groups.find((item) => item.latest.id === 2)
+    assert.deepEqual(group.visits.map((item) => item.id), [2, 1])
+    assert.equal(group.total, 3000)
+    assert.equal(groups.reduce((sum, item) => sum + item.total, 0), 6000)
+  }
+  assert.equal(groupArchiveVisits([{ ...first, patient_id: null }, { ...latest, patient_id: null }]).length, 2)
+})
+
 test('capitalization changes only the first letter and preserves typing spaces and acronyms', () => {
   const { capitalize } = loader()('src/utils/text.ts')
   assert.equal(capitalize('paludisme simple'), 'Paludisme simple')

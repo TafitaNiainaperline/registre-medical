@@ -3,6 +3,7 @@ import type { Archive, MedicalRecord } from '../../../electron/types'
 import { errorMessage } from '../../utils/error'
 import { matches } from '../../utils/text'
 import { notify } from '../../utils/notifications'
+import { groupArchiveVisits } from './groupArchiveVisits'
 
 export const archiveKey = (archive: Archive | null): string =>
   archive ? `${archive.year}-${String(archive.month).padStart(2, '0')}` : ''
@@ -38,8 +39,7 @@ export const useArchivesPage = () => {
         month: archive.month,
         category: category || undefined,
       })
-      setRows((data || []).filter((row) =>
-        matches(search, [row.patient_nom, row.patient_prenom, row.diagnostic, row.registry_number])))
+      setRows(data || [])
     } catch (e) {
       setRows([])
       setMessage(errorMessage(e, 'Erreur de chargement.'))
@@ -49,7 +49,7 @@ export const useArchivesPage = () => {
   }
 
   useEffect(() => { loadArchives() }, [])
-  useEffect(() => { loadRows(selected) }, [selected, category, search])
+  useEffect(() => { loadRows(selected) }, [selected, category])
 
   const exportExcel = async () => {
     if (!selected?.year || !selected?.month) return
@@ -69,10 +69,13 @@ export const useArchivesPage = () => {
     }
   }
 
+  const groups = groupArchiveVisits(rows).filter((group) => group.visits.some((row) =>
+    matches(search, [row.patient_nom, row.patient_prenom, row.diagnostic, row.registry_number])))
+  const visibleRows = groups.flatMap((group) => group.visits)
   return {
     archives, selected, setSelected, category, setCategory, search, setSearch,
-    rows, loading, message, reload: () => loadRows(selected), exportExcel,
-    total: rows.reduce((sum, row) => sum + (Number(row.cost) || 0), 0),
+    rows: visibleRows, groups, loading, message, reload: () => loadRows(selected), exportExcel,
+    total: groups.reduce((sum, group) => sum + group.total, 0),
     canExport: Boolean(selected?.year && selected?.month) && !loading,
   }
 }
