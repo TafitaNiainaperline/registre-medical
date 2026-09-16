@@ -13,6 +13,7 @@ import AppointmentsPage from './pages/AppointmentsPage'
 import PatientsPage from './pages/PatientsPage'
 import SortiesPage from './pages/SortiesPage'
 import { categories } from './constants'
+import Notifications from './components/Notifications'
 
 type Props = {
   children: ReactNode
@@ -25,6 +26,8 @@ const ProtectedRoute = ({ children }: Props) => {
 
 const App = () => {
   return (
+    <>
+    <Notifications />
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route
@@ -49,6 +52,7 @@ const App = () => {
         <Route path="sorties" element={<SortiesPage />} />
       </Route>
     </Routes>
+    </>
   )
 }
 

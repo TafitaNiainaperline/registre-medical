@@ -1,0 +1,69 @@
+.notification-stack {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 20000;
+  display: grid;
+  gap: 0.75rem;
+  width: min(26rem, calc(100vw - 2.5rem));
+  max-height: calc(100dvh - 2.5rem);
+  overflow-y: auto;
+  pointer-events: none;
+}
+
+.notice-card {
+  --notice-accent: var(--brand);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--notice-accent);
+  border-radius: 1rem;
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: 0 12px 36px #0002;
+  pointer-events: auto;
+  animation: notification-in 180ms ease-out;
+
+  &.ok { --notice-accent: var(--success); }
+  &.err { --notice-accent: var(--danger); }
+  .notice-icon { color: var(--notice-accent); margin-top: 0.1rem; }
+  .notice-copy { flex: 1; min-width: 0; }
+  strong { font-size: 0.9rem; color: var(--ink); }
+  p { margin: 0.3rem 0 0; font-size: 0.875rem; line-height: 1.5; color: var(--soft); overflow-wrap: anywhere; white-space: pre-line; }
+  .notice-close { padding: 0.15rem; background: transparent; color: var(--soft); box-shadow: none; }
+}
+
+.action-confirmation {
+  width: min(28rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  padding: 1.75rem;
+  border: 1px solid var(--border);
+  border-radius: 1.5rem;
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: 0 24px 80px #0005;
+  animation: notification-in 180ms ease-out;
+  &::backdrop { background: #07151b99; backdrop-filter: blur(5px); }
+  .confirmation-symbol {
+    display: flex; align-items: center; justify-content: center;
+    width: 3.5rem; height: 3.5rem; margin-bottom: 1.25rem;
+    border-radius: 1rem; background: var(--field-bg); color: var(--brand);
+  }
+  &.danger .confirmation-symbol { background: #d34a6518; color: var(--danger); }
+  .confirmation-eyebrow { color: var(--soft); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+  h2 { margin: 0.5rem 0 0.75rem; font-size: 1.4rem; color: var(--ink); }
+  p { line-height: 1.6; color: var(--soft); white-space: pre-line; overflow-wrap: anywhere; }
+  .confirmation-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem; }
+  button:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px; }
+}
+
+@keyframes notification-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .notice-card, .action-confirmation { animation: none; }
+}
