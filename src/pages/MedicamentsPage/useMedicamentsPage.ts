@@ -30,7 +30,7 @@ export const useMedicamentsPage = () => {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [modalType, setModalType] = useState<ItemType | null>(null)
   const [search, setSearch] = useState('')
-  const [typeFilter, setTypeFilter] = useState<ItemType | 'all'>('all')
+  const [typeFilter, setTypeFilter] = useState<ItemType>('medication')
   const [message, setMessage] = useState<{ type: MessageType; text: string }>({ type: 'ok', text: '' })
   const [stockTarget, setStockTarget] = useState<Medication | null>(null)
   const [stockQuantity, setStockQuantity] = useState('')
@@ -197,7 +197,7 @@ export const useMedicamentsPage = () => {
     stockTarget, stockQuantity, setStockQuantity, stockDate, setStockDate, openStock, closeStock, confirmStock,
     historyTarget, stockHistory, openHistory, closeHistory: () => setHistoryTarget(null),
     typeFilter, setTypeFilter, counts,
-    filtered: matchingRows.filter((row) => typeFilter === 'all' || (row.item_type || 'medication') === typeFilter),
+    filtered: matchingRows.filter((row) => (row.item_type || 'medication') === typeFilter),
     filteredTopSelling: topSelling.filter((row) => normalize(row.medication_name).includes(query)),
     lowStockCount: rows.filter(isLowStock).length,
     actSummary: Array.from(actTotals.values()).filter((act) => normalize(act.name).includes(query)).sort((a, b) => b.count - a.count),

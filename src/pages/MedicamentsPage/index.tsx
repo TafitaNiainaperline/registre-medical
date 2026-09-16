@@ -66,30 +66,30 @@ const MedicamentsPage = () => {
           </div>
         )}
 
-        {lowStockCount > 0 && (
+        <div className="catalogue-tabs" role="group" aria-label="Catalogue">
+          {(['medication', 'act'] as const).map((type) => (
+            <button type="button" key={type} aria-pressed={typeFilter === type}
+              className={typeFilter === type ? 'active' : ''} onClick={() => { setTypeFilter(type); setSearch('') }}>
+              <Icon name={type === 'act' ? 'stethoscope' : 'pill'} />
+              {type === 'act' ? 'Actes médicaux' : 'Médicaments'}
+            </button>
+          ))}
+        </div>
+
+        {typeFilter === 'medication' && lowStockCount > 0 && (
           <div className="low-stock">
             <Icon name="alert" size="md" />
             <strong>{lowStockCount}</strong> médicament(s) ont atteint leur seuil d'alerte.
           </div>
         )}
 
-        <div className="add-actions">
-          <button type="button" onClick={() => openCreate('medication')}>
-            <Icon name="package" size="md" /> Ajouter un médicament
-          </button>
-
-          <button type="button" className="btn-light" onClick={() => openCreate('act')}>
-            <Icon name="stethoscope" size="md" /> Ajouter un acte médical
-          </button>
-        </div>
-
         <div className="search-bar catalogue-search">
           <div className="search-field">
             <Icon name="search" />
             <input
               type="search"
-              aria-label="Rechercher un médicament ou un acte médical"
-              placeholder="Rechercher un médicament ou un acte médical…"
+              aria-label={typeFilter === 'act' ? 'Rechercher un acte médical' : 'Rechercher un médicament'}
+              placeholder={typeFilter === 'act' ? 'Rechercher un acte médical…' : 'Rechercher un médicament…'}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -97,64 +97,56 @@ const MedicamentsPage = () => {
 
           {search && <button type="button" className="btn-light" onClick={() => setSearch('')} aria-label="Effacer la recherche"><Icon name="close" /></button>}
 
-          <div className="stock-exports" role="group" aria-label="Exporter le stock">
-          <span>Stock</span>
-
-          <button className="btn-success" onClick={exportStock}>
-            <Icon name="excel" /> Excel
+          <button type="button" onClick={() => openCreate(typeFilter)}><Icon name="plus" />
+            {typeFilter === 'act' ? 'Ajouter un acte' : 'Ajouter un médicament'}
           </button>
-
-          <button className="btn-danger" onClick={() => window.api.exportStockPdf()}>
-            <Icon name="file" /> PDF
-          </button>
-          </div>
-
-          <div className="catalogue-filters" role="group" aria-label="Type de résultat">
-            {([
-              ['all', 'Tous'], ['medication', 'Médicaments'], ['act', 'Actes médicaux'],
-            ] as const).map(([type, label]) => (
-              <button type="button" key={type} aria-pressed={typeFilter === type}
-                className={typeFilter === type ? 'active' : ''} onClick={() => setTypeFilter(type)}>
-                {label} <span>{counts[type]}</span>
-              </button>
-            ))}
-            <span className="result-count" role="status">{filtered.length} résultat{filtered.length !== 1 ? 's' : ''}</span>
-          </div>
+          {typeFilter === 'medication' && <details className="export-menu">
+            <summary>Exporter</summary>
+            <div>
+              <button type="button" className="btn-light" onClick={exportStock}><Icon name="excel" /> Stock Excel</button>
+              <button type="button" className="btn-light" onClick={() => window.api.exportStockPdf()}><Icon name="file" /> Stock PDF</button>
+            </div>
+          </details>}
         </div>
 
+        {([typeFilter] as const).map((kind) => {
+          const isActCategory = kind === 'act'
+          const groupRows = filtered.filter((row) => (row.item_type === 'act') === isActCategory)
+          return (
+        <section className={`catalogue-section ${kind}`} key={kind} aria-label={isActCategory ? 'Actes médicaux' : 'Médicaments'}>
+          <p className="catalogue-result" role="status">{counts[kind]} résultat{counts[kind] !== 1 ? 's' : ''}</p>
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>Nom</th>
-                <th className="center">Type</th>
                 <th className="num">Prix (Ar)</th>
-                <th className="center">Unité</th>
-                <th className="center">Stock</th>
-                <th className="center">Seuil</th>
+                {!isActCategory && <>
+                  <th className="center">Unité</th>
+                  <th className="center">Stock</th>
+                  <th className="center">Seuil</th>
+                </>}
                 <th className="center">Date</th>
                 <th className="center">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 && (
-                <tr><td className="empty" colSpan={8}>
-                  Aucun médicament ou acte ne correspond à votre recherche.
-                  {(search || typeFilter !== 'all') && <button type="button" className="btn-light" onClick={() => { setSearch(''); setTypeFilter('all') }}>Réinitialiser les filtres</button>}
+              {groupRows.length === 0 && (
+                <tr><td className="empty" colSpan={isActCategory ? 4 : 7}>
+                  {isActCategory ? 'Aucun acte médical à afficher.' : 'Aucun médicament à afficher.'}
+                  {search && <button type="button" className="btn-light" onClick={() => setSearch('')}>Effacer la recherche</button>}
                 </td></tr>
               )}
 
-              {filtered.map((row) => {
+              {groupRows.map((row) => {
                 const lowStock = isLowStock(row)
                 const isAct = row.item_type === 'act'
 
                 return (
                   <tr key={row.id} className={lowStock ? 'low' : undefined}>
                     <td><strong>{row.name}</strong></td>
-                    <td className="center">
-                      <span className={isAct ? 'badge act' : 'badge med'}>{isAct ? 'Acte' : 'Médicament'}</span>
-                    </td>
                     <td className="num price">{Number(row.price).toLocaleString()}</td>
+                    {!isActCategory && <>
                     <td className="center">
                       {isAct ? '-' : <span className="unit">{row.unit || 'comprimé'}</span>}
                     </td>
@@ -171,6 +163,7 @@ const MedicamentsPage = () => {
                       )}
                     </td>
                     <td className="center">{isAct ? '-' : (row.stock_threshold ?? 100)}</td>
+                    </>}
                     <td className="center date">{formatDate(row.created_at)}</td>
                     <td className="actions">
                       <div>
@@ -192,12 +185,18 @@ const MedicamentsPage = () => {
             </tbody>
           </table>
         </div>
+        </section>
+          )
+        })}
 
+        <details className="catalogue-statistics" key={typeFilter}>
+        <summary>Voir les statistiques</summary>
         <div className="activity-grid">
         {typeFilter !== 'act' && <ActActivity kind="medication" search={search}
           entries={filteredTopSelling.map((medication) => ({ name: medication.medication_name, count: medication.total_sold }))} />}
         {typeFilter !== 'medication' && <ActActivity entries={actSummary} search={search} />}
         </div>
+        </details>
       </section>
     </>
   )

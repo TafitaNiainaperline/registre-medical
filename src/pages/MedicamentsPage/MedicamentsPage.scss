@@ -1,6 +1,37 @@
 @use '../../styles/variables' as *;
 
 .MedicamentsPage {
+  .catalogue-tabs {
+    display: flex; gap: 1rem; border-bottom: 1px solid var(--border); margin-bottom: 1.25rem;
+    button { padding: 0.8rem 0.4rem; border-radius: 0; border: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--soft); box-shadow: none; }
+    button.active { border-bottom-color: var(--brand); color: var(--brand); }
+  }
+  .catalogue-result { margin: 0; padding: 0.6rem 1rem; color: var(--soft); font-size: 0.8rem; }
+  .export-menu {
+    position: relative;
+    summary { cursor: pointer; padding: 0.65rem 0.9rem; border: 1px solid var(--border); border-radius: 0.5rem; font-size: 0.9rem; }
+    > div { position: absolute; right: 0; top: calc(100% + 0.4rem); z-index: 10; display: grid; gap: 0.4rem; padding: 0.5rem; min-width: 11rem; border: 1px solid var(--border); border-radius: 0.5rem; background: var(--field-bg); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); }
+  }
+  .catalogue-statistics { margin-top: 1.25rem; summary { cursor: pointer; color: var(--soft); font-size: 0.9rem; } }
+  .catalogue-section {
+    margin-top: 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: 0.875rem;
+    overflow: hidden;
+    .table-wrap { margin: 0; border: 0; border-radius: 0; }
+  }
+  .catalogue-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: var(--field-bg);
+    h2 { display: flex; align-items: center; gap: 0.6rem; margin: 0; font-size: 1.1rem; }
+    h2 span { padding: 0.15rem 0.5rem; border-radius: 999px; background: var(--hairline); font-size: 0.8rem; }
+    p { margin: 0.35rem 0 0; font-size: 0.85rem; color: var(--soft); }
+  }
   .catalogue-search {
     .search-field { flex: 1 1 23rem; }
     .stock-exports {
@@ -147,4 +178,5 @@
 // Sous cette largeur les colonnes deviennent illisibles : on fait défiler
 @media (max-width: 900px) {
   .MedicamentsPage .table-wrap table { min-width: 52em; }
+  .MedicamentsPage .catalogue-section.act .table-wrap table { min-width: 30em; }
 }
