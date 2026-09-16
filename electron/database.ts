@@ -1321,6 +1321,7 @@ function computeTotalCostAr(treatments: Treatment[]): number {
 }
 
 async function createRecord(data: RecordInput): Promise<number | undefined> {
+  if (!String(data.diagnostic || '').trim()) throw new Error('Le diagnostic est requis.')
   const dateError = appointmentDateError(data.appointment_date)
   if (dateError) throw new Error(dateError)
   const d = await getDB()
@@ -1482,6 +1483,7 @@ async function addTreatmentsToRecord(recordId: number, data: ContinueRecordInput
 }
 
 async function updateRecord(id: number, data: RecordUpdateInput): Promise<void> {
+  if (!String(data.diagnostic || '').trim()) throw new Error('Le diagnostic est requis.')
   const dateError = appointmentDateError(data.appointment_date)
   if (dateError) throw new Error(dateError)
   const d = await getDB()

@@ -1,3 +1,4 @@
+import { notify as showToast, confirmAction } from '../../utils/notifications'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import type { Archive, MedicalRecord, Medication, Patient } from '../../../electron/types'
@@ -25,7 +26,7 @@ const emptyForm: RecordForm = {
 }
 
 // Les champs libres sont remis en forme à la saisie
-const TEXT_FIELDS = new Set(['diagnostic', 'traitement', 'observation'])
+const TEXT_FIELDS = new Set(['diagnostic', 'traitement', 'observation', 'pf_method', 'reference'])
 
 export function appointmentStatus(date: string | null): string {
   if (!date) return ''
@@ -52,7 +53,11 @@ export const useRecordsPage = (category: Category) => {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [filters, setFilters] = useState({ search: '', diagnostic: '', age: '', date: '', act: '' })
 
-  const [actionError, setActionError] = useState('')
+  const [actionError, storeError] = useState('')
+  const setActionError = (text: string) => {
+    storeError(text)
+    if (text) showToast(text, 'err')
+  }
   const [actionOk, setActionOk] = useState('')
   const [saving, setSaving] = useState(false)
   const savingRef = useRef(false)
@@ -63,7 +68,6 @@ export const useRecordsPage = (category: Category) => {
   const [dossierHistory, setDossierHistory] = useState<HistoryRow[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
   const historyRequest = useRef(0)
-  const [toast, setToast] = useState('')
   const notifiedAppointments = useRef(new Set<number>())
 
   const currentUser = getCurrentUser()
@@ -153,8 +157,7 @@ export const useRecordsPage = (category: Category) => {
         row.appointment_date === todayIso() && !notifiedAppointments.current.has(row.id))
       if (!appointment) return
       notifiedAppointments.current.add(appointment.id)
-      setToast(`Rendez-vous aujourd’hui pour ${appointment.patient_nom || 'ce patient'}.`)
-      setTimeout(() => setToast(''), 5000)
+      showToast(`Rendez-vous aujourd’hui pour ${appointment.patient_nom || 'ce patient'}.`, 'info')
     }
     check()
     const timer = setInterval(check, 60000)
@@ -176,13 +179,14 @@ export const useRecordsPage = (category: Category) => {
 
   useEffect(() => { setPendingConfirmation(null) }, [activeTab])
 
-  const submit = async (e: { preventDefault: () => void }, confirmed = false) => {
+  const submit = async (e: { preventDefault: () => void }, confirmed = false): Promise<void> => {
     e.preventDefault()
     if (savingRef.current) return
     setActionError('')
     setActionOk('')
 
     const identity = form.identity
+    if (!form.diagnostic.trim()) { setActionError('Le diagnostic est requis.'); return }
     const dateError = appointmentDateError(form.appointment_date)
     if (dateError) { setActionError(dateError); return }
     if (!form.patient) {
@@ -214,6 +218,14 @@ export const useRecordsPage = (category: Category) => {
       }
     }
 
+    if (treatments.length && !confirmed) {
+      return confirmAction({
+        title: editingId ? 'Modifier cette visite ?' : 'Enregistrer cette visite ?',
+        message: `${form.patient?.nom || identity.nom} : les soins et le montant seront enregistrés. Les médicaments sélectionnés seront déduits du stock.`,
+        confirmLabel: editingId ? 'Modifier' : 'Enregistrer',
+      }, () => submit({ preventDefault() {} }, true))
+    }
+
     setPendingConfirmation(null)
     // Sans sélection, le patient est créé avant l'enregistrement du dossier
     savingRef.current = true
@@ -241,15 +253,15 @@ export const useRecordsPage = (category: Category) => {
     const payload = {
       created_by: currentUser.id || null,
       patient_id: patient.id,
-      diagnostic: capitalize(form.diagnostic),
+      diagnostic: capitalize(form.diagnostic.trim()),
       appointment_date: form.appointment_date || null,
       tdr_result: category.key === 'consultation' ? (form.tdr_result || null) : null,
-      reference: category.key === 'consultation' ? (form.reference.trim() || null) : null,
-      pf_method: category.key === 'pf' ? (form.pf_method || null) : null,
+      reference: category.key === 'consultation' ? (capitalize(form.reference.trim()) || null) : null,
+      pf_method: category.key === 'pf' ? (capitalize(form.pf_method.trim()) || null) : null,
       cpn_type: category.key === 'cpn' ? (form.cpn_type || null) : null,
-      traitement: capitalize(form.traitement),
+      traitement: capitalize(form.traitement.trim()),
       treatments,
-      observation: capitalize(form.observation),
+      observation: capitalize(form.observation.trim()),
       cost: treatments.reduce((sum, t) => sum + Number(t.unit_price) * Number(t.quantity), 0),
     }
 
@@ -257,6 +269,7 @@ export const useRecordsPage = (category: Category) => {
       if (editingId) {
         await window.api.updateRecord(editingId, payload)
         setActionOk('Visite modifiée.')
+        showToast('Visite modifiée.')
       } else {
         await window.api.createRecord({
           category: category.key,
@@ -265,6 +278,7 @@ export const useRecordsPage = (category: Category) => {
           ...payload,
         })
         setActionOk('Visite enregistrée. Son reçu reste disponible dans la liste.')
+        showToast('Visite enregistrée. Son reçu reste disponible dans la liste.')
       }
       setForm(emptyForm)
       setEditingId(null)
@@ -328,25 +342,38 @@ export const useRecordsPage = (category: Category) => {
       const result = await window.api.exportReceiptPdf(row.id)
       if (result?.canceled) return
       setActionOk(`Reçu téléchargé : ${result.filePath}`)
+      showToast(`Reçu téléchargé : ${result.filePath}`)
     } catch (err) {
       console.error('exportReceiptPdf failed:', err)
       setActionError(errorMessage(err, 'Impossible de générer le reçu.'))
     }
   }
 
-  const remove = (id: number) => window.api.deleteRecord(id).then(() => load())
+  const remove = (id: number) => confirmAction({
+    title: 'Supprimer cette visite ?', message: 'Cette visite sera supprimée définitivement du registre.',
+    confirmLabel: 'Supprimer', danger: true,
+  }, async () => {
+    await window.api.deleteRecord(id)
+    showToast('Visite supprimée.')
+    await load()
+  })
 
 
   const diagnosticOptions = useMemo(() => {
     const counts = new Map<string, number>()
     suggestionRecords.forEach((row) => {
-      const diagnostic = String(row.diagnostic || '').trim()
+      const diagnostic = capitalize(String(row.diagnostic || '').trim())
       if (diagnostic) counts.set(diagnostic, (counts.get(diagnostic) || 0) + 1)
     })
     return Array.from(counts.entries())
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'fr', { sensitivity: 'base' }))
       .map(([diagnostic]) => diagnostic)
   }, [suggestionRecords])
+
+  const pfMethodOptions = useMemo(() => [...new Set(suggestionRecords
+    .filter((row) => row.category === 'pf')
+    .map((row) => capitalize(String(row.pf_method || '').trim()))
+    .filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr')), [suggestionRecords])
 
   const groupedRecords = useMemo(() => mergeRecords(records), [records])
 
@@ -383,7 +410,7 @@ export const useRecordsPage = (category: Category) => {
   return {
     activeTab, setActiveTab,
     records: groupedRecords, medications, archives, activeArchive, setActiveArchive, selectedYear, setSelectedYear,
-    availableYears, form, setForm, editingId, filters, setFilters, actionError, actionOk, toast,
+    availableYears, form, setForm, editingId, filters, setFilters, actionError, actionOk,
     patientVisits, saving, historyRow, dossierHistory, historyLoading,
     needsTreatmentConfirmation,
     dismissTreatmentConfirmation: () => setPendingConfirmation(null),
@@ -404,10 +431,15 @@ export const useRecordsPage = (category: Category) => {
       setHistoryRow(null)
       setForm({ ...form, patient: null, identity: emptyIdentity })
     },
-    setIdentity: (identity: PatientIdentity) => setForm({ ...form, identity }),
+    setIdentity: (identity: PatientIdentity) => setForm({ ...form, identity: {
+      ...identity,
+      nom: capitalize(identity.nom, true),
+      domicile: capitalize(identity.domicile, true),
+    } }),
     cancelEdit: () => { setEditingId(null); setForm(emptyForm) },
     clearFilters: () => setFilters({ search: '', diagnostic: '', age: '', date: '', act: '' }),
     diagnosticOptions,
+    pfMethodOptions,
     filteredRecords,
     diagnosticSummary,
     cpnSummary,

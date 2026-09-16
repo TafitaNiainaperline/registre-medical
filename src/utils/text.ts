@@ -8,15 +8,11 @@ export function normalize(value: string | number | null | undefined): string {
     .trim()
 }
 
-// Première lettre de chaque mot en majuscule, en conservant l'espace final en cours de frappe
+// Première lettre en majuscule, en conservant le reste du texte saisi.
 export function capitalize(value: string | null | undefined, preserveTrailingSpace = false): string {
   const input = String(value || '')
-  const trailingSpace = preserveTrailingSpace ? input.match(/\s*$/)?.[0] || '' : ''
-  return input
-    .trimStart()
-    .toLowerCase()
-    .replace(/(^|\s|[-'’])(\p{L})/gu, (_, separator: string, char: string) => `${separator}${char.toUpperCase()}`)
-    + trailingSpace
+  const text = preserveTrailingSpace ? input.trimStart() : input.trim()
+  return text.replace(/\p{L}/u, (char) => char.toUpperCase())
 }
 
 // Vrai si l'une des valeurs contient la recherche

@@ -21,11 +21,11 @@ const RecordsPage = ({ category }: Props) => {
   const {
     activeTab, setActiveTab, records,
     medications, archives, activeArchive, setActiveArchive, selectedYear, setSelectedYear, availableYears,
-    form, setForm, editingId, filters, setFilters, actionError, actionOk, toast,
+    form, setForm, editingId, filters, setFilters, actionError, actionOk,
     patientVisits, saving, historyRow, dossierHistory, historyLoading, isAdmin, closeHistory,
     needsTreatmentConfirmation, dismissTreatmentConfirmation, confirmWithoutTreatment,
     change, submit, edit, viewHistory, downloadReceipt, remove, load,
-    cancelEdit, clearFilters, diagnosticOptions, selectPatient, clearPatient, setIdentity,
+    cancelEdit, clearFilters, diagnosticOptions, pfMethodOptions, selectPatient, clearPatient, setIdentity,
     filteredRecords, diagnosticSummary, cpnSummary, pfSummary,
   } = useRecordsPage(category)
 
@@ -115,7 +115,6 @@ const RecordsPage = ({ category }: Props) => {
 
       {actionError && <p className="error-msg"><Icon name="alert" /> {actionError}</p>}
       {actionOk && <p className="success-msg"><Icon name="check-circle" /> {actionOk}</p>}
-      {toast && <div className="toast" role="status"><Icon name="calendar" /> {toast}</div>}
       {needsTreatmentConfirmation && <TreatmentConfirmation onConfirm={confirmWithoutTreatment} onCancel={dismissTreatmentConfirmation} />}
 
       {activeTab === 'liste' && (
@@ -315,8 +314,9 @@ const RecordsPage = ({ category }: Props) => {
               value={form.diagnostic}
               onChange={(value) => setForm({ ...form, diagnostic: capitalize(value, true) })}
               suggestions={diagnosticOptions}
-              placeholder="Diagnostic"
+              placeholder="Diagnostic obligatoire"
               id="diagnostic"
+              required
             />
 
             <div className="field appointment">
@@ -343,7 +343,13 @@ const RecordsPage = ({ category }: Props) => {
             )}
 
             {category.key === 'pf' && (
-              <input name="pf_method" placeholder="Produits PF" value={form.pf_method} onChange={change} />
+              <SuggestionInput
+                id="pf_method"
+                placeholder="Produits PF"
+                value={form.pf_method}
+                suggestions={pfMethodOptions}
+                onChange={(value) => setForm({ ...form, pf_method: capitalize(value, true) })}
+              />
             )}
 
             {category.key === 'cpn' && (

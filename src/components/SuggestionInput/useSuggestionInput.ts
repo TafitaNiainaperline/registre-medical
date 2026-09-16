@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
+import { normalize } from '../../utils/text'
 
 export const useSuggestionInput = (value: string, suggestions: string[], onChange?: (value: string) => void) => {
   const [open, setOpen] = useState(false)
@@ -19,7 +20,7 @@ export const useSuggestionInput = (value: string, suggestions: string[], onChang
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const filtered = suggestions.filter((s) => String(s || '').toLowerCase().includes(query.toLowerCase()))
+  const filtered = suggestions.filter((s) => normalize(s).includes(normalize(query)))
 
   const select = (item: string) => {
     onChange?.(item)

@@ -7,9 +7,10 @@ type Props = {
   onChange?: (value: string) => void
   placeholder?: string
   id?: string
+  required?: boolean
 }
 
-const SuggestionInput = ({ value, suggestions, onChange, placeholder, id }: Props) => {
+const SuggestionInput = ({ value, suggestions, onChange, placeholder, id, required }: Props) => {
   const { open, query, filtered, wrapperRef, inputRef, select, change, focus } =
     useSuggestionInput(value, suggestions, onChange)
 
@@ -18,6 +19,7 @@ const SuggestionInput = ({ value, suggestions, onChange, placeholder, id }: Prop
       <input
         ref={inputRef}
         id={id}
+        required={required}
         value={query}
         placeholder={placeholder}
         onChange={change}

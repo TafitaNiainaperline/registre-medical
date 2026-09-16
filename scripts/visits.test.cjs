@@ -24,6 +24,35 @@ function loader(mocks = {}) {
   }
 }
 
+test('capitalization changes only the first letter and preserves typing spaces and acronyms', () => {
+  const { capitalize } = loader()('src/utils/text.ts')
+  assert.equal(capitalize('paludisme simple'), 'Paludisme simple')
+  assert.equal(capitalize('test VIH positif'), 'Test VIH positif')
+  assert.equal(capitalize('  état stable  ', true), 'État stable  ')
+  assert.equal(capitalize('  état stable  '), 'État stable')
+  assert.equal(capitalize(''), '')
+})
+
+test('all registers reject missing or blank diagnoses when creating and updating visits', async () => {
+  const load = loader({
+    electron: { app: { isPackaged: false, getPath: () => 'in-memory-test' } },
+    fs: { ...fs, existsSync: () => false, writeFileSync: () => {} },
+  })
+  const db = load('electron/database.ts')
+  const patient = await db.createPatient({ nom: 'Patient', domicile: 'Test' })
+  for (const category of ['consultation', 'cpn', 'pf', 'analyse', 'soin']) {
+    const input = { category, patient_id: patient.id,
+      treatments: [{ name: 'Acte', item_type: 'act', quantity: 1, unit_price: 1000 }] }
+    const id = await db.createRecord({ ...input, diagnostic: 'Diagnostic' })
+    for (const diagnostic of [undefined, '', '   ']) {
+      await assert.rejects(db.createRecord({ ...input, diagnostic }), /Le diagnostic est requis/)
+      await assert.rejects(db.updateRecord(id, { ...input, diagnostic }), /Le diagnostic est requis/)
+    }
+    assert.equal((await db.fetchRecordById(id)).diagnostic, 'Diagnostic')
+  }
+  assert.equal((await db.fetchRecordsByPatient(patient.id)).length, 5)
+})
+
 test('three visits retain separate rows, amounts and receipt contents', async () => {
   const load = loader({
     electron: { app: { isPackaged: false, getPath: () => 'in-memory-test' } },
@@ -251,6 +280,7 @@ test('list groups three visits while history exposes each separate receipt', asy
   react.useRef = (initial) => react.useState({ current: initial })[0]
   const load = loader({ react })
   const { useRecordsPage } = load('src/pages/RecordsPage/useRecordsPage.ts')
+  const notifications = load('src/utils/notifications.ts')
   const now = new Date()
   const patient = { id: 1, nom: 'Patient A', domicile: 'Test' }
   global.window = { confirm: () => { assert.fail('Native confirmation must not be used') }, api: {
@@ -270,13 +300,24 @@ test('list groups three visits while history exposes each separate receipt', asy
   try {
     let page = render()
     for (let visit = 1; visit <= 3; visit++) {
-      page.setForm({ ...page.form, patient, treatments: [{ name: `Act ${visit}`, item_type: 'act', quantity: 1, unit_price: 1000 }] })
+      page.setForm({ ...page.form, patient, diagnostic: `diagnostic ${visit}`, observation: 'observation', reference: 'reference', treatments: [{ name: `Act ${visit}`, item_type: 'act', quantity: 1, unit_price: 1000 }] })
       page = render()
       assert.equal(page.patientVisits.length, visit - 1)
-      await Promise.all([page.submit({ preventDefault() {} }), page.submit({ preventDefault() {} })])
+      const pending = page.submit({ preventDefault() {} })
+      await page.submit({ preventDefault() {} })
+      assert.equal(rows.length, visit - 1)
+      assert.ok(notifications.getConfirmation())
+      await notifications.acceptConfirmation()
+      await pending
       page = render()
       assert.equal(page.records.length, 1)
       assert.equal(page.records[0].id, visit)
+      assert.equal(page.records[0].diagnostic, `Diagnostic ${visit}`)
+      assert.equal(page.records[0].observation, 'Observation')
+      assert.equal(page.records[0].reference, 'Reference')
+      for (const key of ['consultation', 'cpn', 'pf', 'analyse', 'soin']) {
+        assert.ok(render(key).diagnosticOptions.includes(`Diagnostic ${visit}`))
+      }
       assert.equal(page.saving, false)
       assert.equal(page.activeTab, 'liste')
       assert.deepEqual(receipts, [])
@@ -296,7 +337,7 @@ test('list groups three visits while history exposes each separate receipt', asy
     assert.equal(render().needsTreatmentConfirmation, false)
 
     page = render()
-    page.setForm({ ...page.form, patient, treatments: [] })
+    page.setForm({ ...page.form, patient, diagnostic: 'Diagnostic', treatments: [] })
     page = render()
     await page.submit({ preventDefault() {} })
     assert.equal(render().needsTreatmentConfirmation, true)
@@ -324,7 +365,7 @@ test('list groups three visits while history exposes each separate receipt', asy
     assert.equal(rows[3].cost, 0)
 
     page = render('cpn')
-    page.setForm({ ...page.form, patient, treatments: [] })
+    page.setForm({ ...page.form, patient, diagnostic: 'Diagnostic', treatments: [] })
     await render('cpn').submit({ preventDefault() {} })
     assert.equal(render('cpn').needsTreatmentConfirmation, false)
     assert.equal(rows.length, 4)
