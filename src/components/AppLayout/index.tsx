@@ -61,9 +61,17 @@ const AppLayout = () => {
             <span>{currentUser.name || currentUser.username}</span>
           </div>
 
-          <button className="theme" onClick={toggleTheme} title={darkMode ? 'Mode clair' : 'Mode sombre'}>
-            <Icon name={darkMode ? 'sun' : 'moon'} />
-            <span>{darkMode ? 'Mode clair' : 'Mode sombre'}</span>
+          <button
+            type="button"
+            className="theme"
+            onClick={toggleTheme}
+            role="switch"
+            aria-label="Mode sombre"
+            aria-checked={darkMode}
+            title={darkMode ? 'Passer en mode clair' : 'Passer en mode sombre'}
+          >
+            <Icon name={darkMode ? 'moon' : 'sun'} />
+            <span>{darkMode ? 'Mode sombre' : 'Mode clair'}</span>
           </button>
 
           <button className="logout" onClick={logout} title="Se déconnecter">

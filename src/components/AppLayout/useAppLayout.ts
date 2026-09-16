@@ -51,7 +51,7 @@ export const useAppLayout = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const currentUser = getCurrentUser()
-  const [darkMode, setDarkMode] = useState(false)
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('darkMode') === 'true')
   const [menuOpen, setMenuOpen] = useState(false)
 
   // Le tiroir se referme dès qu'on change de page
@@ -67,16 +67,12 @@ export const useAppLayout = () => {
   }, [menuOpen])
 
   useEffect(() => {
-    const saved = localStorage.getItem('darkMode') === 'true'
-    setDarkMode(saved)
-    document.body.classList.toggle('dark-mode', saved)
-  }, [])
+    document.body.classList.toggle('dark-mode', darkMode)
+    localStorage.setItem('darkMode', String(darkMode))
+  }, [darkMode])
 
   const toggleTheme = () => {
-    const next = !darkMode
-    setDarkMode(next)
-    document.body.classList.toggle('dark-mode', next)
-    localStorage.setItem('darkMode', String(next))
+    setDarkMode((previous) => !previous)
   }
 
   const logout = () => {
