@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Icon from '../../components/Icon'
 import DatePicker from '../../components/DatePicker'
 import { formatDay } from '../../utils/date'
+import { normalize } from '../../utils/text'
 import { useSortiesPage } from './useSortiesPage'
 import './SortiesPage.scss'
 
@@ -11,6 +12,11 @@ const SortiesPage = () => {
     editing, editForm, setEditForm, openEdit, closeEdit, update,
   } = useSortiesPage()
   const createDialogRef = useRef<HTMLDivElement>(null)
+  const [search, setSearch] = useState('')
+  const [actionId, setActionId] = useState<number | null>(null)
+  const filteredOutflows = outflows.filter((outflow) => normalize([
+    outflow.designation, formatDay(outflow.outflow_date), outflow.amount,
+  ].join(' ')).includes(normalize(search)))
 
   useEffect(() => {
     if (!creating) return
@@ -36,27 +42,24 @@ const SortiesPage = () => {
         </div>
       </div>
 
-      <div className="cards-grid totals">
-        <article className="stat-card green">
-          <div className="top"><h3>Entrées</h3></div>
-          <strong className="value">{totals.entries.toLocaleString()} Ar</strong>
-          <span className="subtitle">Total recettes du mois</span>
-        </article>
-
-        <article className="stat-card red">
-          <div className="top"><h3>Sorties</h3></div>
-          <strong className="value">{totals.outflows.toLocaleString()} Ar</strong>
-          <span className="subtitle">Total dépenses du mois</span>
-        </article>
-
-        <article className="stat-card blue">
-          <div className="top"><h3>Solde de caisse</h3></div>
-          <strong className="value">{totals.balance.toLocaleString()} Ar</strong>
-          <span className="subtitle">Entrées - Sorties</span>
-        </article>
+      <div className="cash-summary">
+        <div className={`cash-balance${totals.balance < 0 ? ' negative' : ''}`}>
+          <span>Solde de caisse</span>
+          <strong>{totals.balance.toLocaleString()} Ar</strong>
+          <small>{archiveLabel || 'Période en cours'}</small>
+        </div>
+        <div className="cash-breakdown">
+          <div><span>Entrées</span><strong>{totals.entries.toLocaleString()} Ar</strong></div>
+          <div><span>Dépenses</span><strong>{totals.outflows.toLocaleString()} Ar</strong></div>
+        </div>
       </div>
 
       <div className="outflow-tools">
+        <div className="search-field">
+          <Icon name="search" />
+          <input type="search" aria-label="Rechercher une sortie de caisse" placeholder="Rechercher une dépense…"
+            value={search} onChange={(event) => { setSearch(event.target.value); setActionId(null) }} />
+        </div>
         <button type="button" aria-haspopup="dialog" onClick={openCreate}>
           <Icon name="plus" /> Nouvelle sortie
         </button>
@@ -118,11 +121,14 @@ const SortiesPage = () => {
         <div className="panel list-panel">
           <div className="list-header">
             <h3>Liste des sorties</h3>
-            <span className="total">Total : {totals.outflows.toLocaleString()} Ar</span>
+            <span className="result-count" role="status">{filteredOutflows.length} sortie{filteredOutflows.length !== 1 ? 's' : ''}</span>
           </div>
 
-          {outflows.length === 0 ? (
-            <div className="empty"><Icon name="bank" size="xl" /><p>Aucune sortie enregistrée ce mois.</p><button type="button" className="btn-light" onClick={openCreate}><Icon name="plus" /> Ajouter une sortie</button></div>
+          {filteredOutflows.length === 0 ? (
+            <div className="empty"><Icon name="bank" size="xl" /><p>{search ? 'Aucune dépense ne correspond à la recherche.' : 'Aucune sortie enregistrée ce mois.'}</p>
+              {search ? <button type="button" className="btn-light" onClick={() => setSearch('')}>Effacer la recherche</button> :
+                <button type="button" className="btn-light" onClick={openCreate}><Icon name="plus" /> Ajouter une sortie</button>}
+            </div>
           ) : (
             <div className="scroll">
               <table>
@@ -135,19 +141,20 @@ const SortiesPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {outflows.map((outflow) => (
+                  {filteredOutflows.map((outflow) => (
                     <tr key={outflow.id}>
-                      <td>{formatDay(outflow.outflow_date)}</td>
-                      <td>{outflow.designation}</td>
+                      <td className="outflow-date">{formatDay(outflow.outflow_date)}</td>
+                      <td className="outflow-designation">{outflow.designation}</td>
                       <td className="num amount">-{Number(outflow.amount).toLocaleString()} Ar</td>
                       <td className="actions">
-                        <div>
-                          <button className="icon-btn edit" title="Modifier" onClick={() => openEdit(outflow)}>
-                            <Icon name="edit" />
-                          </button>
-                          <button className="icon-btn remove" title="Supprimer" onClick={() => remove(outflow.id)}>
-                            <Icon name="trash" />
-                          </button>
+                        <div className="outflow-actions">
+                          <button type="button" className="action-toggle" aria-label={`Actions pour ${outflow.designation}`}
+                            aria-expanded={actionId === outflow.id} onClick={() => setActionId(actionId === outflow.id ? null : outflow.id)}>⋯</button>
+                          {actionId === outflow.id && <div className="action-options"
+                            onKeyDown={(event) => { if (event.key === 'Escape') { setActionId(null); event.currentTarget.parentElement?.querySelector<HTMLButtonElement>('button')?.focus() } }}>
+                            <button type="button" className="btn-light" onClick={() => { setActionId(null); openEdit(outflow) }}><Icon name="edit" /> Modifier</button>
+                            <button type="button" className="btn-light delete-action" onClick={() => { setActionId(null); remove(outflow.id) }}><Icon name="trash" /> Supprimer</button>
+                          </div>}
                         </div>
                       </td>
                     </tr>

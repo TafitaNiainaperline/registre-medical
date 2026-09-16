@@ -1,6 +1,16 @@
 @use '../../styles/variables' as *;
 
 .SortiesPage {
+  .cash-summary { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem; padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid var(--border); border-radius: 0.875rem; background: var(--panel); }
+  .cash-balance { display: grid; gap: 0.35rem; span, small { color: var(--soft); } strong { font-size: clamp(1.6rem, 4vw, 2.2rem); color: var(--brand); } &.negative strong { color: var(--danger); } }
+  .cash-breakdown { display: flex; flex-wrap: wrap; gap: 1.5rem; > div { display: grid; gap: 0.4rem; } span { color: var(--soft); font-size: 0.85rem; } }
+  .result-count { color: var(--soft); font-size: 0.85rem; }
+  .outflow-tools { gap: 0.75rem; flex-wrap: wrap; align-items: center; .search-field { flex: 1; min-width: 12rem; } }
+  .outflow-designation { overflow-wrap: anywhere; }
+  .outflow-date { color: var(--soft); white-space: nowrap; font-size: 0.85rem; }
+  .outflow-actions { flex-wrap: wrap; justify-content: flex-end; }
+  .action-toggle { background: var(--field-bg); color: var(--soft); padding: 0.1rem 0.6rem; font-size: 1.4rem; box-shadow: none; }
+  .action-options { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; button { font-size: 0.8rem; padding: 0.4rem 0.6rem; } .delete-action { color: var(--danger); } }
   .totals { margin-bottom: 1.5em; }
 
   .outflow-tools { display: flex; justify-content: flex-end; margin-bottom: 1.25rem; }
@@ -67,10 +77,22 @@
 
 @media (max-width: 600px) {
   .SortiesPage {
-    .outflow-tools button { width: 100%; }
+    .outflow-tools > button { width: 100%; }
+    .outflow-tools .search-field { flex-basis: 100%; }
     .entry-form { grid-template-columns: 1fr; }
     .form-actions button { width: 100%; }
     .list-header { align-items: flex-start; flex-direction: column; }
-    .list-panel table { min-width: 32rem; }
-  }
+    .list-panel { padding: 1rem; }
+    .list-panel .scroll { max-height: none; overflow: visible; }
+    .list-panel table { min-width: 0; width: 100%; display: block; }
+    .list-panel thead { display: none; }
+    .list-panel tbody { display: grid; gap: 0.75rem; }
+    .list-panel tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; padding: 1rem; gap: 0.5rem; border: 1px solid var(--border); border-radius: 0.75rem; background: var(--field-bg); }
+    .list-panel td { border: 0; padding: 0; background: transparent; }
+    .list-panel .outflow-date { grid-column: 1; grid-row: 1; }
+    .list-panel .outflow-designation { grid-column: 1 / -1; grid-row: 2; font-weight: 600; }
+    .list-panel .amount { grid-column: 1 / -1; grid-row: 3; text-align: left; }
+    .list-panel .actions { grid-column: 2; grid-row: 1; }
+    .cash-summary { padding: 1.25rem; }
+}
 }
