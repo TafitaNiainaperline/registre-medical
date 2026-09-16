@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { categories } from '../../constants'
 import { getCurrentUser } from '../../utils/currentUser'
 import type { IconName } from '../Icon/types'
+import { confirmAction } from '../../utils/notifications'
 
 export type MenuItem = {
   to: string
@@ -75,11 +76,14 @@ export const useAppLayout = () => {
     setDarkMode((previous) => !previous)
   }
 
-  const logout = () => {
+  const logout = () => confirmAction({
+    title: 'Se déconnecter ?',
+    confirmLabel: 'Se déconnecter',
+  }, () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     navigate('/login')
-  }
+  })
 
   return {
     menuSections, currentUser, darkMode, toggleTheme, logout, menuOpen,

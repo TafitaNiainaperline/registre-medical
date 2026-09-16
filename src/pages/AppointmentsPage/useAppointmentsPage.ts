@@ -1,3 +1,4 @@
+import { notify as showToast, confirmAction } from '../../utils/notifications'
 import { useEffect, useState } from 'react'
 import { todayIso } from '../../utils/date'
 import { matches } from '../../utils/text'
@@ -20,19 +21,24 @@ export const useAppointmentsPage = () => {
       .catch(() => setAppointments([]))
   }, [])
 
-  const remove = async (id: number) => {
-    if (!window.confirm('Supprimer ce rendez-vous ?')) return
+  const remove = (id: number) => confirmAction({
+    title: 'Confirmer la suppression', message: 'Supprimer ce rendez-vous ?', confirmLabel: 'Supprimer', danger: true,
+  }, async () => {
     await window.api.clearAppointment(id)
     setAppointments((prev) => prev.filter((a) => a.id !== id))
-  }
+    showToast('Rendez-vous supprimé(s).')
+  })
 
-  const removeAll = async () => {
-    if (!window.confirm('Supprimer tous les rendez-vous ? Cette action est irréversible.')) return
+  const removeAll = () => confirmAction({
+    title: 'Confirmer la suppression', message: 'Supprimer tous les rendez-vous ? Cette action est irréversible.', confirmLabel: 'Supprimer', danger: true,
+  }, async () => {
     for (const appointment of appointments) {
       await window.api.clearAppointment(appointment.id)
+      setAppointments((prev) => prev.filter((a) => a.id !== appointment.id))
     }
     setAppointments([])
-  }
+    showToast('Rendez-vous supprimé(s).')
+  })
 
   const filtered = appointments.filter((a) => matches(search, [
     a.patient_nom, a.patient_prenom, a.diagnostic, a.appointment_date,

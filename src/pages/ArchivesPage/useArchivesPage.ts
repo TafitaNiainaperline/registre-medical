@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Archive, MedicalRecord } from '../../../electron/types'
 import { errorMessage } from '../../utils/error'
 import { matches } from '../../utils/text'
+import { notify } from '../../utils/notifications'
 
 export const archiveKey = (archive: Archive | null): string =>
   archive ? `${archive.year}-${String(archive.month).padStart(2, '0')}` : ''
@@ -60,9 +61,11 @@ export const useArchivesPage = () => {
       })
       if (result?.canceled) return
       setMessage(`Export réussi : ${result.filePath}`)
+      notify(`Export réussi : ${result.filePath}`)
       setTimeout(() => setMessage(''), 3500)
     } catch (e) {
       setMessage(errorMessage(e, 'Export impossible.'))
+      notify(errorMessage(e, 'Export impossible.'), 'err')
     }
   }
 

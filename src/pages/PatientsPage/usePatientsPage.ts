@@ -1,3 +1,4 @@
+import { notify as showToast, confirmAction } from '../../utils/notifications'
 import { useEffect, useState } from 'react'
 import type { MedicalRecord, Patient, PatientAddressEntry } from '../../../electron/types'
 import { getCurrentUser } from '../../utils/currentUser'
@@ -46,6 +47,7 @@ export const usePatientsPage = () => {
 
   const notify = (text: string, type: 'ok' | 'err' = 'ok') => {
     setMessage({ text, type })
+    showToast(text, type)
     setTimeout(() => setMessage({ text: '', type: 'ok' }), 3000)
   }
 
@@ -92,18 +94,22 @@ export const usePatientsPage = () => {
     }
 
     try {
-      if (selected) {
-        await window.api.updatePatient(selected.id, payload)
-        notify('Fiche patient mise à jour.')
-        const refreshed = await window.api.getPatient(selected.id)
-        if (refreshed) await open(refreshed)
-      } else {
-        const created = await window.api.createPatient(payload)
-        notify('Patient créé.')
-        await open(created)
-      }
-      setEditing(false)
-      load()
+      await confirmAction({ title: 'Enregistrer la fiche patient ?',
+        message: `${payload.nom} : ${selected ? "mettre à jour les informations" : "créer la fiche"}.`, confirmLabel: 'Enregistrer',
+      }, async () => {
+        if (selected) {
+          await window.api.updatePatient(selected.id, payload)
+          notify('Fiche patient mise à jour.')
+          const refreshed = await window.api.getPatient(selected.id)
+          if (refreshed) await open(refreshed)
+        } else {
+          const created = await window.api.createPatient(payload)
+          notify('Patient créé.')
+          await open(created)
+        }
+        setEditing(false)
+        load()
+      })
     } catch (err) {
       notify(errorMessage(err, 'Enregistrement impossible.'), 'err')
     }

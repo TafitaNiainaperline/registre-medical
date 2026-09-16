@@ -1,3 +1,4 @@
+import { notify as showToast, confirmAction } from '../../utils/notifications'
 import { useEffect, useState } from 'react'
 import type { ItemType, MedicalRecord, Medication, StockHistoryEntry, TopSellingMedication } from '../../../electron/types'
 import { getCurrentUser } from '../../utils/currentUser'
@@ -31,7 +32,6 @@ export const useMedicamentsPage = () => {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<ItemType | 'all'>('all')
   const [message, setMessage] = useState<{ type: MessageType; text: string }>({ type: 'ok', text: '' })
-  const [toast, setToast] = useState<{ type: MessageType; text: string }>({ type: 'ok', text: '' })
   const [stockTarget, setStockTarget] = useState<Medication | null>(null)
   const [stockQuantity, setStockQuantity] = useState('')
   const [stockDate, setStockDate] = useState(todayIso())
@@ -48,9 +48,8 @@ export const useMedicamentsPage = () => {
 
   const notify = (text: string, type: MessageType = 'ok') => {
     setMessage({ text, type })
-    setToast({ text, type })
+    showToast(text, type)
     setTimeout(() => setMessage({ text: '', type: 'ok' }), 2500)
-    setTimeout(() => setToast({ text: '', type: 'ok' }), 3500)
   }
 
   const openCreate = (itemType: ItemType) => {
@@ -96,16 +95,20 @@ export const useMedicamentsPage = () => {
     }
 
     try {
-      if (editingId) await window.api.updateMedication(editingId, payload)
-      else await window.api.createMedication(payload)
+      await confirmAction({ title: 'Enregistrer cet élément ?',
+        message: `${name} : ${editingId ? "appliquer les modifications" : "ajouter au catalogue"}.`, confirmLabel: 'Enregistrer',
+      }, async () => {
+        if (editingId) await window.api.updateMedication(editingId, payload)
+        else await window.api.createMedication(payload)
 
-      const reachedThreshold = payload.stock !== null && payload.stock <= payload.stock_threshold
-      notify(editingId
-        ? (isAct ? 'Acte médical mis à jour.' : 'Médicament mis à jour.')
-        : (isAct ? 'Acte médical ajouté.' : `Médicament ajouté.${reachedThreshold ? ` Attention : stock atteint le seuil de ${payload.stock_threshold}.` : ''}`))
+        const reachedThreshold = payload.stock !== null && payload.stock <= payload.stock_threshold
+        notify(editingId
+          ? (isAct ? 'Acte médical mis à jour.' : 'Médicament mis à jour.')
+          : (isAct ? 'Acte médical ajouté.' : `Médicament ajouté.${reachedThreshold ? ` Attention : stock atteint le seuil de ${payload.stock_threshold}.` : ''}`))
 
-      closeModal()
-      load()
+        closeModal()
+        load()
+      })
     } catch (err) {
       notify(errorMessage(err, 'Erreur lors de l\'enregistrement.'), 'err')
     }
@@ -133,15 +136,19 @@ export const useMedicamentsPage = () => {
     }
 
     try {
-      await window.api.addMedicationStock(stockTarget.id, quantity, currentUser.id || null, stockDate)
+      await confirmAction({ title: 'Ajouter au stock ?',
+        message: `${stockTarget.name} : +${quantity} ${stockTarget.unit || "unité(s)"} le ${formatDay(stockDate)}.`, confirmLabel: 'Ajouter au stock',
+      }, async () => {
+        await window.api.addMedicationStock(stockTarget.id, quantity, currentUser.id || null, stockDate)
 
-      const threshold = Number(stockTarget.stock_threshold ?? DEFAULT_THRESHOLD)
-      const newStock = (Number(stockTarget.stock) || 0) + quantity
-      const warning = newStock <= threshold ? ` Attention : stock atteint le seuil de ${threshold}.` : ''
+        const threshold = Number(stockTarget.stock_threshold ?? DEFAULT_THRESHOLD)
+        const newStock = (Number(stockTarget.stock) || 0) + quantity
+        const warning = newStock <= threshold ? ` Attention : stock atteint le seuil de ${threshold}.` : ''
 
-      notify(`Stock ajouté : +${quantity} le ${formatDay(stockDate)}.${warning}`)
-      closeStock()
-      load()
+        notify(`Stock ajouté : +${quantity} le ${formatDay(stockDate)}.${warning}`)
+        closeStock()
+        load()
+      })
     } catch (err) {
       notify(errorMessage(err, 'Erreur lors de l\'ajout du stock.'), 'err')
     }
@@ -150,6 +157,16 @@ export const useMedicamentsPage = () => {
   const openHistory = async (medication: Medication) => {
     setHistoryTarget(medication)
     setStockHistory(await window.api.getMedicationStockHistory(medication.id))
+  }
+
+  const exportStock = async () => {
+    try {
+      const result = await window.api.exportStockExcel()
+      if (!result?.success) return
+      showToast('Stock exporté avec succès.')
+    } catch (err) {
+      showToast(errorMessage(err, 'Export du stock impossible.'), 'err')
+    }
   }
 
   // Actes facturés, agrégés depuis les dossiers
@@ -175,8 +192,8 @@ export const useMedicamentsPage = () => {
   }
 
   return {
-    currentUser, isAdmin, rows, topSelling, form, setForm, editingId, modalType, search, setSearch, message, toast,
-    openCreate, openEdit, closeModal, submit, notify,
+    currentUser, isAdmin, rows, topSelling, form, setForm, editingId, modalType, search, setSearch, message,
+    openCreate, openEdit, closeModal, submit, notify, exportStock,
     stockTarget, stockQuantity, setStockQuantity, stockDate, setStockDate, openStock, closeStock, confirmStock,
     historyTarget, stockHistory, openHistory, closeHistory: () => setHistoryTarget(null),
     typeFilter, setTypeFilter, counts,

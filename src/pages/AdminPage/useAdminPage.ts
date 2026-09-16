@@ -1,3 +1,4 @@
+import { notify as showToast, confirmAction } from '../../utils/notifications'
 import { useEffect, useState } from 'react'
 import type { UserRow } from '../../../electron/types'
 import { getCurrentUser } from '../../utils/currentUser'
@@ -18,14 +19,19 @@ export const useAdminPage = () => {
 
   const notify = (text: string, type: MessageType = 'ok') => {
     setMessage({ text, type })
+    showToast(text, type)
     setTimeout(() => setMessage({ text: '', type: 'ok' }), 3000)
   }
 
-  const toggleActive = async (id: number, isActive: number) => {
+  const toggleActive = (id: number, isActive: number) => confirmAction({
+    title: isActive ? 'Désactiver ce compte ?' : 'Activer ce compte ?',
+    message: isActive ? 'Cet utilisateur ne pourra plus se connecter.' : 'Cet utilisateur pourra accéder à l’application.',
+    confirmLabel: isActive ? 'Désactiver' : 'Activer', danger: Boolean(isActive),
+  }, async () => {
     await window.api.toggleUserActive(id, !isActive)
     notify(isActive ? 'Compte désactivé.' : 'Compte activé !')
     load()
-  }
+  })
 
   const resetPassword = async (id: number) => {
     const password = newPwd[id]
@@ -33,17 +39,22 @@ export const useAdminPage = () => {
       notify('Mot de passe trop court (min 4 caractères).', 'err')
       return
     }
-    await window.api.resetUserPassword(id, password)
-    setNewPwd({ ...newPwd, [id]: '' })
-    notify('Mot de passe réinitialisé avec succès !')
+    await confirmAction({ title: 'Réinitialiser le mot de passe ?',
+      message: 'L’ancien mot de passe de cet utilisateur sera remplacé.', confirmLabel: 'Réinitialiser',
+    }, async () => {
+      await window.api.resetUserPassword(id, password)
+      setNewPwd({ ...newPwd, [id]: '' })
+      notify('Mot de passe réinitialisé avec succès !')
+    })
   }
 
-  const remove = async (id: number) => {
-    if (!window.confirm('Supprimer cet utilisateur définitivement ?')) return
+  const remove = (id: number) => confirmAction({
+    title: 'Confirmer la suppression', message: 'Supprimer cet utilisateur définitivement ?', confirmLabel: 'Supprimer', danger: true,
+  }, async () => {
     await window.api.deleteUser(id)
     notify('Utilisateur supprimé.')
     load()
-  }
+  })
 
   return {
     users, currentUser, message, newPwd, showPwd,

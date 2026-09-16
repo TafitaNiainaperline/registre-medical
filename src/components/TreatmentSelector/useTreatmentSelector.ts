@@ -1,3 +1,4 @@
+import { notify as showToast } from '../../utils/notifications'
 import { useMemo, useState } from 'react'
 import type { Medication, Treatment } from '../../../electron/types'
 import { normalize } from '../../utils/text'
@@ -40,7 +41,7 @@ export const useTreatmentSelector = (
       .reduce((sum, t) => sum + toNumber(t.quantity), 0)
 
     if (exceedsStock(med, alreadyTaken + 1)) {
-      alert(`Stock insuffisant pour "${med.name}" !\nDisponible : ${med.stock} ${med.unit || 'unité(s)'}`)
+      showToast(`Stock insuffisant pour "${med.name}" !\nDisponible : ${med.stock} ${med.unit || 'unité(s)'}`, 'err')
       return
     }
 
@@ -70,7 +71,7 @@ export const useTreatmentSelector = (
       sum + (String(t.medication_id) === String(medicationId) ? q : toNumber(t.quantity)), 0)
 
     if (exceedsStock(med, total)) {
-      alert(`Stock insuffisant pour "${med?.name}" ! Disponible : ${med?.stock}`)
+      showToast(`Stock insuffisant pour "${med?.name}" ! Disponible : ${med?.stock}`, 'err')
       return
     }
 

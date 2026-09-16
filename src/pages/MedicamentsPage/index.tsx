@@ -10,8 +10,8 @@ import './MedicamentsPage.scss'
 
 const MedicamentsPage = () => {
   const {
-    currentUser, isAdmin, filteredTopSelling, form, setForm, editingId, modalType, search, setSearch, message, toast,
-    openCreate, openEdit, closeModal, submit,
+    currentUser, isAdmin, filteredTopSelling, form, setForm, editingId, modalType, search, setSearch, message,
+    openCreate, openEdit, closeModal, submit, exportStock,
     stockTarget, stockQuantity, setStockQuantity, stockDate, setStockDate, openStock, closeStock, confirmStock,
     historyTarget, stockHistory, openHistory, closeHistory,
     filtered, lowStockCount, actSummary, typeFilter, setTypeFilter, counts,
@@ -19,13 +19,6 @@ const MedicamentsPage = () => {
 
   return (
     <>
-      {toast.text && (
-        <div className={toast.type === 'err' ? 'toast error' : 'toast'} role="status">
-          <Icon name={toast.type === 'err' ? 'alert' : 'check-circle'} />
-          {toast.text}
-        </div>
-      )}
-
       {stockTarget && (
         <StockModal
           medication={stockTarget}
@@ -107,7 +100,7 @@ const MedicamentsPage = () => {
           <div className="stock-exports" role="group" aria-label="Exporter le stock">
           <span>Stock</span>
 
-          <button className="btn-success" onClick={() => window.api.exportStockExcel()}>
+          <button className="btn-success" onClick={exportStock}>
             <Icon name="excel" /> Excel
           </button>
 

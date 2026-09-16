@@ -1,3 +1,4 @@
+import { notify as showToast, confirmAction } from '../../utils/notifications'
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { CashOutflow } from '../../../electron/types'
@@ -16,7 +17,11 @@ export const useSortiesPage = () => {
   const [totals, setTotals] = useState<Totals>({ entries: 0, outflows: 0, balance: 0 })
   const [archiveLabel, setArchiveLabel] = useState('')
   const [form, setForm] = useState({ date: todayIso(), designation: '', amount: '' })
-  const [error, setError] = useState('')
+  const [error, storeError] = useState('')
+  const setError = (text: string) => {
+    storeError(text)
+    if (text) showToast(text, 'err')
+  }
   const [success, setSuccess] = useState('')
   const [editing, setEditing] = useState<CashOutflow | null>(null)
   const [editForm, setEditForm] = useState({ date: '', designation: '', amount: '' })
@@ -61,30 +66,37 @@ export const useSortiesPage = () => {
     if (reason) { setError(reason); return }
 
     try {
-      await window.api.createCashOutflow({
-        outflow_date: form.date,
-        designation: form.designation.trim(),
-        amount: Number(form.amount),
+      await confirmAction({ title: 'Enregistrer cette sortie ?',
+        message: `${form.designation.trim()} : ${Number(form.amount).toLocaleString()} Ar seront déduits de la caisse.`, confirmLabel: 'Enregistrer',
+      }, async () => {
+        await window.api.createCashOutflow({
+          outflow_date: form.date,
+          designation: form.designation.trim(),
+          amount: Number(form.amount),
+        })
+        setForm({ ...form, designation: '', amount: '' })
+        setSuccess('Sortie enregistrée avec succès.')
+        showToast('Sortie enregistrée avec succès.')
+        setCreating(false)
+        setTimeout(() => setSuccess(''), 3000)
+        loadData()
       })
-      setForm({ ...form, designation: '', amount: '' })
-      setSuccess('Sortie enregistrée avec succès.')
-      setCreating(false)
-      setTimeout(() => setSuccess(''), 3000)
-      loadData()
     } catch (err) {
       setError(errorMessage(err, 'Erreur lors de l\'enregistrement.'))
     }
   }
 
-  const remove = async (id: number) => {
-    if (!window.confirm('Supprimer cette sortie ?')) return
+  const remove = (id: number) => confirmAction({
+    title: 'Confirmer la suppression', message: 'Supprimer cette sortie ?', confirmLabel: 'Supprimer', danger: true,
+  }, async () => {
     try {
       await window.api.deleteCashOutflow(id)
+      showToast('Sortie supprimée.')
       loadData()
     } catch (err) {
-      alert(errorMessage(err, 'Erreur lors de la suppression.'))
+      showToast(errorMessage(err, 'Erreur lors de la suppression.'), 'err')
     }
-  }
+  })
 
   const openEdit = (outflow: CashOutflow) => {
     setEditing(outflow)
@@ -101,18 +113,23 @@ export const useSortiesPage = () => {
     if (!editing) return
 
     const reason = invalidReason(editForm)
-    if (reason) { alert(reason); return }
+    if (reason) { showToast(reason, 'err'); return }
 
     try {
-      await window.api.updateCashOutflow(editing.id, {
-        outflow_date: editForm.date,
-        designation: editForm.designation.trim(),
-        amount: Number(editForm.amount),
+      await confirmAction({ title: 'Appliquer les modifications ?',
+        message: `Cette modification changera les informations de la sortie de caisse.`, confirmLabel: 'Modifier',
+      }, async () => {
+        await window.api.updateCashOutflow(editing.id, {
+          outflow_date: editForm.date,
+          designation: editForm.designation.trim(),
+          amount: Number(editForm.amount),
+        })
+        showToast('Sortie modifiée.')
+        closeEdit()
+        loadData()
       })
-      closeEdit()
-      loadData()
     } catch (err) {
-      alert(errorMessage(err, 'Erreur lors de la modification.'))
+      showToast(errorMessage(err, 'Erreur lors de la modification.'), 'err')
     }
   }
 

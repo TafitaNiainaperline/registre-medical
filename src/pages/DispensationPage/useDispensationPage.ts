@@ -1,3 +1,4 @@
+import { notify as showToast, confirmAction } from '../../utils/notifications'
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { Dispensation, Medication } from '../../../electron/types'
@@ -35,6 +36,7 @@ export const useDispensationPage = () => {
 
   const notify = (text: string, type: MessageType = 'ok') => {
     setMessage({ text, type })
+    showToast(text, type)
     setTimeout(() => setMessage({ text: '', type: 'ok' }), 2500)
   }
 
@@ -58,20 +60,24 @@ export const useDispensationPage = () => {
     savingRef.current = true
     setSaving(true)
     try {
-      await window.api.createDispensation({ medication_id: medicationId, quantity: qty })
+      await confirmAction({ title: 'Confirmer la dispensation ?',
+        message: `${med.name} : ${qty} ${med.unit || "unité(s)"}. Cette quantité sera retirée du stock.`, confirmLabel: 'Enregistrer',
+      }, async () => {
+        await window.api.createDispensation({ medication_id: medicationId, quantity: qty })
 
-      const total = Number(med.price) * qty
-      const threshold = Number(med.stock_threshold ?? DEFAULT_THRESHOLD)
-      const remaining = med.stock === null || med.stock === undefined ? null : Number(med.stock) - qty
-      const warning = remaining !== null && remaining <= threshold
-        ? ` Attention : stock atteint le seuil de ${threshold}.`
-        : ''
+        const total = Number(med.price) * qty
+        const threshold = Number(med.stock_threshold ?? DEFAULT_THRESHOLD)
+        const remaining = med.stock === null || med.stock === undefined ? null : Number(med.stock) - qty
+        const warning = remaining !== null && remaining <= threshold
+          ? ` Attention : stock atteint le seuil de ${threshold}.`
+          : ''
 
-      notify(`Dispensation enregistrée. Total : ${total.toLocaleString()} Ar.${warning}`)
-      setSelectedId('')
-      setQuantity('')
-      setCreating(false)
-      load()
+        notify(`Dispensation enregistrée. Total : ${total.toLocaleString()} Ar.${warning}`)
+        setSelectedId('')
+        setQuantity('')
+        setCreating(false)
+        load()
+      })
     } catch (err) {
       notify(errorMessage(err, 'Erreur lors de l\'enregistrement.'), 'err')
     } finally {
@@ -80,8 +86,9 @@ export const useDispensationPage = () => {
     }
   }
 
-  const remove = async (id: number) => {
-    if (!window.confirm('Supprimer cette dispensation ? Le stock sera recrédité.')) return
+  const remove = (id: number) => confirmAction({
+    title: 'Confirmer la suppression', message: 'Supprimer cette dispensation ? Le stock sera recrédité.', confirmLabel: 'Supprimer', danger: true,
+  }, async () => {
     try {
       await window.api.deleteDispensation(id)
       notify('Dispensation supprimée, stock recrédité.')
@@ -89,7 +96,7 @@ export const useDispensationPage = () => {
     } catch (err) {
       notify(errorMessage(err, 'Erreur lors de la suppression.'), 'err')
     }
-  }
+  })
 
   const startEdit = (dispensation: Dispensation) => {
     setEditingId(Number(dispensation.id))
@@ -99,15 +106,19 @@ export const useDispensationPage = () => {
   const saveEdit = async () => {
     if (editingId === null) return
     try {
-      await window.api.updateDispensation({
-        id: editingId,
-        medication_id: Number(editForm.medication_id),
-        quantity: Number(editForm.quantity),
+      await confirmAction({ title: 'Appliquer les modifications ?',
+        message: `Les quantités et le stock seront recalculés.`, confirmLabel: 'Modifier',
+      }, async () => {
+        await window.api.updateDispensation({
+          id: editingId,
+          medication_id: Number(editForm.medication_id),
+          quantity: Number(editForm.quantity),
+        })
+        notify('Dispensation modifiée.')
+        setEditingId(null)
+        setEditForm({ medication_id: '', quantity: '' })
+        load()
       })
-      notify('Dispensation modifiée.')
-      setEditingId(null)
-      setEditForm({ medication_id: '', quantity: '' })
-      load()
     } catch (err) {
       notify(errorMessage(err, 'Erreur lors de la modification.'), 'err')
     }
