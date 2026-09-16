@@ -86,18 +86,6 @@ export const useDispensationPage = () => {
     }
   }
 
-  const remove = (id: number) => confirmAction({
-    title: 'Confirmer la suppression', message: 'Supprimer cette dispensation ? Le stock sera recrédité.', confirmLabel: 'Supprimer', danger: true,
-  }, async () => {
-    try {
-      await window.api.deleteDispensation(id)
-      notify('Dispensation supprimée, stock recrédité.')
-      load()
-    } catch (err) {
-      notify(errorMessage(err, 'Erreur lors de la suppression.'), 'err')
-    }
-  })
-
   const startEdit = (dispensation: Dispensation) => {
     setEditingId(Number(dispensation.id))
     setEditForm({ medication_id: String(dispensation.medication_id), quantity: String(dispensation.quantity) })
@@ -138,7 +126,7 @@ export const useDispensationPage = () => {
     },
     closeCreate: () => { if (!savingRef.current) setCreating(false) },
     medications, filtered, selectedId, setSelectedId, quantity, setQuantity, search, setSearch,
-    message, submit, remove, editingId, setEditingId, editForm, setEditForm, startEdit, saveEdit,
+    message, submit, editingId, setEditingId, editForm, setEditForm, startEdit, saveEdit,
     unit: selected?.unit || 'comprimé',
     totalPrice: selected ? Number(selected.price) * Number(quantity || 0) : 0,
     unitOf: (id: string) => medications.find((m) => Number(m.id) === Number(id))?.unit || 'comprimé',

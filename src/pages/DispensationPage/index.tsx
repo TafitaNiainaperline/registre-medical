@@ -7,7 +7,7 @@ import './DispensationPage.scss'
 const DispensationPage = () => {
   const {
     medications, filtered, selectedId, setSelectedId, quantity, setQuantity, search, setSearch,
-    message, submit, remove, editingId, setEditingId, editForm, setEditForm, startEdit, saveEdit,
+    message, submit, editingId, setEditingId, editForm, setEditForm, startEdit, saveEdit,
     unit, totalPrice, unitOf, creating, saving, openCreate, closeCreate,
   } = useDispensationPage()
   const dialogRef = useRef<HTMLDialogElement>(null)
@@ -188,9 +188,6 @@ const DispensationPage = () => {
                           <div>
                             <button className="icon-btn edit" title="Modifier" onClick={() => startEdit(dispensation)}>
                               <Icon name="edit" />
-                            </button>
-                            <button className="icon-btn remove" title="Supprimer" onClick={() => remove(dispensation.id)}>
-                              <Icon name="trash" />
                             </button>
                           </div>
                         </td>
