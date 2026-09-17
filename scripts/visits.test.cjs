@@ -24,6 +24,100 @@ function loader(mocks = {}) {
   }
 }
 
+test('editing a medication never changes its stock or type, even for an administrator', async () => {
+  const load = loader({
+    electron: { app: { isPackaged: false, getPath: () => 'in-memory-test' } },
+    fs: { ...fs, existsSync: () => false, writeFileSync: () => {} },
+  })
+  const db = load('electron/database.ts')
+  const admin = await db.loginUser({ username: 'admin', password: 'admin123' })
+  await db.runAudited(admin.id, () => db.createMedication({ name: 'Stock protégé', item_type: 'medication', stock: 20, price: 100 }))
+  const medication = (await db.listMedications())[0]
+  for (const stock of [999, 0, null, undefined]) {
+    await db.runAudited(admin.id, () => db.updateMedication(medication.id, { name: medication.name, price: 200, stock, item_type: 'act' }))
+    const updated = (await db.listMedications())[0]
+    assert.equal(updated.stock, 20)
+    assert.equal(updated.item_type, 'medication')
+    assert.equal(updated.price, 200)
+  }
+  assert.ok((await db.listAudit({ entity: 'stock' })).filter((entry) => entry.action === 'update').every((entry) =>
+    JSON.parse(entry.before_json).stock === JSON.parse(entry.after_json).stock))
+  await db.runAudited(admin.id, () => db.addMedicationStock(medication.id, 5, admin.id))
+  assert.equal((await db.listMedications())[0].stock, 25)
+  await db.runAudited(admin.id, () => db.createDispensation({ medication_id: medication.id, quantity: 2 }))
+  assert.equal((await db.listMedications())[0].stock, 23)
+})
+
+test('audit preserves authors and before/after values across visits, stock and expenses without logging rolled-back changes', async () => {
+  const load = loader({
+    electron: { app: { isPackaged: false, getPath: () => 'in-memory-test' } },
+    fs: { ...fs, existsSync: () => false, writeFileSync: () => {}, renameSync: () => {} },
+  })
+  const db = load('electron/database.ts')
+  const admin = await db.loginUser({ username: 'admin', password: 'admin123' })
+  await db.registerUser({ username: 'agent', name: 'Agent caisse', password: 'agent123' })
+  const agent = (await db.getAllUsers()).find((user) => user.username === 'agent')
+  await db.toggleUserActive(agent.id, true)
+  const patient = await db.createPatient({ nom: 'Patient audit', domicile: 'Test' })
+  const input = { category: 'consultation', patient_id: patient.id, diagnostic: 'Avant',
+    treatments: [{ name: 'Acte', item_type: 'act', quantity: 1, unit_price: 1000 }] }
+  const id = await db.runAudited(admin.id, () => db.createRecord(input))
+  await db.runAudited(agent.id, () => db.updateRecord(id, { ...input, diagnostic: 'Après' }))
+  let entry = (await db.listAudit({ entity: 'visit' }))[0]
+  assert.equal(entry.action, 'update')
+  assert.equal(entry.actor_id, agent.id)
+  assert.equal(entry.actor_name, 'Agent caisse')
+  assert.equal(entry.entity_label, 'Patient audit')
+  assert.equal(JSON.parse(entry.before_json).diagnostic, 'Avant')
+  assert.equal(JSON.parse(entry.after_json).diagnostic, 'Après')
+  await db.runAudited(admin.id, () => db.createMedication({ name: 'Médicament audit', item_type: 'medication', stock: 20, price: 100 }))
+  const medication = (await db.listMedications())[0]
+  await db.runAudited(agent.id, () => db.addMedicationStock(medication.id, 5, agent.id, '2026-09-17'))
+  entry = (await db.listAudit({ entity: 'stock' }))[0]
+  assert.equal(entry.actor_id, agent.id)
+  assert.equal(JSON.parse(entry.before_json).stock, 20)
+  assert.equal(JSON.parse(entry.after_json).stock, 25)
+  await db.runAudited(agent.id, () => db.createDispensation({ medication_id: medication.id, quantity: 2 }))
+  entry = (await db.listAudit({ entity: 'stock' }))[0]
+  assert.equal(JSON.parse(entry.before_json).stock, 25)
+  assert.equal(JSON.parse(entry.after_json).stock, 23)
+  assert.equal(entry.actor_id, agent.id)
+  const expense = { outflow_date: '2026-09-17', designation: 'Transport', amount: 100 }
+  const expenseId = await db.runAudited(agent.id, () => db.createCashOutflow(expense))
+  await db.runAudited(admin.id, () => db.updateCashOutflow(expenseId, { ...expense, amount: 200 }))
+  entry = (await db.listAudit({ entity: 'expense' }))[0]
+  assert.equal(entry.actor_id, admin.id)
+  assert.equal(JSON.parse(entry.before_json).amount, 100)
+  assert.equal(JSON.parse(entry.after_json).amount, 200)
+  const changes = load('src/pages/AdminPage/auditChanges.ts').auditChanges(entry)
+  assert.deepEqual(changes, [{ field: 'amount', label: 'Montant (Ar)', before: 100, after: 200 }])
+  const beforeFailure = await db.listAudit()
+  await assert.rejects(db.runAudited(agent.id, () => db.createRecord({ ...input,
+    treatments: [{ name: medication.name, medication_id: medication.id, item_type: 'medication', quantity: 999, unit_price: 100 }] })), /Stock insuffisant/)
+  assert.deepEqual(await db.listAudit(), beforeFailure)
+  await db.runAudited(admin.id, () => db.updateCashOutflow(expenseId, { ...expense, amount: 200 }))
+  assert.deepEqual(await db.listAudit(), beforeFailure)
+  await db.runAudited(agent.id, () => db.deleteCashOutflow(expenseId))
+  entry = (await db.listAudit({ entity: 'expense' }))[0]
+  assert.equal(entry.action, 'delete')
+  assert.equal(entry.after_json, null)
+  assert.equal(JSON.parse(entry.before_json).amount, 200)
+  await Promise.all([
+    db.runAudited(admin.id, async () => { await Promise.resolve(); await db.createCashOutflow({ ...expense, designation: 'Admin' }) }),
+    db.runAudited(agent.id, async () => { await Promise.resolve(); await db.createCashOutflow({ ...expense, designation: 'Agent' }) }),
+  ])
+  const expenses = await db.listAudit({ entity: 'expense' })
+  assert.equal(expenses.find((item) => item.entity_label === 'Admin').actor_id, admin.id)
+  assert.equal(expenses.find((item) => item.entity_label === 'Agent').actor_id, agent.id)
+  assert.ok((await db.listAudit({ beforeId: expenses[0].id })).every((item) => item.id < expenses[0].id))
+  await db.toggleUserActive(agent.id, false)
+  await assert.rejects(db.runAudited(agent.id, () => db.updateRecord(id, input)), /reconnecter/)
+  assert.equal(expenses.find((item) => item.entity_label === 'Agent').actor_name, 'Agent caisse')
+  await db.exportDatabase('audit-export.db')
+  await db.runAudited(admin.id, () => db.updateRecord(id, { ...input, diagnostic: 'Après export' }))
+  assert.equal((await db.listAudit({ entity: 'visit' }))[0].actor_id, admin.id)
+})
+
 test('complete backups restore data, preserve the previous database and reject invalid files and failed writes', async () => {
   const os = require('node:os')
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'registre-backup-test-'))
@@ -93,6 +187,23 @@ test('complete backups restore data, preserve the previous database and reject i
     for (const [name, data] of expected) assert.deepEqual(restored.exec(`SELECT * FROM "${name}"`), data)
     restored.close()
     assert.equal((await db.loginUser({ username: 'admin', password: 'admin123' })).id, admin.id)
+    const legacy = new SQL.Database(fs.readFileSync(backupPath))
+    const auditTriggers = legacy.exec("SELECT name FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'audit_%'")[0]?.values || []
+    for (const [name] of auditTriggers) legacy.run(`DROP TRIGGER "${name}"`)
+    legacy.run('DROP TABLE audit_log')
+    const legacyPath = path.join(directory, 'ancienne-sauvegarde.db')
+    fs.writeFileSync(legacyPath, legacy.export())
+    legacy.close()
+    candidate = await db.readBackup(legacyPath)
+    await db.restoreDatabase(candidate)
+    candidate = undefined
+    assert.equal((await db.listAudit()).length, 0)
+    await db.runAudited(admin.id, () => db.createCashOutflow({ outflow_date: '2026-09-17', designation: 'Après migration', amount: 100 }))
+    assert.equal((await db.listAudit({ entity: 'expense' }))[0].actor_id, admin.id)
+    const reopened = loader({ electron: { app: { isPackaged: false, getPath: () => directory } } })('electron/database.ts')
+    assert.equal((await reopened.listAudit({ entity: 'expense' }))[0].actor_id, admin.id)
+    await reopened.runAudited(admin.id, () => reopened.createCashOutflow({ outflow_date: '2026-09-17', designation: 'Après redémarrage', amount: 100 }))
+    assert.equal((await reopened.listAudit({ entity: 'expense' }))[0].entity_label, 'Après redémarrage')
   } finally {
     candidate?.close()
     assert.equal(path.dirname(directory), os.tmpdir())

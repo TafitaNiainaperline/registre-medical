@@ -98,7 +98,10 @@ export const useMedicamentsPage = () => {
       await confirmAction({ title: 'Enregistrer cet élément ?',
         message: `${name} : ${editingId ? "appliquer les modifications" : "ajouter au catalogue"}.`, confirmLabel: 'Enregistrer',
       }, async () => {
-        if (editingId) await window.api.updateMedication(editingId, payload)
+        if (editingId) {
+          const { stock: _stock, ...changes } = payload
+          await window.api.updateMedication(editingId, changes)
+        }
         else await window.api.createMedication(payload)
 
         const reachedThreshold = payload.stock !== null && payload.stock <= payload.stock_threshold

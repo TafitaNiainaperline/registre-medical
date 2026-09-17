@@ -67,8 +67,11 @@ const ItemModal = ({ itemType, editing, form, isAdmin, onChange, onSubmit, onClo
               <fieldset className="stock-fields wide">
               <legend>Suivi du stock</legend>
               <label className="field">
-                <span>{editing ? 'Stock actuel' : 'Stock initial'} {isAdmin ? '' : '(administrateur)'}</span>
-                <input
+                <span>{editing ? 'Stock actuel' : 'Stock initial'} {!editing && !isAdmin ? '(administrateur)' : ''}</span>
+                {editing ? <>
+                  <strong>{form.stock === '' ? 'Non suivi' : `${Number(form.stock).toLocaleString()} ${form.unit}`}</strong>
+                  <small>Les entrées et les délivrances mettent à jour le stock automatiquement.</small>
+                </> : <><input
                   type="number"
                   min="0"
                   placeholder="Non suivi"
@@ -77,6 +80,7 @@ const ItemModal = ({ itemType, editing, form, isAdmin, onChange, onSubmit, onClo
                   readOnly={!isAdmin}
                 />
                 <small>Laissez vide si le stock n’est pas suivi.</small>
+                </>}
               </label>
               <label className="field">
                 <span>Seuil d’alerte</span>

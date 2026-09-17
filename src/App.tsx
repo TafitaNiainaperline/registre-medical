@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import AppLayout from './components/AppLayout'
 import LoginPage from './pages/LoginPage'
@@ -25,6 +26,15 @@ const ProtectedRoute = ({ children }: Props) => {
 }
 
 const App = () => {
+  const [sessionReady, setSessionReady] = useState(false)
+  useEffect(() => {
+    window.api.getSessionUser().then((user) => {
+      if (user) localStorage.setItem('user', JSON.stringify(user))
+      else { localStorage.removeItem('user'); localStorage.removeItem('token') }
+    }).catch(() => { localStorage.removeItem('user'); localStorage.removeItem('token') })
+      .finally(() => setSessionReady(true))
+  }, [])
+  if (!sessionReady) return <p role="status">Chargement…</p>
   return (
     <>
     <Notifications />

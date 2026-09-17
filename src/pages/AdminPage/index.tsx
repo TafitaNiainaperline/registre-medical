@@ -1,5 +1,6 @@
 import Icon from '../../components/Icon'
 import BackupPanel from './BackupPanel'
+import AuditPanel from './AuditPanel'
 import { useAdminPage } from './useAdminPage'
 import './AdminPage.scss'
 
@@ -38,6 +39,7 @@ const AdminPage = () => {
       )}
 
       <BackupPanel />
+      <AuditPanel />
       <h2 className="users-title">Utilisateurs</h2>
       <div className="table-wrap">
         <table>

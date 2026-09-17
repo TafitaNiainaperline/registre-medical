@@ -6,10 +6,12 @@ import type { Database, QueryExecResult, SqlValue } from 'sql.js'
 import { app } from 'electron'
 import { appointmentDateError } from './appointmentDate'
 import { validateBackup } from './backup'
+import { auditActor, exportWithAudit, installAudit, queryAudit, registerAuditFunctions } from './audit'
 import type {
   Appointment,
   Archive,
   ArchiveFilters,
+  AuditFilters,
   AuthUser,
   CashOutflow,
   CashOutflowInput,
@@ -139,19 +141,33 @@ async function getDB(): Promise<Database> {
     db = new SQL.Database()
   }
 
+  registerAuditFunctions(db)
   initTables(db)
   const schemaChanged = ensureMedicalRecordsSchema(db) || ensureMedicationsSchema(db) || ensureDispensationsSchema(db)
   if (schemaChanged) {
     try { saveDB() } catch { /* ignore */ }
   }
 
+  installAudit(db)
+  saveDB()
   return db
 }
 
 function saveDB(): void {
   if (!db || !dbPath) return
-  const data = db.export()
+  const data = exportWithAudit(db)
   fs.writeFileSync(dbPath, Buffer.from(data))
+}
+
+async function runAudited<T>(userId: number, action: () => Promise<T>): Promise<T> {
+  const d = await getDB()
+  const user = toObjects<{ id: number; name: string }>(d.exec('SELECT id, name FROM users WHERE id = ? AND is_active = 1', [userId]))[0]
+  if (!user) throw new Error('Veuillez vous reconnecter pour enregistrer cette modification.')
+  return auditActor.run(user, action)
+}
+
+async function listAudit(filters: AuditFilters = {}) {
+  return queryAudit(await getDB(), filters)
 }
 
 async function assertBackupAdmin(userId: number): Promise<void> {
@@ -169,7 +185,7 @@ async function exportDatabase(destination: string): Promise<void> {
   }
   const temporary = `${destination}.${Date.now()}-${Math.random().toString(16).slice(2)}.tmp`
   try {
-    fs.writeFileSync(temporary, Buffer.from(d.export()))
+    fs.writeFileSync(temporary, Buffer.from(exportWithAudit(d)))
     fs.renameSync(temporary, destination)
   } catch (error) {
     if (fs.existsSync(temporary)) fs.unlinkSync(temporary)
@@ -185,6 +201,7 @@ async function readBackup(source: string): Promise<Database> {
   try {
     candidate = new SQL.Database(fs.readFileSync(source))
     validateBackup(candidate)
+    installAudit(candidate)
     return candidate
   } catch {
     candidate?.close()
@@ -208,10 +225,10 @@ async function restoreDatabase(candidate: Database): Promise<string> {
   fs.mkdirSync(directory, { recursive: true })
   const stamp = `${new Date().toISOString().replace(/[:.]/g, '-')}-${Math.random().toString(16).slice(2)}`
   const previousPath = path.join(directory, `avant-restauration-${stamp}.db`)
-  fs.writeFileSync(previousPath, Buffer.from(current.export()))
+  fs.writeFileSync(previousPath, Buffer.from(exportWithAudit(current)))
   const temporary = `${dbPath!}.${stamp}.tmp`
   try {
-    fs.writeFileSync(temporary, Buffer.from(candidate.export()))
+    fs.writeFileSync(temporary, Buffer.from(exportWithAudit(candidate)))
     fs.renameSync(temporary, dbPath!)
   } catch (error) {
     if (fs.existsSync(temporary)) fs.unlinkSync(temporary)
@@ -1759,15 +1776,16 @@ async function updateMedication(id: number, data: MedicationInput): Promise<void
   if (ensureMedicationsSchema(d)) {
     try { saveDB() } catch { /* ignore */ }
   }
+  const existing = toObjects<Pick<Medication, 'item_type'>>(d.exec('SELECT item_type FROM medications WHERE id = ?', [id]))[0]
+  if (!existing) throw new Error('Médicament ou acte introuvable.')
+  const isAct = existing.item_type === 'act'
   d.run(
-    'UPDATE medications SET name=?, item_type=?, price=?, unit=?, description=?, stock=?, stock_threshold=?, updated_at=CURRENT_TIMESTAMP WHERE id=?',
+    'UPDATE medications SET name=?, price=?, unit=?, description=?, stock_threshold=?, updated_at=CURRENT_TIMESTAMP WHERE id=?',
     [
       String(data.name || '').trim(),
-      data.item_type === 'act' ? 'act' : 'medication',
       Number(data.price) || 0,
-      data.item_type === 'act' ? null : (data.unit || 'comprimé'),
+      isAct ? null : (data.unit || 'comprimé'),
       data.description || null,
-      data.item_type === 'act' ? null : (data.stock === '' || data.stock === undefined || data.stock === null ? null : Number(data.stock)),
       data.stock_threshold === '' || data.stock_threshold === undefined || data.stock_threshold === null ? 100 : Number(data.stock_threshold),
       id,
     ]
@@ -2289,6 +2307,7 @@ async function updateCashOutflow(id: number, data: CashOutflowInput): Promise<vo
 }
 
 export {
+  runAudited, listAudit,
   assertBackupAdmin, exportDatabase, readBackup, restoreDatabase,
   loginUser, registerUser,
   getAllUsers, toggleUserActive, resetUserPassword, deleteUser,

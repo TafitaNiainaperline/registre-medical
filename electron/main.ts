@@ -7,6 +7,7 @@ import * as db from './database'
 import { buildReceiptHtml } from './receiptPdf'
 import type {
   ArchiveFilters,
+  AuditFilters,
   CashOutflowInput,
   CategoryKey,
   ContinueRecordInput,
@@ -91,6 +92,18 @@ ipcMain.handle('auth:login', async (event, data: Parameters<typeof db.loginUser>
 
 ipcMain.handle('auth:logout', (event) => { sessions.delete(event.sender.id) })
 
+ipcMain.handle('auth:session', async (event) => {
+  const id = sessions.get(event.sender.id)
+  if (!id) return null
+  const user = (await db.getAllUsers()).find((row) => row.id === id && row.is_active)
+  return user ? { id: user.id, name: user.name, username: user.username, role: user.role } : null
+})
+
+ipcMain.handle('audit:list', async (event, filters?: AuditFilters) => {
+  await db.assertBackupAdmin(sessions.get(event.sender.id) || 0)
+  return db.listAudit(filters)
+})
+
 ipcMain.handle('backup:save', async (event): Promise<SaveResult> => {
   if (backupBusy) throw new Error('Une sauvegarde ou restauration est déjà en cours.')
   backupBusy = true
@@ -174,8 +187,8 @@ ipcMain.handle('records:appointments', () => {
   return db.fetchAppointments()
 })
 
-ipcMain.handle('records:clearAppointment', (_e, id: number) => {
-  return db.clearAppointment(id)
+ipcMain.handle('records:clearAppointment', (event, id: number) => {
+  return db.runAudited(sessions.get(event.sender.id) || 0, () => db.clearAppointment(id))
 })
 
 ipcMain.handle('records:stats', () => {
@@ -186,12 +199,14 @@ ipcMain.handle('records:statsByArchive', (_e, filters: PeriodFilters) => {
   return db.fetchStatsByArchive(filters || {})
 })
 
-ipcMain.handle('records:create', (_e, data: RecordInput) => {
-  return db.createRecord(data)
+ipcMain.handle('records:create', (event, data: RecordInput) => {
+  const actor = sessions.get(event.sender.id) || 0
+  return db.runAudited(actor, () => db.createRecord({ ...data, created_by: actor }))
 })
 
-ipcMain.handle('records:continue', (_e, id: number, data: ContinueRecordInput) => {
-  return db.addTreatmentsToRecord(id, data)
+ipcMain.handle('records:continue', (event, id: number, data: ContinueRecordInput) => {
+  const actor = sessions.get(event.sender.id) || 0
+  return db.runAudited(actor, () => db.addTreatmentsToRecord(id, { ...data, created_by: actor }))
 })
 
 ipcMain.handle('records:fetchByDossier', async (_e, dossierId: number) => {
@@ -238,12 +253,12 @@ ipcMain.handle('patients:addressLog', (_e, patientId: number) => {
   return db.getPatientAddressLog(patientId)
 })
 
-ipcMain.handle('records:update', (_e, id: number, data: RecordUpdateInput) => {
-  return db.updateRecord(id, data)
+ipcMain.handle('records:update', (event, id: number, data: RecordUpdateInput) => {
+  return db.runAudited(sessions.get(event.sender.id) || 0, () => db.updateRecord(id, data))
 })
 
-ipcMain.handle('records:delete', (_e, id: number) => {
-  return db.deleteRecord(id)
+ipcMain.handle('records:delete', (event, id: number) => {
+  return db.runAudited(sessions.get(event.sender.id) || 0, () => db.deleteRecord(id))
 })
 
 ipcMain.handle('records:backfillRegistry', async () => {
@@ -301,20 +316,22 @@ ipcMain.handle('meds:list', () => {
   return db.listMedications()
 })
 
-ipcMain.handle('meds:create', (_e, data: MedicationInput) => {
-  return db.createMedication(data)
+ipcMain.handle('meds:create', (event, data: MedicationInput) => {
+  const actor = sessions.get(event.sender.id) || 0
+  return db.runAudited(actor, () => db.createMedication({ ...data, created_by: actor }))
 })
 
-ipcMain.handle('meds:update', (_e, id: number, data: MedicationInput) => {
-  return db.updateMedication(id, data)
+ipcMain.handle('meds:update', (event, id: number, data: MedicationInput) => {
+  return db.runAudited(sessions.get(event.sender.id) || 0, () => db.updateMedication(id, data))
 })
 
 ipcMain.handle('meds:history', () => {
   return db.getMedicationHistory()
 })
 
-ipcMain.handle('meds:addStock', (_e, id: number, quantity: number, createdBy: number | null, date?: string) => {
-  return db.addMedicationStock(id, quantity, createdBy, date)
+ipcMain.handle('meds:addStock', (event, id: number, quantity: number, _createdBy: number | null, date?: string) => {
+  const actor = sessions.get(event.sender.id) || 0
+  return db.runAudited(actor, () => db.addMedicationStock(id, quantity, actor, date))
 })
 
 ipcMain.handle('meds:movements', () => {
@@ -450,24 +467,25 @@ ipcMain.handle('dispensations:list', () => db.getDispensations())
 
 ipcMain.handle('dispensations:total', (_e, filters: PeriodFilters) => db.getDispensationTotal(filters))
 
-ipcMain.handle('dispensations:create', (_e, data: DispensationInput) => {
-  return db.createDispensation(data)
+ipcMain.handle('dispensations:create', (event, data: DispensationInput) => {
+  return db.runAudited(sessions.get(event.sender.id) || 0, () => db.createDispensation(data))
 })
 
-ipcMain.handle('dispensations:delete', (_e, id: number) => {
-  return db.deleteDispensation(id)
+ipcMain.handle('dispensations:delete', (event, id: number) => {
+  return db.runAudited(sessions.get(event.sender.id) || 0, () => db.deleteDispensation(id))
 })
 
-ipcMain.handle('dispensations:update', (_e, data: DispensationUpdateInput) => {
-  return db.updateDispensation(data.id, data)
+ipcMain.handle('dispensations:update', (event, data: DispensationUpdateInput) => {
+  return db.runAudited(sessions.get(event.sender.id) || 0, () => db.updateDispensation(data.id, data))
 })
 
 // ─────────────────────────────────────────────────────
 // CASH OUTFLOWS (Sorties de caisse)
 // ─────────────────────────────────────────────────────
 
-ipcMain.handle('cashOutflows:create', (_e, data: CashOutflowInput) => {
-  return db.createCashOutflow(data)
+ipcMain.handle('cashOutflows:create', (event, data: CashOutflowInput) => {
+  const actor = sessions.get(event.sender.id) || 0
+  return db.runAudited(actor, () => db.createCashOutflow({ ...data, created_by: actor }))
 })
 
 ipcMain.handle('cashOutflows:list', (_e, filters: PeriodFilters) => {
@@ -478,10 +496,10 @@ ipcMain.handle('cashOutflows:total', (_e, filters: PeriodFilters) => {
   return db.getCashOutflowTotal(filters || {})
 })
 
-ipcMain.handle('cashOutflows:delete', (_e, id: number) => {
-  return db.deleteCashOutflow(id)
+ipcMain.handle('cashOutflows:delete', (event, id: number) => {
+  return db.runAudited(sessions.get(event.sender.id) || 0, () => db.deleteCashOutflow(id))
 })
 
-ipcMain.handle('cashOutflows:update', (_e, id: number, data: CashOutflowInput) => {
-  return db.updateCashOutflow(id, data)
+ipcMain.handle('cashOutflows:update', (event, id: number, data: CashOutflowInput) => {
+  return db.runAudited(sessions.get(event.sender.id) || 0, () => db.updateCashOutflow(id, data))
 })

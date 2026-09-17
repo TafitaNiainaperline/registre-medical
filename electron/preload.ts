@@ -3,6 +3,8 @@ import type { ElectronApi } from './types'
 
 // Le typage `ElectronApi` garantit que le pont expose exactement la surface attendue
 const api: ElectronApi = {
+  getSessionUser: () => ipcRenderer.invoke('auth:session'),
+  listAudit: (filters) => ipcRenderer.invoke('audit:list', filters),
   backupDatabase: () => ipcRenderer.invoke('backup:save'),
   restoreDatabase: () => ipcRenderer.invoke('backup:restore'),
   logout: () => ipcRenderer.invoke('auth:logout'),

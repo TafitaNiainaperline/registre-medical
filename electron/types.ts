@@ -328,7 +328,24 @@ export type SaveResult =
 
 // ── Surface exposée au renderer via le preload ────────
 
+export type AuditEntity = 'visit' | 'stock' | 'expense' | 'dispensation'
+export type AuditFilters = { entity?: AuditEntity | ''; beforeId?: number }
+export type AuditEntry = {
+  id: number
+  entity_type: AuditEntity
+  entity_id: number
+  entity_label: string
+  action: 'create' | 'update' | 'delete'
+  actor_id: number | null
+  actor_name: string
+  before_json: string | null
+  after_json: string | null
+  created_at: string
+}
+
 export type ElectronApi = {
+  getSessionUser: () => Promise<AuthUser | null>
+  listAudit: (filters?: AuditFilters) => Promise<AuditEntry[]>
   backupDatabase: () => Promise<SaveResult>
   restoreDatabase: () => Promise<{ canceled: true } | { canceled: false; previousPath: string }>
   logout: () => Promise<void>
