@@ -24,6 +24,82 @@ function loader(mocks = {}) {
   }
 }
 
+test('complete backups restore data, preserve the previous database and reject invalid files and failed writes', async () => {
+  const os = require('node:os')
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'registre-backup-test-'))
+  let failRename = false
+  const load = loader({
+    electron: { app: { isPackaged: false, getPath: () => directory } },
+    fs: { ...fs, renameSync: (...args) => {
+      if (failRename) throw new Error('Simulated disk failure')
+      return fs.renameSync(...args)
+    } },
+  })
+  const db = load('electron/database.ts')
+  let candidate
+  try {
+    const admin = await db.loginUser({ username: 'admin', password: 'admin123' })
+    await db.assertBackupAdmin(admin.id)
+    await assert.rejects(db.assertBackupAdmin(0), /administrateur/)
+    await assert.rejects(db.assertBackupAdmin(999), /administrateur/)
+    const patient = await db.createPatient({ nom: 'Patient sauvegardé', domicile: 'Test' })
+    await db.createRecord({ category: 'consultation', patient_id: patient.id, diagnostic: 'Diagnostic',
+      treatments: [{ name: 'Acte', item_type: 'act', quantity: 1, unit_price: 1000 }] })
+    await db.createMedication({ name: 'Médicament', item_type: 'medication', stock: 20, price: 100, unit: 'comprimé' })
+    const medication = (await db.listMedications())[0]
+    await db.createDispensation({ medication_id: medication.id, quantity: 2 })
+    await db.createCashOutflow({ outflow_date: '2026-09-16', designation: 'Dépense', amount: 50 })
+    const backupPath = path.join(directory, 'sauvegarde.db')
+    await db.exportDatabase(backupPath)
+    await assert.rejects(db.exportDatabase(path.join(directory, 'registre-medical.db')), /autre emplacement/)
+    const SQL = await require('sql.js')()
+    const saved = new SQL.Database(fs.readFileSync(backupPath))
+    const expected = saved.exec("SELECT name FROM sqlite_master WHERE type = 'table'")[0].values
+      .map(([name]) => [name, saved.exec(`SELECT * FROM "${name}"`)])
+    saved.close()
+    const extra = await db.createPatient({ nom: 'Après sauvegarde', domicile: 'Test' })
+    const invalidPath = path.join(directory, 'invalid.db')
+    fs.writeFileSync(invalidPath, 'not a database')
+    await assert.rejects(db.readBackup(invalidPath), /invalide/)
+    const unrelated = new SQL.Database()
+    unrelated.run('CREATE TABLE unrelated (id INTEGER)')
+    fs.writeFileSync(invalidPath, unrelated.export())
+    unrelated.close()
+    await assert.rejects(db.readBackup(invalidPath), /invalide/)
+    assert.ok(await db.getPatientById(extra.id))
+    candidate = await db.readBackup(backupPath)
+    const diskBefore = fs.readFileSync(path.join(directory, 'registre-medical.db'))
+    const incompatible = new SQL.Database(fs.readFileSync(backupPath))
+    incompatible.run('ALTER TABLE patients DROP COLUMN domicile')
+    await assert.rejects(db.restoreDatabase(incompatible), /incompatible/)
+    incompatible.close()
+    assert.deepEqual(fs.readFileSync(path.join(directory, 'registre-medical.db')), diskBefore)
+    failRename = true
+    const backupBefore = fs.readFileSync(backupPath)
+    await assert.rejects(db.exportDatabase(backupPath), /Simulated disk failure/)
+    assert.deepEqual(fs.readFileSync(backupPath), backupBefore)
+    await assert.rejects(db.restoreDatabase(candidate), /Simulated disk failure/)
+    assert.deepEqual(fs.readFileSync(path.join(directory, 'registre-medical.db')), diskBefore)
+    assert.ok(await db.getPatientById(extra.id))
+    failRename = false
+    const previousPath = await db.restoreDatabase(candidate)
+    candidate = undefined
+    const previous = new SQL.Database(fs.readFileSync(previousPath))
+    assert.equal(previous.exec('SELECT COUNT(*) FROM patients')[0].values[0][0], 2)
+    previous.close()
+    assert.equal((await db.listPatients()).length, 1)
+    await db.exportDatabase(path.join(directory, 'restored.db'))
+    const restored = new SQL.Database(fs.readFileSync(path.join(directory, 'restored.db')))
+    for (const [name, data] of expected) assert.deepEqual(restored.exec(`SELECT * FROM "${name}"`), data)
+    restored.close()
+    assert.equal((await db.loginUser({ username: 'admin', password: 'admin123' })).id, admin.id)
+  } finally {
+    candidate?.close()
+    assert.equal(path.dirname(directory), os.tmpdir())
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('archives group visits without mixing patients, registers or periods and retain every amount', () => {
   const { groupArchiveVisits } = loader()('src/pages/ArchivesPage/groupArchiveVisits.ts')
   const first = { id: 1, patient_id: 1, category: 'consultation', registry_number: 'CONS-001', archive_year: 2026, archive_month: 9, created_at: '2026-09-01', cost: 1000 }

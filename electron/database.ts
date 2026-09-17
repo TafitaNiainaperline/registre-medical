@@ -5,6 +5,7 @@ import initSqlJs from 'sql.js'
 import type { Database, QueryExecResult, SqlValue } from 'sql.js'
 import { app } from 'electron'
 import { appointmentDateError } from './appointmentDate'
+import { validateBackup } from './backup'
 import type {
   Appointment,
   Archive,
@@ -151,6 +152,74 @@ function saveDB(): void {
   if (!db || !dbPath) return
   const data = db.export()
   fs.writeFileSync(dbPath, Buffer.from(data))
+}
+
+async function assertBackupAdmin(userId: number): Promise<void> {
+  if (!userId) throw new Error('Veuillez vous reconnecter avec un compte administrateur pour gérer les sauvegardes.')
+  const d = await getDB()
+  if (!d.exec("SELECT id FROM users WHERE id = ? AND role = 'admin' AND is_active = 1", [userId])[0]?.values.length) {
+    throw new Error('Seul un administrateur connecté peut gérer les sauvegardes.')
+  }
+}
+
+async function exportDatabase(destination: string): Promise<void> {
+  const d = await getDB()
+  if (path.resolve(destination).toLowerCase() === path.resolve(dbPath!).toLowerCase()) {
+    throw new Error('Choisissez un autre emplacement que la base utilisée par l’application.')
+  }
+  const temporary = `${destination}.${Date.now()}-${Math.random().toString(16).slice(2)}.tmp`
+  try {
+    fs.writeFileSync(temporary, Buffer.from(d.export()))
+    fs.renameSync(temporary, destination)
+  } catch (error) {
+    if (fs.existsSync(temporary)) fs.unlinkSync(temporary)
+    throw error
+  }
+}
+
+async function readBackup(source: string): Promise<Database> {
+  const wasmPath = app.isPackaged ? path.join(process.resourcesPath, 'sql-wasm.wasm')
+    : path.join(__dirname, '../node_modules/sql.js/dist/sql-wasm.wasm')
+  const SQL = await initSqlJs({ locateFile: () => wasmPath })
+  let candidate: Database | undefined
+  try {
+    candidate = new SQL.Database(fs.readFileSync(source))
+    validateBackup(candidate)
+    return candidate
+  } catch {
+    candidate?.close()
+    throw new Error('Fichier de sauvegarde invalide, incomplet ou endommagé. Les données actuelles sont conservées.')
+  }
+}
+
+async function restoreDatabase(candidate: Database): Promise<string> {
+  const current = await getDB()
+  validateBackup(candidate)
+  const tables = current.exec("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")[0]?.values || []
+  for (const [name] of tables) {
+    const table = String(name).replace(/"/g, '""')
+    const candidateColumns = new Set(candidate.exec(`PRAGMA table_info("${table}")`)[0]?.values.map((row) => String(row[1])))
+    const columns = current.exec(`PRAGMA table_info("${table}")`)[0]?.values || []
+    if (columns.some((row) => !candidateColumns.has(String(row[1])))) {
+      throw new Error('Cette sauvegarde est incompatible avec cette version de l’application. Les données actuelles sont conservées.')
+    }
+  }
+  const directory = path.join(app.getPath('userData'), 'backups')
+  fs.mkdirSync(directory, { recursive: true })
+  const stamp = `${new Date().toISOString().replace(/[:.]/g, '-')}-${Math.random().toString(16).slice(2)}`
+  const previousPath = path.join(directory, `avant-restauration-${stamp}.db`)
+  fs.writeFileSync(previousPath, Buffer.from(current.export()))
+  const temporary = `${dbPath!}.${stamp}.tmp`
+  try {
+    fs.writeFileSync(temporary, Buffer.from(candidate.export()))
+    fs.renameSync(temporary, dbPath!)
+  } catch (error) {
+    if (fs.existsSync(temporary)) fs.unlinkSync(temporary)
+    throw error
+  }
+  db = candidate
+  current.close()
+  return previousPath
 }
 
 function initTables(d: Database): void {
@@ -2220,6 +2289,7 @@ async function updateCashOutflow(id: number, data: CashOutflowInput): Promise<vo
 }
 
 export {
+  assertBackupAdmin, exportDatabase, readBackup, restoreDatabase,
   loginUser, registerUser,
   getAllUsers, toggleUserActive, resetUserPassword, deleteUser,
   fetchRecords, fetchRecordsByArchive, fetchRecordById, fetchRecordsByDossier, fetchAppointments, fetchStats, fetchStatsByArchive, createRecord, updateRecord, deleteRecord, clearAppointment,

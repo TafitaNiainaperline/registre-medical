@@ -79,8 +79,57 @@ app.on('window-all-closed', () => {
 // AUTH
 // ─────────────────────────────
 
-ipcMain.handle('auth:login', (_e, data: Parameters<typeof db.loginUser>[0]) => {
-  return db.loginUser(data)
+const sessions = new Map<number, number>()
+let backupBusy = false
+
+ipcMain.handle('auth:login', async (event, data: Parameters<typeof db.loginUser>[0]) => {
+  sessions.delete(event.sender.id)
+  const user = await db.loginUser(data)
+  sessions.set(event.sender.id, user.id)
+  return user
+})
+
+ipcMain.handle('auth:logout', (event) => { sessions.delete(event.sender.id) })
+
+ipcMain.handle('backup:save', async (event): Promise<SaveResult> => {
+  if (backupBusy) throw new Error('Une sauvegarde ou restauration est déjà en cours.')
+  backupBusy = true
+  try {
+    await db.assertBackupAdmin(sessions.get(event.sender.id) || 0)
+    const result = await showSaveDialog({ title: 'Sauvegarder toutes les données',
+      defaultPath: `registre-medical-${new Date().toISOString().slice(0, 10)}.db`,
+      filters: [{ name: 'Sauvegarde Registre Médical', extensions: ['db'] }] })
+    if (result.canceled || !result.filePath) return { canceled: true }
+    await db.assertBackupAdmin(sessions.get(event.sender.id) || 0)
+    await db.exportDatabase(result.filePath)
+    return { canceled: false, filePath: result.filePath }
+  } finally { backupBusy = false }
+})
+
+ipcMain.handle('backup:restore', async (event) => {
+  if (backupBusy) throw new Error('Une sauvegarde ou restauration est déjà en cours.')
+  backupBusy = true
+  let candidate: Awaited<ReturnType<typeof db.readBackup>> | undefined
+  try {
+    await db.assertBackupAdmin(sessions.get(event.sender.id) || 0)
+    const win = BrowserWindow.fromWebContents(event.sender)
+    const options = { title: 'Choisir une sauvegarde', properties: ['openFile'] as ['openFile'],
+      filters: [{ name: 'Sauvegarde Registre Médical', extensions: ['db'] }] }
+    const selection = await (win ? dialog.showOpenDialog(win, options) : dialog.showOpenDialog(options))
+    if (selection.canceled || !selection.filePaths[0]) return { canceled: true }
+    candidate = await db.readBackup(selection.filePaths[0])
+    const confirmation = { type: 'warning' as const, title: 'Restaurer la sauvegarde ?',
+      message: 'Remplacer les données actuelles par cette sauvegarde ?',
+      detail: `${selection.filePaths[0]}\n\nUne copie des données actuelles sera conservée automatiquement. Vous devrez vous reconnecter avec un compte de la sauvegarde.`,
+      buttons: ['Annuler', 'Restaurer'], defaultId: 0, cancelId: 0, noLink: true }
+    const answer = await (win ? dialog.showMessageBox(win, confirmation) : dialog.showMessageBox(confirmation))
+    if (answer.response !== 1) return { canceled: true }
+    await db.assertBackupAdmin(sessions.get(event.sender.id) || 0)
+    const previousPath = await db.restoreDatabase(candidate)
+    candidate = undefined
+    sessions.clear()
+    return { canceled: false, previousPath }
+  } finally { candidate?.close(); backupBusy = false }
 })
 
 ipcMain.handle('auth:register', (_e, data: Parameters<typeof db.registerUser>[0]) => {

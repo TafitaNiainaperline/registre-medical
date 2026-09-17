@@ -79,7 +79,8 @@ export const useAppLayout = () => {
   const logout = () => confirmAction({
     title: 'Se déconnecter ?',
     confirmLabel: 'Se déconnecter',
-  }, () => {
+  }, async () => {
+    await window.api.logout()
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     navigate('/login')

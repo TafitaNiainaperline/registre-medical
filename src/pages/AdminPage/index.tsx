@@ -1,4 +1,5 @@
 import Icon from '../../components/Icon'
+import BackupPanel from './BackupPanel'
 import { useAdminPage } from './useAdminPage'
 import './AdminPage.scss'
 
@@ -21,8 +22,8 @@ const AdminPage = () => {
     <section className="AdminPage">
       <div className="page-header">
         <div>
-          <h1>Gestion des utilisateurs</h1>
-          <p>Activez, désactivez et gérez les comptes utilisateurs de la clinique.</p>
+          <h1>Administration</h1>
+          <p>Gérez les comptes et les sauvegardes de la clinique.</p>
         </div>
         <div className="page-badge">
           <Icon name="users" /> Administration
@@ -36,6 +37,8 @@ const AdminPage = () => {
         </div>
       )}
 
+      <BackupPanel />
+      <h2 className="users-title">Utilisateurs</h2>
       <div className="table-wrap">
         <table>
           <thead>

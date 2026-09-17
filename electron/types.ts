@@ -329,6 +329,9 @@ export type SaveResult =
 // ── Surface exposée au renderer via le preload ────────
 
 export type ElectronApi = {
+  backupDatabase: () => Promise<SaveResult>
+  restoreDatabase: () => Promise<{ canceled: true } | { canceled: false; previousPath: string }>
+  logout: () => Promise<void>
   // Auth
   login: (data: LoginInput) => Promise<AuthUser>
   register: (data: RegisterInput) => Promise<{ username: string; name: string }>
