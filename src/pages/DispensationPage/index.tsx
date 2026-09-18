@@ -8,7 +8,7 @@ const DispensationPage = () => {
   const {
     medications, filtered, selectedId, setSelectedId, quantity, setQuantity, search, setSearch,
     message, submit, editingId, setEditingId, editForm, setEditForm, startEdit, saveEdit,
-    unit, totalPrice, unitOf, creating, saving, openCreate, closeCreate,
+    exporting, downloadReceipt, unit, totalPrice, unitOf, creating, saving, openCreate, closeCreate,
   } = useDispensationPage()
   const dialogRef = useRef<HTMLDialogElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
@@ -186,6 +186,11 @@ const DispensationPage = () => {
                         <td className="num amount">{total} Ar</td>
                         <td className="actions">
                           <div>
+                            <button type="button" className="btn-light" disabled={exporting}
+                              title="Télécharger la facture" aria-label={`Télécharger la facture de ${dispensation.medication_name}`}
+                              onClick={() => downloadReceipt(dispensation)}>
+                              <Icon name="file" /> Facture PDF
+                            </button>
                             <button className="icon-btn edit" title="Modifier" onClick={() => startEdit(dispensation)}>
                               <Icon name="edit" />
                             </button>

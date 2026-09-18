@@ -14,6 +14,8 @@ export const useDispensationPage = () => {
   const [dispensations, setDispensations] = useState<Dispensation[]>([])
   const [selectedId, setSelectedId] = useState('')
   const [quantity, setQuantity] = useState('')
+  const [exporting, setExporting] = useState(false)
+  const exportingRef = useRef(false)
   const [creating, setCreating] = useState(false)
   const [saving, setSaving] = useState(false)
   const savingRef = useRef(false)
@@ -112,11 +114,26 @@ export const useDispensationPage = () => {
     }
   }
 
+  const downloadReceipt = async (dispensation: Dispensation) => {
+    if (exportingRef.current) return
+    exportingRef.current = true
+    setExporting(true)
+    try {
+      const result = await window.api.exportDispensationReceiptPdf(dispensation.id)
+      if (!result.canceled) notify(`Facture téléchargée : ${result.filePath}`)
+    } catch (err) {
+      notify(errorMessage(err, 'Impossible de générer la facture.'), 'err')
+    } finally {
+      exportingRef.current = false
+      setExporting(false)
+    }
+  }
+
   const selected = medications.find((m) => Number(m.id) === Number(selectedId))
   const filtered = dispensations.filter((d) => matches(search, [d.medication_name, d.unit, d.quantity]))
 
   return {
-    creating, saving,
+    creating, saving, exporting, downloadReceipt,
     openCreate: () => {
       setSelectedId('')
       setQuantity('')

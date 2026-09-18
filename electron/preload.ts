@@ -151,6 +151,9 @@ const api: ElectronApi = {
     ipcRenderer.invoke('stock:pdf'),
 
   // DISPENSATIONS
+  exportDispensationReceiptPdf: (id) =>
+    ipcRenderer.invoke('dispensations:pdf', id),
+
   getDispensations: () =>
     ipcRenderer.invoke('dispensations:list'),
 

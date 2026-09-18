@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import type { MedicalRecord, Treatment } from './types'
+import type { Dispensation, MedicalRecord, Treatment } from './types'
 
 function escapeHtml(value: unknown): string {
   return String(value ?? '')
@@ -73,10 +73,6 @@ function getLogoDataUri(): string {
 
 function buildReceiptHtml(record: MedicalRecord): string {
   const treatments: Treatment[] = Array.isArray(record.treatments) ? record.treatments : []
-  const logoDataUri = getLogoDataUri()
-  const logoHtml = logoDataUri
-    ? `<img class="receipt-logo" src="${logoDataUri}" alt="Logo du centre médical" />`
-    : ''
   const rows = treatments.length
     ? treatments.map((t) => {
         const total = Number(t.total) || Number(t.unit_price || 0) * Number(t.quantity || 0)
@@ -98,6 +94,19 @@ function buildReceiptHtml(record: MedicalRecord): string {
 
   const date = record.created_at ? formatMadagascarDateTime(record.created_at).slice(0, 10) : formatMadagascarDateTime(new Date()).slice(0, 10)
   const amount = Number(record.cost) || 0
+  return buildInvoiceHtml(rows, amount, `<section class="grid">
+          <div class="field"><div class="label">Patient</div><div class="value">${escapeHtml(record.patient_nom)} ${escapeHtml(record.patient_prenom)}</div></div>
+          <div class="field"><div class="label">Date</div><div class="value">${escapeHtml(date)}</div></div>
+          <div class="field"><div class="label">Sexe</div><div class="value">${escapeHtml(record.sexe || '-')}</div></div>
+          <div class="field"><div class="label">Domicile</div><div class="value">${escapeHtml(record.domicile || '-')}</div></div>
+        </section>`, '<th>Désignation</th><th class="num">Prix unitaire</th><th class="num">Montant</th>')
+}
+
+function buildInvoiceHtml(rows: string, amount: number, details: string, columns: string): string {
+  const logoDataUri = getLogoDataUri()
+  const logoHtml = logoDataUri
+    ? `<img class="receipt-logo" src="${logoDataUri}" alt="Logo du centre médical" />`
+    : ''
   const amountInWords = numberToFrenchWords(amount)
 
   return `<!doctype html>
@@ -144,19 +153,12 @@ function buildReceiptHtml(record: MedicalRecord): string {
           </div>
         </div>
 
-        <section class="grid">
-          <div class="field"><div class="label">Patient</div><div class="value">${escapeHtml(record.patient_nom)} ${escapeHtml(record.patient_prenom)}</div></div>
-          <div class="field"><div class="label">Date</div><div class="value">${escapeHtml(date)}</div></div>
-          <div class="field"><div class="label">Sexe</div><div class="value">${escapeHtml(record.sexe || '-')}</div></div>
-          <div class="field"><div class="label">Domicile</div><div class="value">${escapeHtml(record.domicile || '-')}</div></div>
-        </section>
+        ${details}
 
         <table>
           <thead>
             <tr>
-              <th>Désignation</th>
-              <th class="num">Prix unitaire</th>
-              <th class="num">Montant</th>
+              ${columns}
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -171,4 +173,16 @@ function buildReceiptHtml(record: MedicalRecord): string {
   </html>`
 }
 
-export { buildReceiptHtml }
+function buildDispensationReceiptHtml(dispensation: Dispensation): string {
+  const amount = Number(dispensation.unit_price || 0) * Number(dispensation.quantity)
+  const rows = `<tr>
+    <td>${escapeHtml(formatMadagascarDateTime(dispensation.created_at))}</td>
+    <td>${escapeHtml(dispensation.medication_name)}</td>
+    <td>${escapeHtml(dispensation.unit || 'comprimé')}</td>
+    <td class="num">${escapeHtml(dispensation.quantity)}</td>
+    <td class="num">${escapeHtml(formatMoney(amount))}</td>
+  </tr>`
+  return buildInvoiceHtml(rows, amount, '', '<th>Date</th><th>Médicament</th><th>Unité</th><th class="num">Qté</th><th class="num">Total</th>')
+}
+
+export { buildReceiptHtml, buildDispensationReceiptHtml }

@@ -4,7 +4,7 @@ import path from 'path'
 import fs from 'fs'
 import PDFDocument from 'pdfkit'
 import * as db from './database'
-import { buildReceiptHtml } from './receiptPdf'
+import { buildReceiptHtml, buildDispensationReceiptHtml } from './receiptPdf'
 import type {
   ArchiveFilters,
   AuditFilters,
@@ -271,6 +271,17 @@ ipcMain.handle('receipt:pdf', async (_e, id: number): Promise<SaveResult> => {
 
   const safeNumber = String(record.registry_number || record.id).replace(/[^\w.-]+/g, '_')
   const defaultName = `recu_${safeNumber}_visite_${record.id}.pdf`
+  return saveReceiptPdf(buildReceiptHtml(record), defaultName)
+})
+
+ipcMain.handle('dispensations:pdf', async (_e, id: number): Promise<SaveResult> => {
+  if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Dispensation invalide.')
+  const dispensation = (await db.getDispensations()).find((row) => row.id === id)
+  if (!dispensation) throw new Error('Dispensation introuvable.')
+  return saveReceiptPdf(buildDispensationReceiptHtml(dispensation), `facture_dispensation_${id}.pdf`)
+})
+
+async function saveReceiptPdf(html: string, defaultName: string): Promise<SaveResult> {
   const result = await showSaveDialog({
     title: 'Telecharger le recu',
     defaultPath: defaultName,
@@ -287,7 +298,6 @@ ipcMain.handle('receipt:pdf', async (_e, id: number): Promise<SaveResult> => {
   })
 
   try {
-    const html = buildReceiptHtml(record)
     await receiptWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
     const pdf = await receiptWindow.webContents.printToPDF({
       printBackground: true,
@@ -298,7 +308,7 @@ ipcMain.handle('receipt:pdf', async (_e, id: number): Promise<SaveResult> => {
   } finally {
     receiptWindow.destroy()
   }
-})
+}
 
 // ─────────────────────────────────────────────────────
 // ARCHIVES
