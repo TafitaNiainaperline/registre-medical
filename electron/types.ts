@@ -377,6 +377,7 @@ export type ElectronApi = {
 
   // Patients
   listPatients: (search?: string) => Promise<Patient[]>
+  listPatientAddresses: () => Promise<string[]>
   getPatient: (id: number) => Promise<Patient | null>
   fetchRecordsByPatient: (patientId: number) => Promise<MedicalRecord[]>
   createPatient: (data: PatientInput) => Promise<Patient>

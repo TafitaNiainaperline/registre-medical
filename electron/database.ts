@@ -824,6 +824,21 @@ function createPatientRow(d: Database, data: PatientInput): Patient {
 }
 
 // Candidats classés par score, pour que l'utilisateur confirme lui-même
+async function listPatientAddresses(): Promise<string[]> {
+  const d = await getDB()
+  const rows = toObjects<{ domicile: string }>(d.exec(`
+    SELECT TRIM(domicile) AS domicile FROM patients WHERE TRIM(COALESCE(domicile, '')) <> ''
+    UNION
+    SELECT TRIM(domicile) AS domicile FROM patient_address_log WHERE TRIM(COALESCE(domicile, '')) <> ''
+  `))
+  const addresses = new Map<string, string>()
+  for (const row of rows) {
+    const key = normalizeMedicationName(row.domicile)
+    if (!addresses.has(key)) addresses.set(key, row.domicile)
+  }
+  return [...addresses.values()].sort((a, b) => a.localeCompare(b, 'fr'))
+}
+
 async function searchSimilarPatients(nom: string, domicile?: string | null, minScore = 55): Promise<PatientMatch[]> {
   const d = await getDB()
   if (!String(nom || '').trim()) return []
@@ -2331,7 +2346,7 @@ export {
   ensureRegistryNumbers,
   getStockReport,
   listDossiers, getDossierById,
-  listPatients, getPatientById, createPatient, updatePatient, searchSimilarPatients,
+  listPatients, listPatientAddresses, getPatientById, createPatient, updatePatient, searchSimilarPatients,
   fetchRecordsByPatient, getPatientAddressLog,
   addTreatmentsToRecord,
   createDispensation,

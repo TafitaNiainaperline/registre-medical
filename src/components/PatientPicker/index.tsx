@@ -1,5 +1,6 @@
 import Icon from '../Icon'
 import AgeField from '../AgeField'
+import SuggestionInput from '../SuggestionInput'
 import type { Patient } from '../../../electron/types'
 import type { PatientIdentity } from './usePatientPicker'
 import { usePatientPicker } from './usePatientPicker'
@@ -16,7 +17,7 @@ type Props = {
 }
 
 const PatientPicker = ({ patient, identity, onIdentityChange, onSelect, onClear, yearsOnly = false, hideSex = false }: Props) => {
-  const { matches, showMatches, dismiss } = usePatientPicker(identity, patient)
+  const { matches, showMatches, dismiss, addresses } = usePatientPicker(identity, patient)
   const locked = Boolean(patient)
   const set = (field: keyof PatientIdentity, value: string) => onIdentityChange({ ...identity, [field]: value })
 
@@ -69,13 +70,13 @@ const PatientPicker = ({ patient, identity, onIdentityChange, onSelect, onClear,
 
         <label className="field">
           <span>Adresse</span>
-          <input
+          {locked ? <input value={identity.domicile} readOnly required /> : <SuggestionInput
             value={identity.domicile}
-            onChange={(e) => set('domicile', e.target.value)}
-            readOnly={locked}
-            autoComplete="off"
+            suggestions={addresses}
+            onChange={(value) => set('domicile', value)}
+            placeholder="Saisir ou choisir une adresse"
             required
-          />
+          />}
         </label>
 
         {!hideSex && <label className="field">

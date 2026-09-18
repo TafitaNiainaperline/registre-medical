@@ -276,6 +276,8 @@ ipcMain.handle('receipt:pdf', async (_e, id: number): Promise<SaveResult> => {
   return saveReceiptPdf(buildReceiptHtml(record), defaultName)
 })
 
+ipcMain.handle('patients:addresses', () => db.listPatientAddresses())
+
 ipcMain.handle('dispensations:pdf', async (_e, id: number): Promise<SaveResult> => {
   if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Dispensation invalide.')
   const dispensation = (await db.getDispensations()).find((row) => row.id === id)

@@ -81,6 +81,9 @@ const api: ElectronApi = {
   getPatient: (id) =>
     ipcRenderer.invoke('patients:get', id),
 
+  listPatientAddresses: () =>
+    ipcRenderer.invoke('patients:addresses'),
+
   fetchRecordsByPatient: (patientId) =>
     ipcRenderer.invoke('patients:records', patientId),
 

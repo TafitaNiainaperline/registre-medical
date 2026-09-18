@@ -28,6 +28,16 @@ export const identityFromPatient = (patient: Patient): PatientIdentity => ({
 export const usePatientPicker = (identity: PatientIdentity, patient: Patient | null) => {
   const [matches, setMatches] = useState<PatientMatch[]>([])
   const [dismissed, setDismissed] = useState(false)
+  const [addresses, setAddresses] = useState<string[]>([])
+
+  useEffect(() => {
+    if (patient) return
+    let cancelled = false
+    window.api.listPatientAddresses()
+      .then((found) => { if (!cancelled) setAddresses(found) })
+      .catch(() => { if (!cancelled) setAddresses([]) })
+    return () => { cancelled = true }
+  }, [patient])
 
   // Suggestions tolérantes aux fautes, tant qu'aucun patient n'est retenu
   useEffect(() => {
@@ -45,6 +55,7 @@ export const usePatientPicker = (identity: PatientIdentity, patient: Patient | n
   useEffect(() => { setDismissed(false) }, [identity.nom])
 
   return {
+    addresses,
     matches,
     showMatches: !patient && !dismissed && matches.length > 0,
     dismiss: () => setDismissed(true),
