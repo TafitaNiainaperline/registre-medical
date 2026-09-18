@@ -72,9 +72,8 @@ const DashboardPage = () => {
         <article className="stat-card amber">
           <div className="top">
             <Icon name="users" size="xl" />
-            <h3>Sexe des patients</h3>
+            <h3>Sexe des patients (CE)</h3>
           </div>
-          <span className="subtitle">Consultation externe uniquement</span>
           <div className="rows">
             {sexSummary.length === 0 && <span className="muted">Aucun patient en consultation externe ce mois.</span>}
             {sexSummary.map(([sex, count]) => (
