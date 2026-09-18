@@ -278,7 +278,7 @@ export type TopSellingMedication = {
 
 export type StockReportRow = Pick<
   Medication,
-  'id' | 'name' | 'price' | 'unit' | 'stock' | 'stock_threshold' | 'description'
+  'id' | 'name' | 'item_type' | 'price' | 'unit' | 'stock' | 'stock_threshold' | 'description'
 >
 
 // ── Dispensations ─────────────────────────────────────
@@ -404,8 +404,8 @@ export type ElectronApi = {
 
   // Exports
   exportExcelByArchive: (filters: ArchiveFilters) => Promise<SaveResult>
-  exportStockExcel: () => Promise<{ success: true } | undefined>
-  exportStockPdf: () => Promise<{ success: true } | undefined>
+  exportStockExcel: (itemType?: ItemType) => Promise<{ success: true } | undefined>
+  exportStockPdf: (itemType?: ItemType) => Promise<{ success: true } | undefined>
 
   // Dispensations
   exportDispensationReceiptPdf: (id: number) => Promise<SaveResult>

@@ -44,6 +44,83 @@ test('PF and CPN save female patient sex for dashboard records on creation and e
   }
 })
 
+test('locked exports support another filename, retry, and cancellation without hiding other errors', async () => {
+  const { saveExportWithRetry } = loader()('electron/exportFile.ts')
+  for (const code of ['EBUSY', 'EACCES', 'EPERM']) {
+    const written = []
+    const result = await saveExportWithRetry('locked.pdf', async (destination) => {
+      written.push(destination)
+      if (destination === 'locked.pdf') throw Object.assign(new Error('locked'), { code })
+    }, async (destination) => {
+      assert.equal(destination, 'locked.pdf')
+      return 'copy.pdf'
+    })
+    assert.deepEqual(written, ['locked.pdf', 'copy.pdf'])
+    assert.deepEqual(result, { canceled: false, filePath: 'copy.pdf' })
+  }
+  const locked = Object.assign(new Error('locked'), { code: 'EBUSY' })
+  assert.deepEqual(await saveExportWithRetry('locked.xlsx', async () => { throw locked }, async () => null), { canceled: true })
+  let attempts = 0
+  assert.deepEqual(await saveExportWithRetry('retry.pdf', async () => {
+    if (++attempts === 1) throw locked
+  }, async (destination) => destination), { canceled: false, filePath: 'retry.pdf' })
+  assert.equal(attempts, 2)
+  const diskFull = Object.assign(new Error('full'), { code: 'ENOSPC' })
+  await assert.rejects(saveExportWithRetry('full.pdf', async () => { throw diskFull }, async () => {
+    assert.fail('A full disk must not be presented as a locked file')
+  }), { code: 'ENOSPC' })
+})
+
+test('catalogue PDF and Excel exports separate medications from acts, including legacy medications', async () => {
+  const ExcelJS = require('exceljs')
+  const workbooks = []
+  class MemoryWorkbook extends ExcelJS.Workbook {
+    constructor() {
+      super()
+      this.xlsx.writeFile = async () => { workbooks.push(await this.xlsx.writeBuffer()) }
+    }
+  }
+  const load = loader({ exceljs: { ...ExcelJS, Workbook: MemoryWorkbook } })
+  const { buildCatalogueHtml, catalogueReport } = load('electron/catalogueExport.ts')
+  const { writeStockExcel } = load('electron/excelExport.ts')
+  const rows = [
+    { id: 1, name: 'Medicament A', item_type: 'medication', price: 1250, unit: 'boite', stock: 0, stock_threshold: 5 },
+    { id: 2, name: 'Acte <B>', item_type: 'act', price: 5000, unit: null, stock: null },
+    { id: 3, name: 'Ancien medicament', item_type: null, price: 20, stock: null },
+  ]
+  assert.deepEqual(catalogueReport(rows).rows.map((row) => row.id), [1, 3])
+  assert.throws(() => catalogueReport(rows, 'all'), /invalide/)
+  for (const itemType of ['medication', 'act']) {
+    const isAct = itemType === 'act'
+    const html = buildCatalogueHtml(rows, itemType)
+    assert.equal(html.includes('Acte &lt;B&gt;'), isAct)
+    assert.equal(html.includes('Medicament A'), !isAct)
+    assert.equal(html.includes('>Stock</th>'), !isAct)
+    assert.ok(!html.includes('>Seuil</th>'))
+    assert.ok(!html.includes('Acte <B>'))
+    assert.ok(html.includes('table-layout: fixed'))
+    assert.ok(html.includes('<th class="right">Prix (Ar)</th>'))
+    await writeStockExcel({ filePath: 'unused.xlsx', medications: rows, itemType })
+    const workbook = new ExcelJS.Workbook()
+    await workbook.xlsx.load(workbooks.at(-1))
+    const sheet = workbook.worksheets[0]
+    assert.deepEqual(sheet.getColumn(1).values.slice(2), isAct ? ['Acte <B>'] : ['Medicament A', 'Ancien medicament'])
+    assert.equal(sheet.columnCount, isAct ? 2 : 4)
+    assert.ok(!sheet.getRow(1).values.includes('Seuil'))
+    assert.equal(sheet.getCell('B2').value, isAct ? 5000 : 1250)
+    assert.equal(sheet.getCell('B1').alignment.horizontal, 'right')
+    assert.equal(sheet.getCell('B2').alignment.horizontal, 'right')
+    if (!isAct) {
+      assert.equal(sheet.getCell('D2').value, 0)
+      assert.equal(sheet.getCell('D3').value, 'Non suivi')
+      assert.equal(sheet.getCell('C1').alignment.horizontal, 'center')
+      assert.equal(sheet.getCell('C2').alignment.horizontal, 'center')
+      assert.equal(sheet.getCell('D1').alignment.horizontal, 'center')
+      assert.equal(sheet.getCell('D2').alignment.horizontal, 'center')
+    }
+  }
+})
+
 test('editing a medication never changes its stock or type, even for an administrator', async () => {
   const load = loader({
     electron: { app: { isPackaged: false, getPath: () => 'in-memory-test' } },

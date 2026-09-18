@@ -1,5 +1,6 @@
 import ExcelJS from 'exceljs'
-import type { MedicalRecord, StockReportRow } from './types'
+import type { ItemType, MedicalRecord, StockReportRow } from './types'
+import { catalogueReport } from './catalogueExport'
 
 type ArchiveExcelOptions = {
   filePath: string
@@ -11,6 +12,7 @@ type ArchiveExcelOptions = {
 type StockExcelOptions = {
   filePath: string
   medications: StockReportRow[]
+  itemType?: ItemType
 }
 
 function displayAge(stored: string | null | undefined): string {
@@ -138,26 +140,35 @@ async function writeArchiveExcel({ filePath, year, month, records }: ArchiveExce
   await wb.xlsx.writeFile(filePath)
 }
 
-async function writeStockExcel({ filePath, medications }: StockExcelOptions): Promise<void> {
+async function writeStockExcel({ filePath, medications, itemType = 'medication' }: StockExcelOptions): Promise<void> {
   const wb = new ExcelJS.Workbook()
 
-  const ws = wb.addWorksheet('Stock')
+  const report = catalogueReport(medications, itemType)
+  const ws = wb.addWorksheet(report.title)
+  ws.columns = report.columns
+  ws.views = [{ state: 'frozen', ySplit: 1 }]
+  ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: report.columns.length } }
+  ws.pageSetup = { paperSize: 9, orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0 }
+  ws.pageSetup.printTitlesRow = '1:1'
 
-  ws.columns = [
-    { header: 'Nom', key: 'name', width: 30 },
-    { header: 'Prix', key: 'price', width: 15 },
-    { header: 'Unité', key: 'unit', width: 15 },
-    { header: 'Stock', key: 'stock', width: 15 },
-    { header: 'Description', key: 'description', width: 40 },
-  ]
-
-  medications.forEach((m) => {
+  report.rows.forEach((m) => {
     ws.addRow({
       name: m.name,
       price: m.price,
-      unit: m.unit,
-      stock: m.stock,
-      description: m.description || ''
+      unit: m.unit || 'comprimé',
+      stock: m.stock ?? 'Non suivi',
+    })
+  })
+
+  ws.getColumn('price').numFmt = '#,##0'
+  ws.eachRow((row, index) => {
+    const lines = Math.max(...report.columns.map((column, i) => Math.ceil(String(row.getCell(i + 1).value ?? '').length / (column.width - 3))))
+    row.height = index === 1 ? 30 : Math.max(28, lines * 16 + 10)
+    row.eachCell((cell, columnNumber) => {
+      cell.font = { name: 'Calibri', size: 11, bold: index === 1, color: { argb: index === 1 ? 'FFFFFFFF' : 'FF15323B' } }
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: index === 1 ? 'FF0D7280' : index % 2 === 0 ? 'FFF0F7F9' : 'FFFFFFFF' } }
+      cell.alignment = { vertical: 'middle', wrapText: true, horizontal: report.columns[columnNumber - 1].align, indent: 1 }
+      cell.border = { bottom: { style: 'thin', color: { argb: 'FFD8E4E8' } } }
     })
   })
 

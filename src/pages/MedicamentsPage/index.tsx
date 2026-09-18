@@ -14,7 +14,7 @@ const MedicamentsPage = () => {
     openCreate, openEdit, closeModal, submit, exportStock,
     stockTarget, stockQuantity, setStockQuantity, stockDate, setStockDate, openStock, closeStock, confirmStock,
     historyTarget, stockHistory, openHistory, closeHistory,
-    filtered, lowStockCount, actSummary, typeFilter, setTypeFilter, counts,
+    filtered, lowStockCount, actSummary, typeFilter, setTypeFilter, counts, catalogueCounts, exporting,
   } = useMedicamentsPage()
 
   return (
@@ -55,7 +55,7 @@ const MedicamentsPage = () => {
             <p>Retrouvez vos médicaments et actes, leurs tarifs et le stock disponible.</p>
           </div>
           <div className="page-badge">
-            <Icon name="pill" /> Médicaments
+            <Icon name={typeFilter === 'act' ? 'stethoscope' : 'pill'} /> {typeFilter === 'act' ? 'Actes médicaux' : 'Médicaments'}
           </div>
         </div>
 
@@ -71,7 +71,10 @@ const MedicamentsPage = () => {
             <button type="button" key={type} aria-pressed={typeFilter === type}
               className={typeFilter === type ? 'active' : ''} onClick={() => { setTypeFilter(type); setSearch('') }}>
               <Icon name={type === 'act' ? 'stethoscope' : 'pill'} />
-              {type === 'act' ? 'Actes médicaux' : 'Médicaments'}
+              <span className="tab-label">{type === 'act' ? 'Actes médicaux' : 'Médicaments'}
+                <small>{type === 'act' ? 'Catalogue et tarifs' : 'Tarifs et suivi du stock'}</small>
+              </span>
+              <span className="tab-count">{catalogueCounts[type]}</span>
             </button>
           ))}
         </div>
@@ -100,13 +103,25 @@ const MedicamentsPage = () => {
           <button type="button" onClick={() => openCreate(typeFilter)}><Icon name="plus" />
             {typeFilter === 'act' ? 'Ajouter un acte' : 'Ajouter un médicament'}
           </button>
-          {typeFilter === 'medication' && <details className="export-menu">
-            <summary>Exporter</summary>
+        </div>
+
+        <div className="catalogue-export" aria-busy={exporting}>
+          <div className="export-description">
+            <span className="export-icon"><Icon name={typeFilter === 'act' ? 'stethoscope' : 'pill'} size="md" /></span>
             <div>
-              <button type="button" className="btn-light" onClick={exportStock}><Icon name="excel" /> Stock Excel</button>
-              <button type="button" className="btn-light" onClick={() => window.api.exportStockPdf()}><Icon name="file" /> Stock PDF</button>
+              <strong>{typeFilter === 'act' ? 'Exporter les actes médicaux' : 'Exporter les médicaments'}</strong>
+              <p>{typeFilter === 'act' ? 'Catalogue complet des actes et de leurs tarifs.' : 'Liste complète des médicaments, tarifs et stocks disponibles.'}</p>
             </div>
-          </details>}
+          </div>
+          <div className="export-buttons">
+            <button type="button" className="btn-light" disabled={exporting || catalogueCounts[typeFilter] === 0} onClick={() => exportStock('excel')}>
+              <Icon name="excel" /> Excel
+            </button>
+            <button type="button" className="btn-light" disabled={exporting || catalogueCounts[typeFilter] === 0} onClick={() => exportStock('pdf')}>
+              <Icon name="file" /> PDF
+            </button>
+          </div>
+          {exporting && <span className="export-status" role="status">Export en cours…</span>}
         </div>
 
         {([typeFilter] as const).map((kind) => {
@@ -114,7 +129,10 @@ const MedicamentsPage = () => {
           const groupRows = filtered.filter((row) => (row.item_type === 'act') === isActCategory)
           return (
         <section className={`catalogue-section ${kind}`} key={kind} aria-label={isActCategory ? 'Actes médicaux' : 'Médicaments'}>
-          <p className="catalogue-result" role="status">{counts[kind]} résultat{counts[kind] !== 1 ? 's' : ''}</p>
+          <div className="catalogue-heading">
+            <h2><Icon name={isActCategory ? 'stethoscope' : 'pill'} /> {isActCategory ? 'Actes médicaux' : 'Médicaments'}</h2>
+            <p className="catalogue-result" role="status">{counts[kind]} résultat{counts[kind] !== 1 ? 's' : ''}</p>
+          </div>
         <div className="table-wrap">
           <table>
             <thead>
@@ -150,19 +168,19 @@ const MedicamentsPage = () => {
                     <td className="center">
                       {isAct ? '-' : <span className="unit">{row.unit || 'comprimé'}</span>}
                     </td>
-                    <td className="center">
-                      {isAct || row.stock === null || row.stock === undefined ? (
-                        <span className="untracked">{isAct ? '-' : 'Non suivi'}</span>
-                      ) : (
-                        <div className="stock">
+                    <td className="center stock-cell">
+                      <div className="stock">
+                        {row.stock === null || row.stock === undefined ? (
+                          <span className="untracked">Non suivi</span>
+                        ) : (
                           <button className="value" title="Voir l'historique du stock" onClick={() => openHistory(row)}>
                             {row.stock}
                           </button>
-                          {lowStock && <span className="badge warn">Stock faible</span>}
-                        </div>
-                      )}
+                        )}
+                        {lowStock && <span className="badge warn">Stock faible</span>}
+                      </div>
                     </td>
-                    <td className="center">{isAct ? '-' : (row.stock_threshold ?? 100)}</td>
+                    <td className="center">{row.stock_threshold ?? 100}</td>
                     </>}
                     <td className="center date">{formatDate(row.created_at)}</td>
                     <td className="actions">

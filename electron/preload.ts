@@ -144,11 +144,11 @@ const api: ElectronApi = {
   exportExcelByArchive: (filters) =>
     ipcRenderer.invoke('export:excelByArchive', filters),
 
-  exportStockExcel: () =>
-    ipcRenderer.invoke('stock:excel'),
+  exportStockExcel: (itemType) =>
+    ipcRenderer.invoke('stock:excel', itemType),
 
-  exportStockPdf: () =>
-    ipcRenderer.invoke('stock:pdf'),
+  exportStockPdf: (itemType) =>
+    ipcRenderer.invoke('stock:pdf', itemType),
 
   // DISPENSATIONS
   exportDispensationReceiptPdf: (id) =>

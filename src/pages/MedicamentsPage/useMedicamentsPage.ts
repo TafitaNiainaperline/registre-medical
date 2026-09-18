@@ -1,6 +1,6 @@
 import { notify as showToast, confirmAction } from '../../utils/notifications'
-import { useEffect, useState } from 'react'
-import type { ItemType, MedicalRecord, Medication, StockHistoryEntry, TopSellingMedication } from '../../../electron/types'
+import { useEffect, useRef, useState } from 'react'
+import type { ItemType, MedicalRecord, Medication, MedicationInput, StockHistoryEntry, TopSellingMedication } from '../../../electron/types'
 import { getCurrentUser } from '../../utils/currentUser'
 import { errorMessage } from '../../utils/error'
 import { capitalize, normalize } from '../../utils/text'
@@ -31,6 +31,8 @@ export const useMedicamentsPage = () => {
   const [modalType, setModalType] = useState<ItemType | null>(null)
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<ItemType>('medication')
+  const [exporting, setExporting] = useState(false)
+  const exportingRef = useRef(false)
   const [message, setMessage] = useState<{ type: MessageType; text: string }>({ type: 'ok', text: '' })
   const [stockTarget, setStockTarget] = useState<Medication | null>(null)
   const [stockQuantity, setStockQuantity] = useState('')
@@ -99,7 +101,8 @@ export const useMedicamentsPage = () => {
         message: `${name} : ${editingId ? "appliquer les modifications" : "ajouter au catalogue"}.`, confirmLabel: 'Enregistrer',
       }, async () => {
         if (editingId) {
-          const { stock: _stock, ...changes } = payload
+          const changes: MedicationInput = { ...payload }
+          delete changes.stock
           await window.api.updateMedication(editingId, changes)
         }
         else await window.api.createMedication(payload)
@@ -162,13 +165,20 @@ export const useMedicamentsPage = () => {
     setStockHistory(await window.api.getMedicationStockHistory(medication.id))
   }
 
-  const exportStock = async () => {
+  const exportStock = async (format: 'excel' | 'pdf') => {
+    if (exportingRef.current) return
+    exportingRef.current = true
+    setExporting(true)
+    const label = typeFilter === 'act' ? 'Actes médicaux' : 'Médicaments'
     try {
-      const result = await window.api.exportStockExcel()
+      const result = await (format === 'excel' ? window.api.exportStockExcel(typeFilter) : window.api.exportStockPdf(typeFilter))
       if (!result?.success) return
-      showToast('Stock exporté avec succès.')
+      notify(`${label} exportés en ${format === 'excel' ? 'Excel' : 'PDF'}.`)
     } catch (err) {
-      showToast(errorMessage(err, 'Export du stock impossible.'), 'err')
+      notify(errorMessage(err, 'Export impossible.'), 'err')
+    } finally {
+      exportingRef.current = false
+      setExporting(false)
     }
   }
 
@@ -199,7 +209,8 @@ export const useMedicamentsPage = () => {
     openCreate, openEdit, closeModal, submit, notify, exportStock,
     stockTarget, stockQuantity, setStockQuantity, stockDate, setStockDate, openStock, closeStock, confirmStock,
     historyTarget, stockHistory, openHistory, closeHistory: () => setHistoryTarget(null),
-    typeFilter, setTypeFilter, counts,
+    typeFilter, setTypeFilter, counts, exporting,
+    catalogueCounts: { medication: rows.filter((row) => row.item_type !== 'act').length, act: rows.filter((row) => row.item_type === 'act').length },
     filtered: matchingRows.filter((row) => (row.item_type || 'medication') === typeFilter),
     filteredTopSelling: topSelling.filter((row) => normalize(row.medication_name).includes(query)),
     lowStockCount: rows.filter(isLowStock).length,

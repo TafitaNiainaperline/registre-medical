@@ -2,7 +2,8 @@ import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import type { SaveDialogOptions, SaveDialogReturnValue } from 'electron'
 import path from 'path'
 import fs from 'fs'
-import PDFDocument from 'pdfkit'
+import { buildCatalogueHtml, catalogueReport } from './catalogueExport'
+import { saveExportWithRetry } from './exportFile'
 import * as db from './database'
 import { buildReceiptHtml, buildDispensationReceiptHtml } from './receiptPdf'
 import type {
@@ -14,6 +15,7 @@ import type {
   DispensationInput,
   DispensationUpdateInput,
   MedicationInput,
+  ItemType,
   PatientInput,
   PeriodFilters,
   RecordInput,
@@ -281,9 +283,31 @@ ipcMain.handle('dispensations:pdf', async (_e, id: number): Promise<SaveResult> 
   return saveReceiptPdf(buildDispensationReceiptHtml(dispensation), `facture_dispensation_${id}.pdf`)
 })
 
-async function saveReceiptPdf(html: string, defaultName: string): Promise<SaveResult> {
+async function chooseExportDestination(lockedPath: string): Promise<string | null> {
+  const { response } = await dialog.showMessageBox({
+    type: 'warning',
+    title: 'Fichier indisponible',
+    message: `Impossible d’écrire dans « ${path.basename(lockedPath)} ».`,
+    detail: 'Le fichier peut être ouvert dans un lecteur PDF ou Excel, ou le dossier peut être protégé. Fermez le fichier puis réessayez, ou choisissez un autre nom ou dossier.',
+    buttons: ['Enregistrer sous…', 'Réessayer', 'Annuler'],
+    defaultId: 0,
+    cancelId: 2,
+    noLink: true,
+  })
+  if (response === 2) return null
+  if (response === 1) return lockedPath
+  const { dir, name, ext } = path.parse(lockedPath)
   const result = await showSaveDialog({
-    title: 'Telecharger le recu',
+    title: 'Enregistrer sous un autre nom',
+    defaultPath: path.join(dir, `${name}_copie${ext}`),
+    filters: [{ name: ext === '.pdf' ? 'PDF' : 'Excel', extensions: [ext.slice(1)] }],
+  })
+  return result.canceled || !result.filePath ? null : result.filePath
+}
+
+async function saveReceiptPdf(html: string, defaultName: string, title = 'Telecharger le recu'): Promise<SaveResult> {
+  const result = await showSaveDialog({
+    title,
     defaultPath: defaultName,
     filters: [{ name: 'PDF', extensions: ['pdf'] }]
   })
@@ -303,8 +327,8 @@ async function saveReceiptPdf(html: string, defaultName: string): Promise<SaveRe
       printBackground: true,
       pageSize: 'A4',
     })
-    fs.writeFileSync(result.filePath, pdf)
-    return { canceled: false, filePath: result.filePath }
+    return await saveExportWithRetry(result.filePath,
+      (destination) => fs.promises.writeFile(destination, pdf), chooseExportDestination)
   } finally {
     receiptWindow.destroy()
   }
@@ -395,14 +419,15 @@ ipcMain.handle('export:excelByArchive', async (_e, filters: ArchiveFilters): Pro
   return { canceled: false, filePath: result.filePath }
 })
 
-ipcMain.handle('stock:excel', async () => {
+ipcMain.handle('stock:excel', async (_e, itemType: ItemType = 'medication') => {
   if (!exportExcel) {
     throw new Error('Dépendance Excel manquante. Installez "exceljs" puis relancez l’application.')
   }
 
+  const report = catalogueReport(await db.getStockReport(), itemType)
   const result = await showSaveDialog({
-    title: 'Exporter Stock',
-    defaultPath: 'stock.xlsx',
+    title: `Exporter — ${report.title}`,
+    defaultPath: `${report.filename}.xlsx`,
     filters: [
       {
         name: 'Excel',
@@ -415,58 +440,22 @@ ipcMain.handle('stock:excel', async () => {
     return
   }
 
-  const meds = await db.getStockReport()
-
-  await exportExcel.writeStockExcel({
-    filePath: result.filePath,
-    medications: meds
-  })
+  const writer = exportExcel
+  const saved = await saveExportWithRetry(result.filePath,
+    (destination) => writer.writeStockExcel({ filePath: destination, medications: report.rows, itemType }),
+    chooseExportDestination)
+  if (saved.canceled) return
 
   return {
     success: true as const
   }
 })
 
-ipcMain.handle('stock:pdf', async () => {
-
-  const result = await showSaveDialog({
-    title: 'Exporter PDF',
-    defaultPath: 'stock.pdf',
-    filters: [
-      {
-        name: 'PDF',
-        extensions: ['pdf']
-      }
-    ]
-  })
-
-  if (result.canceled || !result.filePath) {
-    return
-  }
-
-  const meds = await db.getStockReport()
-
-  const doc = new PDFDocument()
-
-  doc.pipe(fs.createWriteStream(result.filePath))
-
-  doc.fontSize(18).text('Rapport du stock')
-
-  doc.moveDown()
-
-  meds.forEach((m) => {
-
-    doc.text(
-      `${m.name} | Stock : ${m.stock ?? '-'} | Prix : ${m.price} Ar`
-    )
-
-  })
-
-  doc.end()
-
-  return {
-    success: true as const
-  }
+ipcMain.handle('stock:pdf', async (_e, itemType: ItemType = 'medication') => {
+  const report = catalogueReport(await db.getStockReport(), itemType)
+  const result = await saveReceiptPdf(buildCatalogueHtml(report.rows, itemType), `${report.filename}.pdf`, `Exporter — ${report.title}`)
+  if (result.canceled) return
+  return { success: true as const }
 })
 
 // ─────────────────────────────────────────────────────

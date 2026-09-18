@@ -2012,6 +2012,7 @@ async function getStockReport(): Promise<StockReportRow[]> {
   const res = d.exec(`
     SELECT
       id,
+      item_type,
       name,
       price,
       unit,
