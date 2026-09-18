@@ -119,7 +119,8 @@ export const useDashboardPage = () => {
     cashOutflowTotal,
     balance: totalAmount - cashOutflowTotal,
     tdr,
-    sexSummary: countDistinctPatients(records, (row) => String(row.sexe || '').trim().toUpperCase() || 'Non renseigné'),
+    sexSummary: countDistinctPatients(records.filter((row) => row.category === 'consultation'),
+      (row) => String(row.sexe || '').trim().toUpperCase() || 'Non renseigné'),
     ageGroupSummary: countDistinctPatients(records, (row) => getAgeGroup(row.age_months))
       .sort((a, b) => a[0].localeCompare(b[0], 'fr', { numeric: true })),
     diagnosticSummary: countDistinctPatients(records, diagnosticOf).sort(byCountDesc),

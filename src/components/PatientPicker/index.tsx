@@ -12,9 +12,10 @@ type Props = {
   onSelect: (patient: Patient) => void
   onClear: () => void
   yearsOnly?: boolean
+  hideSex?: boolean
 }
 
-const PatientPicker = ({ patient, identity, onIdentityChange, onSelect, onClear, yearsOnly = false }: Props) => {
+const PatientPicker = ({ patient, identity, onIdentityChange, onSelect, onClear, yearsOnly = false, hideSex = false }: Props) => {
   const { matches, showMatches, dismiss } = usePatientPicker(identity, patient)
   const locked = Boolean(patient)
   const set = (field: keyof PatientIdentity, value: string) => onIdentityChange({ ...identity, [field]: value })
@@ -25,7 +26,7 @@ const PatientPicker = ({ patient, identity, onIdentityChange, onSelect, onClear,
         <div className="banner">
           <Icon name="user" size="md" />
           <span>
-            Patient <strong>{patient?.patient_number}</strong> sélectionné — sa fiche est reprise telle quelle.
+            Patient <strong>{patient?.patient_number}</strong> sélectionné.
           </span>
           <button type="button" className="btn-light" onClick={onClear}>Changer de patient</button>
         </div>
@@ -77,14 +78,14 @@ const PatientPicker = ({ patient, identity, onIdentityChange, onSelect, onClear,
           />
         </label>
 
-        <label className="field">
+        {!hideSex && <label className="field">
           <span>Sexe</span>
           <select value={identity.sexe} onChange={(e) => set('sexe', e.target.value)} disabled={locked}>
             <option value="">Non renseigné</option>
             <option value="M">Masculin</option>
             <option value="F">Féminin</option>
           </select>
-        </label>
+        </label>}
 
         <label className="field">
           <span>Téléphone (optionnel)</span>

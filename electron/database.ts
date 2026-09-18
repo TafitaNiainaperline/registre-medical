@@ -1406,6 +1406,12 @@ function computeTotalCostAr(treatments: Treatment[]): number {
   return normalizeTreatments(treatments).reduce((sum, t) => sum + (t.unit_price * t.quantity), 0)
 }
 
+function setRegistryPatientSex(d: Database, category: string | undefined, patientId: number | null | undefined): void {
+  if ((category === 'cpn' || category === 'pf') && patientId) {
+    d.run("UPDATE patients SET sexe = 'F', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND COALESCE(sexe, '') <> 'F'", [patientId])
+  }
+}
+
 async function createRecord(data: RecordInput): Promise<number | undefined> {
   if (!String(data.diagnostic || '').trim()) throw new Error('Le diagnostic est requis.')
   const dateError = appointmentDateError(data.appointment_date)
@@ -1441,6 +1447,7 @@ async function createRecord(data: RecordInput): Promise<number | undefined> {
 
   d.run('BEGIN')
   try {
+    setRegistryPatientSex(d, data.category, data.patient_id)
     d.run(`INSERT INTO medical_records
       (category, dossier_id, patient_id, diagnostic, traitement, observation, cost, created_by, registry_number, archive_year, archive_month, treatments_json, appointment_date, tdr_result, pf_method, cpn_type, reference)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -1519,6 +1526,7 @@ async function addTreatmentsToRecord(recordId: number, data: ContinueRecordInput
 
   d.run('BEGIN')
   try {
+    setRegistryPatientSex(d, existing.category, existing.patient_id)
     d.run(`INSERT INTO medical_records
       (category, dossier_id, patient_id, diagnostic, traitement, observation, cost, created_by, registry_number, archive_year, archive_month, treatments_json, appointment_date, tdr_result, pf_method, cpn_type, reference)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -1604,6 +1612,7 @@ async function updateRecord(id: number, data: RecordUpdateInput): Promise<void> 
 
   d.run('BEGIN')
   try {
+    setRegistryPatientSex(d, existing?.category, patientId ?? existing?.patient_id)
     // If treatments are being replaced, we must adjust stock by the diff (old -> new)
     let stockDeltas: Map<number, number> | null = null
     if (data.treatments !== undefined) {

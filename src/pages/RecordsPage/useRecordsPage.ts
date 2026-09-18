@@ -236,7 +236,7 @@ export const useRecordsPage = (category: Category) => {
         patient = await window.api.createPatient({
           nom: capitalize(identity.nom.trim()),
           domicile: capitalize(identity.domicile.trim()),
-          sexe: identity.sexe || null,
+          sexe: category.key === 'pf' || category.key === 'cpn' ? 'F' : (identity.sexe || null),
           phone: identity.phone.trim() || null,
           birth_date: ageEntryToBirthDate(identity.age),
           created_by: currentUser.id || null,

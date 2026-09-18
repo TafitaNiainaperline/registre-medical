@@ -30,7 +30,7 @@ const RecordsPage = ({ category }: Props) => {
   } = useRecordsPage(category)
 
   const isConsultation = category.key === 'consultation'
-  // CPN et PF ne concernent que des adultes : âge en années
+  // Dans les registres CPN et PF, l'âge est saisi en années.
   const isAdultRegistry = category.key === 'cpn' || category.key === 'pf'
 
   // Chaque registre affiche sa donnée propre dans la liste
@@ -40,7 +40,7 @@ const RecordsPage = ({ category }: Props) => {
     : category.key === 'pf' ? { label: 'Produit PF', value: 'pf_method' as const }
     : null
 
-  const columnCount = 12 + (isConsultation ? 1 : 0) + (extraColumn ? 1 : 0)
+  const columnCount = 12 - (isAdultRegistry ? 1 : 0) + (isConsultation ? 1 : 0) + (extraColumn ? 1 : 0)
   const hasFilters = Object.values(filters).some(Boolean)
   const registrySummary = category.key === 'cpn' ? cpnSummary : pfSummary
   const registryFilterLabel = category.key === 'cpn'
@@ -199,7 +199,7 @@ const RecordsPage = ({ category }: Props) => {
               <th>N° registre</th>
               {isConsultation && <th>Référence</th>}
               <th>Patient</th>
-              <th>Sexe</th>
+              {!isAdultRegistry && <th>Sexe</th>}
               <th>Âge</th>
               <th>Domicile</th>
               <th>Diagnostic</th>
@@ -224,7 +224,7 @@ const RecordsPage = ({ category }: Props) => {
                 <td className="registry">{displayRegistryNumber(row.registry_number)}</td>
                 {isConsultation && <td className="reference">{row.reference || '-'}</td>}
                 <td><strong>{row.patient_nom}</strong> {row.patient_prenom}</td>
-                <td>{row.sexe || '-'}</td>
+                {!isAdultRegistry && <td>{row.sexe || '-'}</td>}
                 <td><span className={`badge age ${ageUnit(row.age_months)}`}>{displayAge(row.age)}</span></td>
                 <td>{row.domicile}</td>
                 <td>{row.diagnostic}</td>
@@ -298,6 +298,7 @@ const RecordsPage = ({ category }: Props) => {
           <fieldset className="block patient">
           <legend>Patient</legend>
           <PatientPicker
+            hideSex={isAdultRegistry}
             patient={form.patient}
             identity={form.identity}
             onIdentityChange={setIdentity}

@@ -24,6 +24,26 @@ function loader(mocks = {}) {
   }
 }
 
+test('PF and CPN save female patient sex for dashboard records on creation and editing', async () => {
+  const load = loader({
+    electron: { app: { isPackaged: false, getPath: () => 'in-memory-test' } },
+    fs: { ...fs, existsSync: () => false, writeFileSync: () => {}, renameSync: () => {} },
+  })
+  const db = load('electron/database.ts')
+  for (const category of ['pf', 'cpn', 'consultation']) {
+    const patient = await db.createPatient({ nom: `Patient ${category}`, domicile: 'Test', sexe: null })
+    const input = { category, patient_id: patient.id, diagnostic: 'Suivi', treatments: [] }
+    const id = await db.createRecord(input)
+    const expected = category === 'consultation' ? null : 'F'
+    assert.equal((await db.getPatientById(patient.id)).sexe, expected)
+    assert.equal((await db.fetchRecordById(id)).sexe, expected)
+    await db.updatePatient(patient.id, { nom: patient.nom, domicile: 'Test', sexe: 'M' })
+    await db.updateRecord(id, input)
+    assert.equal((await db.fetchRecordById(id)).sexe, category === 'consultation' ? 'M' : 'F')
+    assert.equal((await db.fetchRecordById(id)).patient_id, patient.id)
+  }
+})
+
 test('editing a medication never changes its stock or type, even for an administrator', async () => {
   const load = loader({
     electron: { app: { isPackaged: false, getPath: () => 'in-memory-test' } },
