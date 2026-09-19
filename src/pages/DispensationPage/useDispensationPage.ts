@@ -6,6 +6,7 @@ import { errorMessage } from '../../utils/error'
 import { monthlyDispensations } from '../../../electron/dispensationReport'
 import { todayIso } from '../../utils/date'
 import { filterPurchaseHistory } from '../../utils/dispensations'
+import { watchCurrentMonth } from '../../utils/watchCurrentMonth'
 
 type MessageType = 'ok' | 'err'
 
@@ -42,10 +43,13 @@ export const useDispensationPage = () => {
   }
 
   useEffect(() => { load() }, [])
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentMonth(todayIso().slice(0, 7)), 60000)
-    return () => clearInterval(timer)
-  }, [])
+  useEffect(() => watchCurrentMonth((month) => {
+    setCurrentMonth(month)
+    setSearchNumber('')
+    setSearchDate('')
+    setEditingId(null)
+    load()
+  }), [])
 
   const notify = (text: string, type: MessageType = 'ok') => {
     setMessage({ text, type })

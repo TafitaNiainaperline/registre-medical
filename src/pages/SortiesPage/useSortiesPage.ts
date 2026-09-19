@@ -1,9 +1,10 @@
 import { notify as showToast, confirmAction } from '../../utils/notifications'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { CashOutflow } from '../../../electron/types'
 import { errorMessage } from '../../utils/error'
 import { todayIso } from '../../utils/date'
+import { watchCurrentMonth } from '../../utils/watchCurrentMonth'
 
 type Totals = {
   entries: number
@@ -25,29 +26,38 @@ export const useSortiesPage = () => {
   const [success, setSuccess] = useState('')
   const [editing, setEditing] = useState<CashOutflow | null>(null)
   const [editForm, setEditForm] = useState({ date: '', designation: '', amount: '' })
+  const loadRequest = useRef(0)
 
   const loadData = async () => {
+    const request = ++loadRequest.current
+    const month = todayIso().slice(0, 7)
+    const period = { year: Number(month.slice(0, 4)), month: Number(month.slice(5, 7)) }
+    setArchiveLabel(new Date(period.year, period.month - 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }))
     try {
-      const current = await window.api.getCurrentArchive()
-      if (current?.label) setArchiveLabel(current.label)
-
-      const period = { year: current?.year, month: current?.month }
-      const list = await window.api.listCashOutflows(period) || []
-      setOutflows(list)
-
-      const outflowTotal = Number(await window.api.getCashOutflowTotal(period) || 0)
-      const records = await window.api.fetchRecordsByArchive(period) || []
-      const dispensed = Number(await window.api.getDispensationTotal(period) || 0)
-      const entries = records.reduce((sum, row) => sum + (Number(row.cost) || 0), 0) + dispensed
-
-      setTotals({ entries, outflows: outflowTotal, balance: entries - outflowTotal })
+      const [list, outflowTotal, records, dispensed] = await Promise.all([
+        window.api.listCashOutflows(period), window.api.getCashOutflowTotal(period),
+        window.api.fetchRecordsByArchive(period), window.api.getDispensationTotal(period),
+      ])
+      if (request !== loadRequest.current) return
+      const entries = (records || []).reduce((sum, row) => sum + (Number(row.cost) || 0), 0) + Number(dispensed || 0)
+      setOutflows(list || [])
+      setTotals({ entries, outflows: Number(outflowTotal || 0), balance: entries - Number(outflowTotal || 0) })
     } catch {
+      if (request !== loadRequest.current) return
       setOutflows([])
       setTotals({ entries: 0, outflows: 0, balance: 0 })
     }
   }
 
-  useEffect(() => { loadData() }, [])
+  useEffect(() => {
+    loadData()
+    const stop = watchCurrentMonth(() => {
+      setOutflows([])
+      setTotals({ entries: 0, outflows: 0, balance: 0 })
+      loadData()
+    })
+    return () => { stop(); loadRequest.current++ }
+  }, [])
 
   // Valide les trois champs d'une sortie de caisse
   const invalidReason = (values: { date: string; designation: string; amount: string }) => {

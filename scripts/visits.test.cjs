@@ -839,3 +839,45 @@ test('purchase history combines number and calendar date and finds archived purc
   const day = visibleDate.startsWith('20') ? '2026-09-20' : '2026-09-19'
   assert.equal(filterPurchaseHistory([midnight], { number: '', date: day, currentMonth: '2026-09' }).length, 1)
 })
+
+test('monthly display refresh runs once on month changes, including wake-up and year changes', () => {
+  let today = '2026-09-30'
+  let tick
+  let cleared = false
+  const windowEvents = new Map()
+  const documentEvents = new Map()
+  const oldWindow = global.window
+  const oldDocument = global.document
+  global.window = {
+    setInterval: (callback, delay) => { tick = callback; assert.equal(delay, 60000); return 42 },
+    clearInterval: (id) => { assert.equal(id, 42); cleared = true },
+    addEventListener: (name, callback) => windowEvents.set(name, callback),
+    removeEventListener: (name, callback) => { assert.equal(windowEvents.get(name), callback); windowEvents.delete(name) },
+  }
+  global.document = {
+    addEventListener: (name, callback) => documentEvents.set(name, callback),
+    removeEventListener: (name, callback) => { assert.equal(documentEvents.get(name), callback); documentEvents.delete(name) },
+  }
+  try {
+    const { watchCurrentMonth } = loader({ './date': { todayIso: () => today } })('src/utils/watchCurrentMonth.ts')
+    const months = []
+    const stop = watchCurrentMonth(month => months.push(month))
+    tick()
+    assert.deepEqual(months, [])
+    today = '2026-10-01'
+    tick()
+    windowEvents.get('focus')()
+    documentEvents.get('visibilitychange')()
+    assert.deepEqual(months, ['2026-10'])
+    today = '2027-01-01'
+    windowEvents.get('focus')()
+    assert.deepEqual(months, ['2026-10', '2027-01'])
+    today = '2027-02-01'
+    documentEvents.get('visibilitychange')()
+    assert.deepEqual(months, ['2026-10', '2027-01', '2027-02'])
+    stop()
+    assert.equal(cleared, true)
+    assert.equal(windowEvents.size, 0)
+    assert.equal(documentEvents.size, 0)
+  } finally { global.window = oldWindow; global.document = oldDocument }
+})

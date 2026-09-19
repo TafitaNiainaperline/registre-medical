@@ -14,6 +14,7 @@ const SortiesPage = () => {
   const createDialogRef = useRef<HTMLDivElement>(null)
   const [search, setSearch] = useState('')
   const [actionId, setActionId] = useState<number | null>(null)
+  useEffect(() => { setSearch(''); setActionId(null) }, [archiveLabel])
   const filteredOutflows = outflows.filter((outflow) => normalize([
     outflow.designation, formatDay(outflow.outflow_date), outflow.amount,
   ].join(' ')).includes(normalize(search)))
