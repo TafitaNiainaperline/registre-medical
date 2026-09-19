@@ -90,7 +90,7 @@ const guideSections: GuideSection[] = [
     items: [
       'La page affiche la liste et deux boutons séparés : « Liste des dispensations » et « Nouvelle dispensation ».',
       'Cliquez sur « Nouvelle dispensation » pour ouvrir le formulaire dans une fenêtre.',
-      'Sélectionnez le médicament, saisissez la quantité et vérifiez le total affiché avant de cliquer sur « Enregistrer ».',
+      'Sélectionnez un médicament et sa quantité. Utilisez « Ajouter un médicament » pour ajouter des lignes, puis vérifiez le total général avant de cliquer sur « Enregistrer ».',
       'Après enregistrement, la fenêtre se ferme et la liste se met à jour. Si le stock suivi est insuffisant, un message indique la quantité disponible.',
       'Utilisez « Annuler », la croix ou Échap pour fermer sans enregistrer. Recherchez et modifiez les dispensations depuis la liste.',
       'La suppression d’une dispensation demande confirmation et recrédite le stock.',

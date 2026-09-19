@@ -280,9 +280,8 @@ ipcMain.handle('patients:addresses', () => db.listPatientAddresses())
 
 ipcMain.handle('dispensations:pdf', async (_e, id: number): Promise<SaveResult> => {
   if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Dispensation invalide.')
-  const dispensation = (await db.getDispensations()).find((row) => row.id === id)
-  if (!dispensation) throw new Error('Dispensation introuvable.')
-  return saveReceiptPdf(buildDispensationReceiptHtml(dispensation), `facture_dispensation_${id}.pdf`)
+  const items = await db.getDispensationReceiptItems(id)
+  return saveReceiptPdf(buildDispensationReceiptHtml(items), `facture_dispensation_${items[0].id}.pdf`)
 })
 
 async function chooseExportDestination(lockedPath: string): Promise<string | null> {
@@ -468,7 +467,7 @@ ipcMain.handle('dispensations:list', () => db.getDispensations())
 
 ipcMain.handle('dispensations:total', (_e, filters: PeriodFilters) => db.getDispensationTotal(filters))
 
-ipcMain.handle('dispensations:create', (event, data: DispensationInput) => {
+ipcMain.handle('dispensations:create', (event, data: DispensationInput | DispensationInput[]) => {
   return db.runAudited(sessions.get(event.sender.id) || 0, () => db.createDispensation(data))
 })
 

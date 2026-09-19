@@ -1,5 +1,6 @@
 import path from 'path'
 import fs from 'fs'
+import { randomUUID } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import initSqlJs from 'sql.js'
 import type { Database, QueryExecResult, SqlValue } from 'sql.js'
@@ -143,7 +144,7 @@ async function getDB(): Promise<Database> {
 
   registerAuditFunctions(db)
   initTables(db)
-  const schemaChanged = ensureMedicalRecordsSchema(db) || ensureMedicationsSchema(db) || ensureDispensationsSchema(db)
+  const schemaChanged = [ensureMedicalRecordsSchema(db), ensureMedicationsSchema(db), ensureDispensationsSchema(db)].some(Boolean)
   if (schemaChanged) {
     try { saveDB() } catch { /* ignore */ }
   }
@@ -1125,6 +1126,7 @@ function ensureDispensationsSchema(d: Database): boolean {
     }
 
     ensureCol('unit_price', 'ALTER TABLE dispensations ADD COLUMN unit_price INTEGER')
+    ensureCol('batch_id', 'ALTER TABLE dispensations ADD COLUMN batch_id TEXT')
 
     return changed
   } catch {
@@ -2041,41 +2043,42 @@ async function getStockReport(): Promise<StockReportRow[]> {
   return toObjects<StockReportRow>(res)
 }
 
-async function createDispensation(data: DispensationInput): Promise<boolean> {
+async function createDispensation(data: DispensationInput | DispensationInput[]): Promise<boolean> {
+  const items = Array.isArray(data) ? data : [data]
+  if (!items.length) throw new Error('Ajoutez au moins un médicament.')
+  const batchId = randomUUID()
   const d = await getDB()
-  const medId = Number(data.medication_id)
-  const quantity = Number(data.quantity)
-
-  const medRows = toObjects<Pick<Medication, 'name' | 'item_type' | 'unit' | 'stock' | 'price'>>(
-    d.exec('SELECT name, item_type, unit, stock, price FROM medications WHERE id = ?', [medId])
-  )
-  const med = medRows[0]
-  if (!med) throw new Error('Médicament introuvable')
-  if (med.item_type === 'act') throw new Error('Un acte médical ne peut pas être dispensé comme un médicament.')
-
-  if (med.stock !== null && med.stock !== undefined && quantity > Number(med.stock)) {
-    throw new Error(`Stock insuffisant. Disponible : ${med.stock}`)
-  }
-
   d.run('BEGIN')
   try {
-    d.run(
-      'INSERT INTO dispensations (medication_id, medication_name, unit, quantity, unit_price) VALUES (?, ?, ?, ?, ?)',
-      [medId, med.name, med.unit || 'comprimé', quantity, Number(med.price) || 0]
-    )
-
-    d.run(
-      `INSERT INTO medication_movements (medication_id, movement_type, quantity) VALUES (?, 'exit', ?)`,
-      [medId, quantity]
-    )
-
-    if (med.stock !== null && med.stock !== undefined) {
+    for (const item of items) {
+      const medId = Number(item?.medication_id)
+      const quantity = Number(item?.quantity)
+      if (!Number.isSafeInteger(medId) || medId <= 0 || !Number.isFinite(quantity) || quantity <= 0) {
+        throw new Error('Médicament ou quantité invalide.')
+      }
+      const med = toObjects<Pick<Medication, 'name' | 'item_type' | 'unit' | 'stock' | 'price'>>(
+        d.exec('SELECT name, item_type, unit, stock, price FROM medications WHERE id = ?', [medId])
+      )[0]
+      if (!med) throw new Error('Médicament introuvable')
+      if (med.item_type === 'act') throw new Error('Un acte médical ne peut pas être dispensé comme un médicament.')
+      if (med.stock != null && quantity > Number(med.stock)) {
+        throw new Error('Stock insuffisant pour ' + med.name + '. Disponible : ' + med.stock)
+      }
       d.run(
-        'UPDATE medications SET stock = stock - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [quantity, medId]
+        'INSERT INTO dispensations (medication_id, medication_name, unit, quantity, unit_price, batch_id) VALUES (?, ?, ?, ?, ?, ?)',
+        [medId, med.name, med.unit || 'comprimé', quantity, Number(med.price) || 0, batchId]
       )
+      d.run(
+        `INSERT INTO medication_movements (medication_id, movement_type, quantity) VALUES (?, 'exit', ?)`,
+        [medId, quantity]
+      )
+      if (med.stock != null) {
+        d.run(
+          'UPDATE medications SET stock = stock - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+          [quantity, medId]
+        )
+      }
     }
-
     d.run('COMMIT')
     saveDB()
     return true
@@ -2090,6 +2093,7 @@ async function getDispensations(): Promise<Dispensation[]> {
   const res = d.exec(`
     SELECT
       d.id,
+      d.batch_id,
       d.medication_id,
       d.medication_name,
       d.unit,
@@ -2100,6 +2104,15 @@ async function getDispensations(): Promise<Dispensation[]> {
     ORDER BY d.created_at DESC
   `)
   return toObjects<Dispensation>(res)
+}
+
+async function getDispensationReceiptItems(id: number): Promise<Dispensation[]> {
+  if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Dispensation invalide.')
+  const d = await getDB()
+  const selected = toObjects<Dispensation>(d.exec('SELECT * FROM dispensations WHERE id = ?', [id]))[0]
+  if (!selected) throw new Error('Dispensation introuvable.')
+  if (!selected.batch_id) return [selected]
+  return toObjects<Dispensation>(d.exec('SELECT * FROM dispensations WHERE batch_id = ? ORDER BY id', [selected.batch_id]))
 }
 
 async function getDispensationTotal({ year, month }: PeriodFilters = {}): Promise<number> {
@@ -2351,6 +2364,7 @@ export {
   addTreatmentsToRecord,
   createDispensation,
   getDispensations,
+  getDispensationReceiptItems,
   getDispensationTotal,
   deleteDispensation,
   updateDispensation,

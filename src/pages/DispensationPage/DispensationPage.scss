@@ -9,7 +9,7 @@
   }
 
   .creation-modal {
-    width: min(32rem, calc(100vw - 2rem));
+    width: min(48rem, calc(100vw - 2rem));
     max-height: calc(100dvh - 2rem);
     box-sizing: border-box;
     margin: auto;
@@ -27,31 +27,118 @@
 
   .form form {
     display: grid;
-    gap: 1em;
+    gap: 0.75rem;
 
-    .row {
+    .medication-columns, .medication-line {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1em;
-      align-items: end;
+      grid-template-columns: minmax(0, 1fr) 7rem 2rem;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .medication-columns {
+      padding: 0 0.625rem;
+      color: var(--label);
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .medication-list {
+      max-height: 42dvh;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-gutter: stable;
+      padding: 0.25rem;
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+    }
+
+    .medication-line {
+      padding: 0.5rem 0.375rem;
+      + .medication-line { border-top: 1px solid var(--border); }
+      > * { min-width: 0; }
+      input, select { min-width: 0; box-sizing: border-box; font-size: 0.9rem; }
+    }
+
+    .medication-quantity {
+      position: relative;
+      small { display: block; margin-top: 0.2rem; color: var(--soft); font-size: 0.7rem; overflow-wrap: anywhere; }
+    }
+
+    .remove-medication {
+      display: grid;
+      place-items: center;
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      color: var(--soft);
+      background: transparent;
+      box-shadow: none;
+      &:hover:not(:disabled) { color: var(--danger); background: var(--field-bg); }
+    }
+
+    .add-medication { justify-self: start; }
+
+    .dispensation-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      border-top: 1px solid var(--border);
+      padding-top: 1rem;
     }
 
     .total {
       display: grid;
       gap: 0.125em;
-      padding: 0.75em 1em;
-      border-radius: 0.75em;
-      background: #e8f5e9;
-      text-align: center;
+      min-width: 0;
 
-      .label { font-size: 0.8em; color: #666; }
+      .label { font-size: 0.8em; color: var(--soft); }
       .value { font-size: 1.2em; font-weight: 700; color: var(--success); }
     }
 
-    .actions { display: flex; justify-content: flex-end; }
+    .actions { display: flex; justify-content: flex-end; margin-top: 0; }
   }
 
   .search-field { margin-bottom: 1em; }
+
+  .purchase-list { display: grid; gap: 1rem; }
+
+  .purchase-card {
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    overflow: hidden;
+    background: var(--panel);
+
+    .table-wrap { border: 0; border-radius: 0; box-shadow: none; margin: 0; }
+    table { margin: 0; }
+    th, td { padding: 0.65rem 1rem; }
+    tbody tr:last-child td { border-bottom: 0; }
+    th:first-child { width: 45%; }
+    .actions { width: 5rem; }
+  }
+
+  .purchase-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--field-bg);
+
+    h4 { margin: 0 0 0.25rem; font-size: 1rem; color: var(--ink); }
+    span { font-size: 0.8rem; color: var(--soft); }
+    .purchase-total {
+      display: grid;
+      gap: 0.2rem;
+      margin-left: auto;
+      text-align: right;
+      strong { color: var(--success); font-size: 1.2rem; }
+    }
+  }
 
   table {
     .date { white-space: nowrap; }
@@ -59,11 +146,13 @@
     .qty { width: 4.5em; }
   }
 
-  body.dark-mode & {
-    .form .total { background: #123127; .label { color: #9bb2bb; } }
-  }
 }
 
 @media (max-width: 600px) {
-  .DispensationPage .form form .row { grid-template-columns: 1fr; }
+  .DispensationPage .creation-modal { padding: 1rem; }
+  .DispensationPage .form form {
+    .medication-columns, .medication-line { grid-template-columns: minmax(0, 1fr) 4.5rem 1.75rem; gap: 0.375rem; }
+    .remove-medication { width: 1.75rem; }
+    .dispensation-footer .actions { flex: 1; }
+  }
 }

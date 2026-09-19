@@ -173,16 +173,18 @@ function buildInvoiceHtml(rows: string, amount: number, details: string, columns
   </html>`
 }
 
-function buildDispensationReceiptHtml(dispensation: Dispensation): string {
-  const amount = Number(dispensation.unit_price || 0) * Number(dispensation.quantity)
-  const rows = `<tr>
+function buildDispensationReceiptHtml(data: Dispensation | Dispensation[]): string {
+  const items = Array.isArray(data) ? data : [data]
+  const amount = items.reduce((sum, item) => sum + Number(item.unit_price || 0) * Number(item.quantity), 0)
+  const rows = items.map((dispensation) => `<tr>
     <td>${escapeHtml(formatMadagascarDateTime(dispensation.created_at))}</td>
     <td>${escapeHtml(dispensation.medication_name)}</td>
     <td>${escapeHtml(dispensation.unit || 'comprimé')}</td>
     <td class="num">${escapeHtml(dispensation.quantity)}</td>
-    <td class="num">${escapeHtml(formatMoney(amount))}</td>
-  </tr>`
-  return buildInvoiceHtml(rows, amount, '', '<th>Date</th><th>Médicament</th><th>Unité</th><th class="num">Qté</th><th class="num">Total</th>')
+    <td class="num">${escapeHtml(formatMoney(dispensation.unit_price))}</td>
+    <td class="num">${escapeHtml(formatMoney(Number(dispensation.unit_price || 0) * Number(dispensation.quantity)))}</td>
+  </tr>`).join('')
+  return buildInvoiceHtml(rows, amount, '', '<th>Date</th><th>Médicament</th><th>Unité</th><th class="num">Qté</th><th class="num">Prix unitaire</th><th class="num">Total</th>')
 }
 
 export { buildReceiptHtml, buildDispensationReceiptHtml }

@@ -6,9 +6,9 @@ import './DispensationPage.scss'
 
 const DispensationPage = () => {
   const {
-    medications, filtered, selectedId, setSelectedId, quantity, setQuantity, search, setSearch,
+    medications, filtered, lines, addLine, removeLine, updateLine, search, setSearch,
     message, submit, editingId, setEditingId, editForm, setEditForm, startEdit, saveEdit,
-    exporting, downloadReceipt, unit, totalPrice, unitOf, creating, saving, openCreate, closeCreate,
+    exporting, downloadReceipt, totalPrice, unitOf, creating, saving, openCreate, closeCreate,
   } = useDispensationPage()
   const dialogRef = useRef<HTMLDialogElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
@@ -33,7 +33,7 @@ const DispensationPage = () => {
       <div className="page-header">
         <div>
           <h1>Dispensation de médicaments</h1>
-          <p>Sélectionnez un médicament et indiquez la quantité dispensée.</p>
+          <p>Ajoutez les médicaments et indiquez la quantité dispensée pour chacun.</p>
         </div>
         <div className="page-badge blue">
           <Icon name="pill" /> Dispensation
@@ -66,63 +66,85 @@ const DispensationPage = () => {
         {creating && message.text && <div className={message.type === 'err' ? 'error-msg' : 'success-msg'} role="alert">{message.text}</div>}
 
         <form onSubmit={submit}>
-          <label className="field">
-            <span>Médicament</span>
-            <select value={selectedId} disabled={saving} onChange={(e) => { setSelectedId(e.target.value); setQuantity('') }} required>
-              <option value="">-- Sélectionner un médicament --</option>
-              {medications.map((med) => (
-                <option key={med.id} value={med.id}>
-                  {med.name} ({med.unit || 'comprimé'}) - Stock: {med.stock ?? 'Non suivi'}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <div className="row">
-            <label className="field">
-              <span>Quantité ({unit})</span>
-              <input
-                type="number"
-                min="1"
-                placeholder="0"
-                value={quantity}
-                disabled={saving}
-                onChange={(e) => setQuantity(e.target.value)}
-                required
-              />
-            </label>
-
-            <div className="total">
-              <span className="label">Total</span>
+          <div className="medication-columns" aria-hidden="true">
+            <span>Médicament</span><span>Quantité</span><span />
+          </div>
+          <div className="medication-list">
+            {lines.map((line, index) => (
+              <div className="medication-line" key={line.id}>
+                <div className="medication-choice">
+                  <select aria-label={'Médicament ' + (index + 1)} disabled={saving} value={line.medication_id} onChange={(e) => updateLine(line.id, { medication_id: e.target.value, quantity: '' })} required>
+                    <option value="">Choisir un médicament…</option>
+                    {medications.map((med) => (
+                      <option key={med.id} value={med.id}>
+                        {med.name} ({med.unit || 'comprimé'}) - Stock : {med.stock ?? 'Non suivi'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              <div className="medication-quantity">
+                  <input aria-label={'Quantité du médicament ' + (index + 1) + ' (' + unitOf(line.medication_id) + ')'} disabled={saving} type="number" min="1" placeholder="Qté" value={line.quantity}
+                    onChange={(e) => updateLine(line.id, { quantity: e.target.value })} required />
+                  <small>{line.medication_id ? unitOf(line.medication_id) : 'unité'}</small>
+              </div>
+              <button type="button" className="remove-medication" disabled={saving || lines.length === 1}
+                title="Retirer ce médicament" aria-label={'Retirer le médicament ' + (index + 1)} onClick={() => removeLine(line.id)}><Icon name="close" /></button>
+            </div>
+          ))}
+          </div>
+          <button type="button" className="btn-light add-medication" disabled={saving} onClick={addLine}>
+            <Icon name="plus" /> Ajouter un médicament
+          </button>
+          <div className="dispensation-footer">
+            <div className="total" aria-live="polite">
+              <span className="label">Total · {lines.length} {lines.length > 1 ? 'lignes' : 'ligne'}</span>
               <span className="value">{totalPrice.toLocaleString()} Ar</span>
             </div>
-          </div>
 
-          <div className="actions">
-            <button type="button" className="btn-light" disabled={saving} onClick={closeCreate}>Annuler</button>
-            <button type="submit" disabled={saving}><Icon name="plus" /> {saving ? 'Enregistrement…' : 'Enregistrer'}</button>
+            <div className="actions">
+              <button type="button" className="btn-light" disabled={saving} onClick={closeCreate}>Annuler</button>
+              <button type="submit" disabled={saving}><Icon name="plus" /> {saving ? 'Enregistrement…' : 'Enregistrer'}</button>
+            </div>
           </div>
         </form>
       </dialog>
 
       <div className="panel" ref={listRef}>
-        <h3><Icon name="file" size="md" /> Historique des dispensations</h3>
+        <h3><Icon name="file" size="md" /> Historique des achats</h3>
 
         <div className="search-field">
           <Icon name="search" />
           <input
             type="search"
-            placeholder="Rechercher une dispensation..."
+            placeholder="Rechercher un achat ou un médicament…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
 
+        <div className="purchase-list">
+          {filtered.length === 0 && <p className="empty">Aucun achat trouvé.</p>}
+          {filtered.map((purchase) => (
+          <article className="purchase-card" key={purchase.id} aria-labelledby={`purchase-${purchase.id}`}>
+            <div className="purchase-header">
+              <div>
+                <h4 id={`purchase-${purchase.id}`}>Achat n° {purchase.id}</h4>
+                <span>{formatDateTime(purchase.created_at)} · {purchase.items.length} {purchase.items.length > 1 ? 'médicaments' : 'médicament'}</span>
+              </div>
+              <div className="purchase-total">
+                <span>Total de l’achat</span>
+                <strong>{purchase.total.toLocaleString()} Ar</strong>
+              </div>
+              <button type="button" className="btn-light" disabled={exporting}
+                aria-label={`Télécharger la facture de l’achat ${purchase.id}`}
+                onClick={() => downloadReceipt(purchase.items[0])}>
+                <Icon name="file" /> Facture PDF
+              </button>
+            </div>
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Date</th>
                 <th>Médicament</th>
                 <th className="center">Unité</th>
                 <th className="center">Qté</th>
@@ -131,22 +153,17 @@ const DispensationPage = () => {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 && (
-                <tr><td className="empty" colSpan={6}>Aucune dispensation enregistrée.</td></tr>
-              )}
-
-              {filtered.map((dispensation) => {
+              {purchase.items.map((dispensation) => {
                 const editing = editingId === Number(dispensation.id)
                 const total = (Number(dispensation.unit_price || 0) * Number(dispensation.quantity)).toLocaleString()
 
                 return (
                   <tr key={dispensation.id}>
-                    <td className="date">{formatDateTime(dispensation.created_at)}</td>
-
                     {editing ? (
                       <>
                         <td>
                           <select
+                            aria-label="Médicament à modifier"
                             value={editForm.medication_id}
                             onChange={(e) => setEditForm({ ...editForm, medication_id: e.target.value })}
                           >
@@ -160,6 +177,7 @@ const DispensationPage = () => {
                         <td className="center">
                           <input
                             className="qty"
+                            aria-label="Quantité à modifier"
                             type="number"
                             min="1"
                             value={editForm.quantity}
@@ -169,10 +187,10 @@ const DispensationPage = () => {
                         <td className="num">-</td>
                         <td className="actions">
                           <div>
-                            <button className="icon-btn confirm" title="Enregistrer" onClick={saveEdit}>
+                            <button className="icon-btn confirm" title="Enregistrer" aria-label="Enregistrer la modification" onClick={saveEdit}>
                               <Icon name="check" />
                             </button>
-                            <button className="icon-btn cancel" title="Annuler" onClick={() => setEditingId(null)}>
+                            <button className="icon-btn cancel" title="Annuler" aria-label="Annuler la modification" onClick={() => setEditingId(null)}>
                               <Icon name="close" />
                             </button>
                           </div>
@@ -186,12 +204,7 @@ const DispensationPage = () => {
                         <td className="num amount">{total} Ar</td>
                         <td className="actions">
                           <div>
-                            <button type="button" className="btn-light" disabled={exporting}
-                              title="Télécharger la facture" aria-label={`Télécharger la facture de ${dispensation.medication_name}`}
-                              onClick={() => downloadReceipt(dispensation)}>
-                              <Icon name="file" /> Facture PDF
-                            </button>
-                            <button className="icon-btn edit" title="Modifier" onClick={() => startEdit(dispensation)}>
+                            <button className="icon-btn edit" title="Modifier" aria-label={`Modifier ${dispensation.medication_name}`} onClick={() => startEdit(dispensation)}>
                               <Icon name="edit" />
                             </button>
                           </div>
@@ -203,6 +216,9 @@ const DispensationPage = () => {
               })}
             </tbody>
           </table>
+        </div>
+          </article>
+          ))}
         </div>
       </div>
     </section>

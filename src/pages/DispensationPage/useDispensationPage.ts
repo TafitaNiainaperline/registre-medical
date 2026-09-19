@@ -4,6 +4,7 @@ import type { FormEvent } from 'react'
 import type { Dispensation, Medication } from '../../../electron/types'
 import { errorMessage } from '../../utils/error'
 import { matches } from '../../utils/text'
+import { groupDispensations } from '../../utils/dispensations'
 
 type MessageType = 'ok' | 'err'
 
@@ -12,8 +13,9 @@ const DEFAULT_THRESHOLD = 100
 export const useDispensationPage = () => {
   const [medications, setMedications] = useState<Medication[]>([])
   const [dispensations, setDispensations] = useState<Dispensation[]>([])
-  const [selectedId, setSelectedId] = useState('')
-  const [quantity, setQuantity] = useState('')
+  const nextLineId = useRef(1)
+  const [lines, setLines] = useState([{ id: 0, medication_id: '', quantity: '' }])
+  const resetLines = () => setLines([{ id: nextLineId.current++, medication_id: '', quantity: '' }])
   const [exporting, setExporting] = useState(false)
   const exportingRef = useRef(false)
   const [creating, setCreating] = useState(false)
@@ -46,37 +48,38 @@ export const useDispensationPage = () => {
     e.preventDefault()
     if (savingRef.current) return
 
-    const medicationId = Number(selectedId)
-    const qty = Number(quantity)
-
-    if (!medicationId) { notify('Veuillez sélectionner un médicament.', 'err'); return }
-    if (!Number.isFinite(qty) || qty <= 0) { notify('Veuillez saisir une quantité valide.', 'err'); return }
-
-    const med = medications.find((m) => Number(m.id) === medicationId)
-    if (!med) { notify('Médicament introuvable.', 'err'); return }
-    if (med.stock !== null && med.stock !== undefined && qty > Number(med.stock)) {
-      notify(`Stock insuffisant. Disponible : ${med.stock}`, 'err')
-      return
+    const items = lines.map((line) => ({ medication_id: Number(line.medication_id), quantity: Number(line.quantity) }))
+    const quantities = new Map<number, number>()
+    for (const item of items) {
+      if (!item.medication_id) { notify('Veuillez sélectionner un médicament sur chaque ligne.', 'err'); return }
+      if (!Number.isFinite(item.quantity) || item.quantity <= 0) { notify('Veuillez saisir une quantité valide sur chaque ligne.', 'err'); return }
+      quantities.set(item.medication_id, (quantities.get(item.medication_id) || 0) + item.quantity)
+    }
+    const summaries: string[] = []
+    const warnings: string[] = []
+    let total = 0
+    for (const [id, qty] of quantities) {
+      const med = medications.find((m) => Number(m.id) === id)
+      if (!med) { notify('Médicament introuvable.', 'err'); return }
+      if (med.stock != null && qty > Number(med.stock)) {
+        notify('Stock insuffisant pour ' + med.name + '. Disponible : ' + med.stock, 'err')
+        return
+      }
+      summaries.push(med.name + ' : ' + qty + ' ' + (med.unit || 'unité(s)'))
+      total += Number(med.price) * qty
+      const threshold = Number(med.stock_threshold ?? DEFAULT_THRESHOLD)
+      if (med.stock != null && Number(med.stock) - qty <= threshold) warnings.push(med.name + ' : stock au seuil de ' + threshold + ' ou inférieur.')
     }
 
     savingRef.current = true
     setSaving(true)
     try {
       await confirmAction({ title: 'Confirmer la dispensation ?',
-        message: `${med.name} : ${qty} ${med.unit || "unité(s)"}. Cette quantité sera retirée du stock.`, confirmLabel: 'Enregistrer',
+        message: summaries.join(' ; ') + '. Total : ' + total.toLocaleString() + ' Ar. Ces quantités seront retirées du stock.', confirmLabel: 'Enregistrer',
       }, async () => {
-        await window.api.createDispensation({ medication_id: medicationId, quantity: qty })
-
-        const total = Number(med.price) * qty
-        const threshold = Number(med.stock_threshold ?? DEFAULT_THRESHOLD)
-        const remaining = med.stock === null || med.stock === undefined ? null : Number(med.stock) - qty
-        const warning = remaining !== null && remaining <= threshold
-          ? ` Attention : stock atteint le seuil de ${threshold}.`
-          : ''
-
-        notify(`Dispensation enregistrée. Total : ${total.toLocaleString()} Ar.${warning}`)
-        setSelectedId('')
-        setQuantity('')
+        await window.api.createDispensation(items)
+        notify('Dispensation enregistrée. Total : ' + total.toLocaleString() + ' Ar. ' + warnings.join(' '))
+        resetLines()
         setCreating(false)
         load()
       })
@@ -129,23 +132,27 @@ export const useDispensationPage = () => {
     }
   }
 
-  const selected = medications.find((m) => Number(m.id) === Number(selectedId))
-  const filtered = dispensations.filter((d) => matches(search, [d.medication_name, d.unit, d.quantity]))
+  const filtered = groupDispensations(dispensations).filter((purchase) =>
+    matches(search, [purchase.id, purchase.created_at, ...purchase.items.flatMap((item) => [item.medication_name, item.unit, item.quantity])]))
 
   return {
     creating, saving, exporting, downloadReceipt,
     openCreate: () => {
-      setSelectedId('')
-      setQuantity('')
+      resetLines()
       setMessage({ text: '', type: 'ok' })
       setEditingId(null)
       setCreating(true)
     },
     closeCreate: () => { if (!savingRef.current) setCreating(false) },
-    medications, filtered, selectedId, setSelectedId, quantity, setQuantity, search, setSearch,
+    medications, filtered, lines, search, setSearch,
+    addLine: () => {
+      const id = nextLineId.current++
+      setLines((current) => [...current, { id, medication_id: '', quantity: '' }])
+    },
+    removeLine: (id: number) => setLines((current) => current.length > 1 ? current.filter((line) => line.id !== id) : current),
+    updateLine: (id: number, patch: Partial<{ medication_id: string; quantity: string }>) => setLines((current) => current.map((line) => line.id === id ? { ...line, ...patch } : line)),
     message, submit, editingId, setEditingId, editForm, setEditForm, startEdit, saveEdit,
-    unit: selected?.unit || 'comprimé',
-    totalPrice: selected ? Number(selected.price) * Number(quantity || 0) : 0,
+    totalPrice: lines.reduce((sum, line) => sum + Number(medications.find((med) => Number(med.id) === Number(line.medication_id))?.price || 0) * Number(line.quantity || 0), 0),
     unitOf: (id: string) => medications.find((m) => Number(m.id) === Number(id))?.unit || 'comprimé',
   }
 }

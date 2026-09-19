@@ -285,6 +285,7 @@ export type StockReportRow = Pick<
 
 export type Dispensation = {
   id: number
+  batch_id?: string | null
   medication_id: number
   medication_name: string
   unit: string | null
@@ -412,7 +413,7 @@ export type ElectronApi = {
   exportDispensationReceiptPdf: (id: number) => Promise<SaveResult>
   getDispensations: () => Promise<Dispensation[]>
   getDispensationTotal: (filters: PeriodFilters) => Promise<number>
-  createDispensation: (data: DispensationInput) => Promise<boolean>
+  createDispensation: (data: DispensationInput | DispensationInput[]) => Promise<boolean>
   deleteDispensation: (id: number) => Promise<boolean>
   updateDispensation: (data: DispensationUpdateInput) => Promise<boolean>
 

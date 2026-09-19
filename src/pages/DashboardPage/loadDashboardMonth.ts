@@ -1,3 +1,5 @@
+import { groupDispensations } from '../../utils/dispensations'
+
 export type DashboardMonth = { year: number; month: number }
 
 export async function loadDashboardMonth(period: DashboardMonth) {
@@ -12,7 +14,7 @@ export async function loadDashboardMonth(period: DashboardMonth) {
     records: records || [],
     dispensations: {
       total: Number(total) || 0,
-      count: (list || []).filter((row) => row.created_at?.slice(0, 7) === monthKey).length,
+      count: groupDispensations((list || []).filter((row) => row.created_at?.slice(0, 7) === monthKey)).length,
     },
     cashOutflowTotal: Number(cashOutflowTotal) || 0,
   }

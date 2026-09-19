@@ -516,11 +516,11 @@ test('monthly dashboard filters registers, dispensation counts and financial tot
     { id: 4, patient_id: 3, category: 'cpn', archive_year: 2025, archive_month: 9, cpn_type: 'CPN2', cost: 400 },
   ]
   const dispensations = [
-    { created_at: '2026-09-01 00:00:00', quantity: 2, unit_price: 50 },
-    { created_at: '2026-09-30 23:59:59', quantity: 1, unit_price: 100 },
-    { created_at: '2026-08-31 23:59:59', quantity: 1, unit_price: 500 },
-    { created_at: '2026-10-01 00:00:00', quantity: 1, unit_price: 600 },
-    { created_at: '2025-09-15 10:00:00', quantity: 1, unit_price: 700 },
+    { id: 1, created_at: '2026-09-01 00:00:00', quantity: 2, unit_price: 50 },
+    { id: 2, created_at: '2026-09-30 23:59:59', quantity: 1, unit_price: 100 },
+    { id: 3, created_at: '2026-08-31 23:59:59', quantity: 1, unit_price: 500 },
+    { id: 4, created_at: '2026-10-01 00:00:00', quantity: 1, unit_price: 600 },
+    { id: 5, created_at: '2025-09-15 10:00:00', quantity: 1, unit_price: 700 },
   ]
   const monthKey = ({ year, month }) => `${year}-${String(month).padStart(2, '0')}`
   const previousWindow = global.window
@@ -673,4 +673,80 @@ test('list groups three visits while history exposes each separate receipt', asy
   } finally {
     delete global.window
   }
+})
+
+
+test('multiple dispensations save together and roll back every line when stock or input is invalid', async () => {
+  const load = loader({
+    electron: { app: { isPackaged: false, getPath: () => 'in-memory-test' } },
+    fs: { ...fs, existsSync: () => false, writeFileSync: () => {}, renameSync: () => {} },
+  })
+  const db = load('electron/database.ts')
+  await db.createMedication({ name: 'A', item_type: 'medication', stock: 10, price: 100 })
+  await db.createMedication({ name: 'B', item_type: 'medication', stock: 5, price: 200 })
+  const [a, b] = await db.listMedications()
+  const line = (med, quantity) => ({ medication_id: med.id, quantity })
+  await db.createDispensation([line(a, 2), line(b, 3)])
+  assert.equal((await db.getDispensations()).length, 2)
+  assert.equal(await db.getDispensationTotal(), 800)
+  assert.deepEqual((await db.listMedications()).map(m => m.stock), [8, 2])
+  const movements = await db.getMedicationMovements()
+  for (const items of [[line(a, 1), line(b, 3)], [line(a, 5), line(a, 4)], [line(a, 1), line(b, -1)], [line(a, 1), line(b, NaN)], [line(a, 1), { medication_id: 99999, quantity: 1 }], []]) {
+    await assert.rejects(db.createDispensation(items))
+    assert.equal((await db.getDispensations()).length, 2)
+    assert.deepEqual((await db.listMedications()).map(m => m.stock), [8, 2])
+    assert.deepEqual(await db.getMedicationMovements(), movements)
+  }
+  await db.createDispensation(line(a, 1))
+  assert.equal((await db.getDispensations()).length, 3)
+  const rows = await db.getDispensations()
+  const first = rows.find(row => row.medication_id === a.id && row.quantity === 2)
+  const second = rows.find(row => row.medication_id === b.id)
+  const separate = rows.find(row => row.medication_id === a.id && row.quantity === 1)
+  assert.ok(first.batch_id)
+  assert.equal(first.batch_id, second.batch_id)
+  assert.notEqual(first.batch_id, separate.batch_id)
+  const receiptItems = await db.getDispensationReceiptItems(first.id)
+  assert.deepEqual(receiptItems.map(row => row.id), [first.id, second.id])
+  assert.deepEqual(await db.getDispensationReceiptItems(second.id), receiptItems)
+  assert.equal((await db.getDispensationReceiptItems(separate.id)).length, 1)
+  const { buildDispensationReceiptHtml } = load('electron/receiptPdf.ts')
+  const html = buildDispensationReceiptHtml(receiptItems)
+  assert.match(html, /<td>A<\/td>/)
+  assert.match(html, /<td>B<\/td>/)
+  assert.match(html, /Total : 800 Ar/)
+  assert.equal((html.match(/<tbody>([\s\S]*?)<\/tbody>/)[1].match(/<tr>/g) || []).length, 2)
+  await db.updateDispensation(second.id, line(b, 2))
+  assert.match(buildDispensationReceiptHtml(await db.getDispensationReceiptItems(first.id)), /Total : 600 Ar/)
+  await assert.rejects(db.getDispensationReceiptItems(99999))
+})
+
+test('purchase groups retain all items and totals without merging separate purchases or legacy rows', async () => {
+  const load = loader()
+  const { groupDispensations } = load('src/utils/dispensations.ts')
+  const common = { created_at: '2026-09-19 10:00:00', unit: 'tablet', unit_price: 100, quantity: 2 }
+  const rows = [
+    { ...common, id: 5, medication_name: 'Other', batch_id: 'other' },
+    { ...common, id: 2, medication_name: 'B', batch_id: 'purchase', unit_price: 300 },
+    { ...common, id: 1, medication_name: 'A', batch_id: 'purchase' },
+    { ...common, id: 3, medication_name: 'Legacy A', batch_id: null },
+    { ...common, id: 4, medication_name: 'Legacy B' },
+  ]
+  const groups = groupDispensations(rows)
+  assert.deepEqual(groups.map(group => group.id), [5, 4, 3, 1])
+  const purchase = groups.find(group => group.id === 1)
+  assert.deepEqual(purchase.items.map(item => item.medication_name), ['A', 'B'])
+  assert.equal(purchase.total, 800)
+  const { matches } = load('src/utils/text.ts')
+  const found = groups.filter(group => matches('B', group.items.map(item => item.medication_name)))
+  assert.equal(found.find(group => group.id === 1).items.length, 2)
+  const previousWindow = global.window
+  global.window = { api: {
+    fetchRecordsByArchive: async () => [], getDispensationTotal: async () => 1400,
+    getDispensations: async () => rows, getCashOutflowTotal: async () => 0,
+  } }
+  try {
+    const { loadDashboardMonth } = load('src/pages/DashboardPage/loadDashboardMonth.ts')
+    assert.deepEqual((await loadDashboardMonth({ year: 2026, month: 9 })).dispensations, { total: 1400, count: 4 })
+  } finally { global.window = previousWindow }
 })
