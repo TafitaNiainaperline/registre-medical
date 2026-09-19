@@ -881,3 +881,48 @@ test('monthly display refresh runs once on month changes, including wake-up and 
     assert.equal(documentEvents.size, 0)
   } finally { global.window = oldWindow; global.document = oldDocument }
 })
+
+test('medications, acts, prices and remaining stock survive new months and database reopening', async () => {
+  const savedFiles = new Map()
+  const mocks = {
+    electron: { app: { isPackaged: false, getPath: () => 'in-memory-month-test' } },
+    fs: {
+      ...fs,
+      existsSync: file => savedFiles.has(String(file)),
+      writeFileSync: (file, contents) => savedFiles.set(String(file), Buffer.from(contents)),
+      readFileSync: file => Buffer.from(savedFiles.get(String(file))),
+    },
+  }
+  const RealDate = global.Date
+  let clock = new RealDate(2026, 8, 30, 12).getTime()
+  global.Date = class extends RealDate {
+    constructor(...args) { super(...(args.length ? args : [clock])) }
+    static now() { return clock }
+  }
+  try {
+    let db = loader(mocks)('electron/database.ts')
+    await db.createMedication({ name: 'Medicine stocked', item_type: 'medication', stock: 40, price: 100, unit: 'tablet', date: '2026-09-30' })
+    await db.createMedication({ name: 'Medicine untracked', item_type: 'medication', stock: null, price: 200, unit: 'bottle', date: '2026-09-30' })
+    await db.createMedication({ name: 'Medical act', item_type: 'act', price: 5000, date: '2026-09-30' })
+    const medication = (await db.listMedications()).find(item => item.name === 'Medicine stocked')
+    await db.createDispensation({ medication_id: medication.id, quantity: 7 })
+    await db.createCashOutflow({ outflow_date: '2026-09-30', designation: 'September expense', amount: 250 })
+    const catalogue = await db.listMedications()
+    const movements = await db.getMedicationMovements()
+    const dispensations = await db.getDispensations()
+    assert.equal(catalogue.find(item => item.id === medication.id).stock, 33)
+    assert.equal(catalogue.find(item => item.item_type === 'act').price, 5000)
+    for (const [year, month] of [[2026, 10], [2027, 1]]) {
+      clock = new RealDate(year, month - 1, 1, 12).getTime()
+      db = loader(mocks)('electron/database.ts')
+      const current = await db.getCurrentArchive()
+      assert.equal(current.year, year)
+      assert.equal(current.month, month)
+      assert.deepEqual(await db.listCashOutflows({ year, month }), [])
+      assert.deepEqual(await db.listMedications(), catalogue)
+      assert.deepEqual(await db.getMedicationMovements(), movements)
+      assert.deepEqual(await db.getDispensations(), dispensations)
+      assert.equal((await db.listCashOutflows({ year: 2026, month: 9 })).length, 1)
+    }
+  } finally { global.Date = RealDate }
+})
