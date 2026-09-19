@@ -92,7 +92,7 @@ const guideSections: GuideSection[] = [
       'Cliquez sur « Nouvelle dispensation » pour ouvrir le formulaire dans une fenêtre.',
       'Sélectionnez un médicament et sa quantité. Utilisez « Ajouter un médicament » pour ajouter des lignes, puis vérifiez le total général avant de cliquer sur « Enregistrer ».',
       'Après enregistrement, la fenêtre se ferme et la liste se met à jour. Si le stock suivi est insuffisant, un message indique la quantité disponible.',
-      'Utilisez « Annuler », la croix ou Échap pour fermer sans enregistrer. Recherchez et modifiez les dispensations depuis la liste.',
+      'Utilisez « Annuler », la croix ou Échap pour fermer sans enregistrer. Retrouvez un achat avec son numéro ou le bouton « Choisir une date ». Le bouton d’export indique le mois téléchargé en Excel : celui de la date choisie, ou le mois en cours sans date.',
       'La suppression d’une dispensation demande confirmation et recrédite le stock.',
     ],
   },

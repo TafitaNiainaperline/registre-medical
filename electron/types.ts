@@ -411,6 +411,7 @@ export type ElectronApi = {
 
   // Dispensations
   exportDispensationReceiptPdf: (id: number) => Promise<SaveResult>
+  exportDispensationsMonth: (period: { year: number; month: number }) => Promise<SaveResult>
   getDispensations: () => Promise<Dispensation[]>
   getDispensationTotal: (filters: PeriodFilters) => Promise<number>
   createDispensation: (data: DispensationInput | DispensationInput[]) => Promise<boolean>

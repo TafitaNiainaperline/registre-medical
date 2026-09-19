@@ -750,3 +750,92 @@ test('purchase groups retain all items and totals without merging separate purch
     assert.deepEqual((await loadDashboardMonth({ year: 2026, month: 9 })).dispensations, { total: 1400, count: 4 })
   } finally { global.window = previousWindow }
 })
+
+test('purchase search matches exact references and multiple medicines while retaining the entire purchase', () => {
+  const { groupDispensations, matchesPurchase } = loader()('src/utils/dispensations.ts')
+  const common = { created_at: '2026-09-19 10:00:00', unit: 'comprimé', unit_price: 100, quantity: 12 }
+  const groups = groupDispensations([
+    { ...common, id: 12, batch_id: 'one', medication_name: 'Paracétamol 500 mg' },
+    { ...common, id: 13, batch_id: 'one', medication_name: 'Amoxicilline' },
+    { ...common, id: 112, batch_id: 'two', medication_name: 'Autre' },
+  ])
+  const ids = query => groups.filter(group => matchesPurchase(group, query)).map(group => group.id)
+  for (const query of ['12', 'Achat 12', 'Achat n° 12', 'achat n°12', '#12', 'n° 12', 'numero 12', '  0012  ']) {
+    assert.deepEqual(ids(query), [12], query)
+  }
+  for (const query of ['PARACETAMOL', 'paracetamol amoxicilline', 'amoxicilline  500', 'achat 12 paracetamol']) {
+    assert.deepEqual(ids(query), [12], query)
+    assert.equal(groups.filter(group => matchesPurchase(group, query))[0].items.length, 2)
+  }
+  assert.deepEqual(ids('19 septembre 2026'), [112, 12])
+  assert.deepEqual(ids('2026-09-19'), [112, 12])
+  assert.deepEqual(ids('paracetamol absent'), [])
+  assert.deepEqual(ids('achat 112 paracetamol'), [])
+  assert.deepEqual(ids('13'), [])
+  assert.deepEqual(ids('   '), [112, 12])
+})
+
+test('monthly purchase export keeps complete purchases and excludes other months and years', async () => {
+  const ExcelJS = require('exceljs')
+  let buffer
+  class MemoryWorkbook extends ExcelJS.Workbook {
+    constructor() {
+      super()
+      this.xlsx.writeFile = async () => { buffer = await this.xlsx.writeBuffer() }
+    }
+  }
+  const load = loader({ exceljs: { ...ExcelJS, Workbook: MemoryWorkbook } })
+  const { monthlyDispensations } = load('electron/dispensationReport.ts')
+  const { writeDispensationsExcel } = load('electron/excelExport.ts')
+  const common = { quantity: 2, unit_price: 100, unit: 'tablet' }
+  const rows = [
+    { ...common, id: 2, batch_id: 'september', medication_name: 'B', created_at: '2026-10-01 00:00:00' },
+    { ...common, id: 1, batch_id: 'september', medication_name: 'A', created_at: '2026-09-30 23:59:59' },
+    { ...common, id: 3, medication_name: 'October', created_at: '2026-10-01 00:00:00' },
+    { ...common, id: 4, medication_name: 'Last year', created_at: '2025-09-19 10:00:00' },
+  ]
+  const period = { year: 2026, month: 9 }
+  const purchases = monthlyDispensations(rows, period)
+  assert.equal(purchases.length, 1)
+  assert.equal(purchases[0].items.length, 2)
+  assert.equal(purchases[0].total, 400)
+  assert.deepEqual(monthlyDispensations(rows, { year: 2026, month: 10 }).map(p => p.id), [3])
+  assert.deepEqual(monthlyDispensations(rows, { year: 2026, month: 8 }), [])
+  assert.throws(() => monthlyDispensations(rows, { year: 2026, month: 13 }))
+  await writeDispensationsExcel({ filePath: 'unused.xlsx', ...period, rows })
+  const workbook = new ExcelJS.Workbook()
+  await workbook.xlsx.load(buffer)
+  const sheet = workbook.worksheets[0]
+  assert.equal(sheet.name, 'Achats 2026-09')
+  assert.equal(sheet.rowCount, 3)
+  assert.equal(sheet.getCell('A2').value, 1)
+  assert.equal(sheet.getCell('C2').value, 'A\nB')
+  assert.equal(sheet.getCell('G2').value, 400)
+  assert.equal(sheet.getCell('G3').value, 400)
+})
+
+test('purchase history combines number and calendar date and finds archived purchase numbers', () => {
+  const load = loader()
+  const { filterPurchaseHistory } = load('src/utils/dispensations.ts')
+  const { formatDate } = load('src/utils/date.ts')
+  const common = { unit: 'tablet', unit_price: 100, quantity: 12, created_at: '2026-09-19 10:00:00Z' }
+  const rows = [
+    { ...common, id: 12, batch_id: 'current', medication_name: 'A' },
+    { ...common, id: 13, batch_id: 'current', medication_name: 'B' },
+    { ...common, id: 112, medication_name: 'C', created_at: '2026-08-20 10:00:00Z' },
+  ]
+  const find = (number, date = '') => filterPurchaseHistory(rows, { number, date, currentMonth: '2026-09' })
+  assert.deepEqual(find('').map(p => p.id), [12])
+  assert.deepEqual(find('112').map(p => p.id), [112])
+  assert.deepEqual(find('achat n° 12').map(p => p.id), [12])
+  assert.equal(find('12', '2026-09-19')[0].items.length, 2)
+  assert.deepEqual(find('12', '2026-08-20'), [])
+  assert.deepEqual(find('', '2026-08-20').map(p => p.id), [112])
+  assert.deepEqual(find('A'), [])
+  assert.deepEqual(find('13'), [])
+  assert.deepEqual(find('12').map(p => p.id), [12])
+  const midnight = { ...common, id: 20, created_at: '2026-09-19 23:30:00Z' }
+  const visibleDate = formatDate(midnight.created_at)
+  const day = visibleDate.startsWith('20') ? '2026-09-20' : '2026-09-19'
+  assert.equal(filterPurchaseHistory([midnight], { number: '', date: day, currentMonth: '2026-09' }).length, 1)
+})

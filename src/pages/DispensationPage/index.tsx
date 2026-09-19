@@ -1,12 +1,13 @@
 import { useEffect, useRef } from 'react'
 import Icon from '../../components/Icon'
-import { formatDateTime } from '../../utils/date'
+import DatePicker from '../../components/DatePicker'
+import { formatDateTime, formatDay } from '../../utils/date'
 import { useDispensationPage } from './useDispensationPage'
 import './DispensationPage.scss'
 
 const DispensationPage = () => {
   const {
-    medications, filtered, lines, addLine, removeLine, updateLine, search, setSearch,
+    medications, filtered, lines, addLine, removeLine, updateLine, searchNumber, searchDate, changeNumber, changeDate, resetFilters, exportMonth, canExportMonth, monthTotal, periodLabel,
     message, submit, editingId, setEditingId, editForm, setEditForm, startEdit, saveEdit,
     exporting, downloadReceipt, totalPrice, unitOf, creating, saving, openCreate, closeCreate,
   } = useDispensationPage()
@@ -112,18 +113,26 @@ const DispensationPage = () => {
       <div className="panel" ref={listRef}>
         <h3><Icon name="file" size="md" /> Historique des achats</h3>
 
-        <div className="search-field">
-          <Icon name="search" />
-          <input
-            type="search"
-            placeholder="Rechercher un achat ou un médicament…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        <div className="purchase-period-tools">
+          <div className="search-field purchase-number">
+            <Icon name="search" />
+            <input type="search" aria-label="Rechercher par numéro d’achat" placeholder="N° d’achat…"
+              value={searchNumber} onChange={(e) => changeNumber(e.target.value)} />
+          </div>
+          <DatePicker value={searchDate} onChange={changeDate} label="Choisir une date" clearLabel="Effacer le filtre de date" />
+          {(searchNumber || searchDate) && <button type="button" className="btn-light" onClick={resetFilters}>Réinitialiser</button>}
+          <button type="button" className="btn-light export-month" disabled={exporting || !canExportMonth} onClick={exportMonth}
+            title={`Exporter tous les achats de ${periodLabel}`}>
+            <Icon name="excel" /> {exporting ? 'Export en cours…' : `Exporter ${periodLabel}`}
+          </button>
+        </div>
+        <div className="purchase-month-summary" role="status">
+          <span>{searchDate ? formatDay(searchDate) : searchNumber.trim() ? 'Recherche par numéro · Toutes les dates' : periodLabel} · {filtered.length} achat{filtered.length !== 1 ? 's' : ''}</span>
+          <strong>Total {searchDate || searchNumber.trim() ? 'affiché' : 'du mois'} : {monthTotal.toLocaleString()} Ar</strong>
         </div>
 
         <div className="purchase-list">
-          {filtered.length === 0 && <p className="empty">Aucun achat trouvé.</p>}
+          {filtered.length === 0 && <p className="empty">{searchDate || searchNumber.trim() ? 'Aucun achat ne correspond à ces critères.' : `Aucun achat enregistré en ${periodLabel}.`}</p>}
           {filtered.map((purchase) => (
           <article className="purchase-card" key={purchase.id} aria-labelledby={`purchase-${purchase.id}`}>
             <div className="purchase-header">

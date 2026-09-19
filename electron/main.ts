@@ -4,6 +4,8 @@ import path from 'path'
 import fs from 'fs'
 import { buildCatalogueHtml, catalogueReport } from './catalogueExport'
 import { saveExportWithRetry } from './exportFile'
+import { monthlyDispensations } from './dispensationReport'
+import type { DispensationPeriod } from './dispensationReport'
 import * as db from './database'
 import { buildReceiptHtml, buildDispensationReceiptHtml } from './receiptPdf'
 import type {
@@ -282,6 +284,21 @@ ipcMain.handle('dispensations:pdf', async (_e, id: number): Promise<SaveResult> 
   if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Dispensation invalide.')
   const items = await db.getDispensationReceiptItems(id)
   return saveReceiptPdf(buildDispensationReceiptHtml(items), `facture_dispensation_${items[0].id}.pdf`)
+})
+
+ipcMain.handle('dispensations:exportMonth', async (_e, period: DispensationPeriod): Promise<SaveResult> => {
+  monthlyDispensations([], period)
+  if (!exportExcel) throw new Error('Export Excel indisponible.')
+  const rows = await db.getDispensations()
+  const result = await showSaveDialog({
+    title: 'Exporter les achats du mois',
+    defaultPath: `achats_${period.year}-${String(period.month).padStart(2, '0')}.xlsx`,
+    filters: [{ name: 'Excel', extensions: ['xlsx'] }],
+  })
+  if (result.canceled || !result.filePath) return { canceled: true }
+  const writer = exportExcel
+  return saveExportWithRetry(result.filePath,
+    (filePath) => writer.writeDispensationsExcel({ filePath, ...period, rows }), chooseExportDestination)
 })
 
 async function chooseExportDestination(lockedPath: string): Promise<string | null> {

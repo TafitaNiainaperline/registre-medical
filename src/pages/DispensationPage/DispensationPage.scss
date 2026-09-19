@@ -103,6 +103,26 @@
 
   .search-field { margin-bottom: 1em; }
 
+  .purchase-period-tools {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    .purchase-number { flex: 1 1 12rem; margin-bottom: 0; }
+    .export-month { margin-left: auto; }
+  }
+
+  .purchase-month-summary {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding-bottom: 1rem;
+    color: var(--soft);
+    strong { color: var(--success); }
+  }
+
   .purchase-list { display: grid; gap: 1rem; }
 
   .purchase-card {

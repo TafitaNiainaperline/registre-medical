@@ -3,8 +3,9 @@ import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { Dispensation, Medication } from '../../../electron/types'
 import { errorMessage } from '../../utils/error'
-import { matches } from '../../utils/text'
-import { groupDispensations } from '../../utils/dispensations'
+import { monthlyDispensations } from '../../../electron/dispensationReport'
+import { todayIso } from '../../utils/date'
+import { filterPurchaseHistory } from '../../utils/dispensations'
 
 type MessageType = 'ok' | 'err'
 
@@ -21,7 +22,11 @@ export const useDispensationPage = () => {
   const [creating, setCreating] = useState(false)
   const [saving, setSaving] = useState(false)
   const savingRef = useRef(false)
-  const [search, setSearch] = useState('')
+  const [currentMonth, setCurrentMonth] = useState(() => todayIso().slice(0, 7))
+  const [searchNumber, setSearchNumber] = useState('')
+  const [searchDate, setSearchDate] = useState('')
+  const monthKey = searchDate ? searchDate.slice(0, 7) : currentMonth
+  const period = { year: Number(monthKey.slice(0, 4)), month: Number(monthKey.slice(5, 7)) }
   const [message, setMessage] = useState<{ type: MessageType; text: string }>({ type: 'ok', text: '' })
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editForm, setEditForm] = useState({ medication_id: '', quantity: '' })
@@ -37,6 +42,10 @@ export const useDispensationPage = () => {
   }
 
   useEffect(() => { load() }, [])
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentMonth(todayIso().slice(0, 7)), 60000)
+    return () => clearInterval(timer)
+  }, [])
 
   const notify = (text: string, type: MessageType = 'ok') => {
     setMessage({ text, type })
@@ -80,6 +89,9 @@ export const useDispensationPage = () => {
         await window.api.createDispensation(items)
         notify('Dispensation enregistrée. Total : ' + total.toLocaleString() + ' Ar. ' + warnings.join(' '))
         resetLines()
+        setCurrentMonth(todayIso().slice(0, 7))
+        setSearchNumber('')
+        setSearchDate('')
         setCreating(false)
         load()
       })
@@ -132,8 +144,22 @@ export const useDispensationPage = () => {
     }
   }
 
-  const filtered = groupDispensations(dispensations).filter((purchase) =>
-    matches(search, [purchase.id, purchase.created_at, ...purchase.items.flatMap((item) => [item.medication_name, item.unit, item.quantity])]))
+  const filtered = filterPurchaseHistory(dispensations, { number: searchNumber, date: searchDate, currentMonth })
+  const canExportMonth = monthlyDispensations(dispensations, period).length > 0
+  const exportMonth = async () => {
+    if (exportingRef.current) return
+    exportingRef.current = true
+    setExporting(true)
+    try {
+      const result = await window.api.exportDispensationsMonth(period)
+      if (!result.canceled) notify(`Export du mois enregistré : ${result.filePath}`)
+    } catch (err) {
+      notify(errorMessage(err, 'Impossible d’exporter les achats du mois.'), 'err')
+    } finally {
+      exportingRef.current = false
+      setExporting(false)
+    }
+  }
 
   return {
     creating, saving, exporting, downloadReceipt,
@@ -144,7 +170,12 @@ export const useDispensationPage = () => {
       setCreating(true)
     },
     closeCreate: () => { if (!savingRef.current) setCreating(false) },
-    medications, filtered, lines, search, setSearch,
+    medications, filtered, lines, exportMonth, canExportMonth, searchNumber, searchDate,
+    changeNumber: (value: string) => { setSearchNumber(value); setEditingId(null) },
+    changeDate: (value: string) => { setSearchDate(value); setEditingId(null) },
+    resetFilters: () => { setSearchNumber(''); setSearchDate(''); setEditingId(null) },
+    monthTotal: filtered.reduce((sum, purchase) => sum + purchase.total, 0),
+    periodLabel: new Date(period.year, period.month - 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }),
     addLine: () => {
       const id = nextLineId.current++
       setLines((current) => [...current, { id, medication_id: '', quantity: '' }])

@@ -154,6 +154,7 @@ const api: ElectronApi = {
     ipcRenderer.invoke('stock:pdf', itemType),
 
   // DISPENSATIONS
+  exportDispensationsMonth: (period) => ipcRenderer.invoke('dispensations:exportMonth', period),
   exportDispensationReceiptPdf: (id) =>
     ipcRenderer.invoke('dispensations:pdf', id),
 

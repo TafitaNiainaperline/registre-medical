@@ -1,20 +1,39 @@
+import { groupDispensations } from '../../electron/dispensationReport'
+export { groupDispensations } from '../../electron/dispensationReport'
+import { formatDate, formatDateTime, formatDay } from './date'
 import type { Dispensation } from '../../electron/types'
+import { normalize } from './text'
 
-export function groupDispensations(rows: Dispensation[]) {
-  const groups = new Map<string, { id: number; created_at: string; items: Dispensation[]; total: number }>()
-  for (const row of rows) {
-    const key = row.batch_id || `legacy-${row.id}`
-    let group = groups.get(key)
-    if (!group) {
-      group = { id: row.id, created_at: row.created_at, items: [], total: 0 }
-      groups.set(key, group)
-    }
-    group.id = Math.min(group.id, row.id)
-    group.items.push(row)
-    group.total += Number(row.unit_price || 0) * Number(row.quantity)
+type Purchase = ReturnType<typeof groupDispensations>[number]
+
+export function filterPurchaseHistory(rows: Dispensation[], filters: { number: string; date: string; currentMonth: string }) {
+  const number = normalize(filters.number)
+  const reference = number.match(/^(?:achat\s*)?(?:(?:n[°ºo]?|numero|#)\s*)?(\d+)$/)
+  return groupDispensations(rows).filter((purchase) => {
+    if (number && (!reference || purchase.id !== Number(reference[1]))) return false
+    if (filters.date) return formatDate(purchase.created_at) === formatDay(filters.date)
+    return number ? true : purchase.created_at.slice(0, 7) === filters.currentMonth
+  })
+}
+
+export function matchesPurchase(purchase: Purchase, search: string): boolean {
+  let query = normalize(search)
+  if (!query) return true
+
+  // A purchase number must not match quantities, dates or a longer number.
+  if (/^\d+$/.test(query)) return purchase.id === Number(query)
+  const reference = query.match(/^(?:achat\s*(?:(?:n[°ºo]?|numero|#)\s*)?|(?:n[°ºo]?|numero|#)\s*)(\d+)\b\s*(.*)$/)
+  if (reference) {
+    if (purchase.id !== Number(reference[1])) return false
+    query = reference[2]
+    if (!query) return true
   }
-  return [...groups.values()].map((group) => ({
-    ...group,
-    items: group.items.sort((a, b) => a.id - b.id),
-  })).sort((a, b) => b.created_at.localeCompare(a.created_at) || b.id - a.id)
+
+  const values = [
+    `Achat n° ${purchase.id}`,
+    purchase.created_at,
+    formatDateTime(purchase.created_at),
+    ...purchase.items.flatMap((item) => [item.medication_name, item.unit]),
+  ].map(normalize)
+  return query.split(/\s+/).every((term) => values.some((value) => value.includes(term)))
 }

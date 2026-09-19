@@ -1,5 +1,6 @@
 import ExcelJS from 'exceljs'
-import type { ItemType, MedicalRecord, StockReportRow } from './types'
+import type { Dispensation, ItemType, MedicalRecord, StockReportRow } from './types'
+import { monthlyDispensations } from './dispensationReport'
 import { catalogueReport } from './catalogueExport'
 
 type ArchiveExcelOptions = {
@@ -175,4 +176,39 @@ async function writeStockExcel({ filePath, medications, itemType = 'medication' 
   await wb.xlsx.writeFile(filePath)
 }
 
-export { writeArchiveExcel, writeStockExcel }
+async function writeDispensationsExcel({ filePath, year, month, rows }: { filePath: string; year: number; month: number; rows: Dispensation[] }): Promise<void> {
+  const purchases = monthlyDispensations(rows, { year, month })
+  const wb = new ExcelJS.Workbook()
+  wb.creator = 'Registre Médical'
+  const ws = wb.addWorksheet(`Achats ${year}-${pad2(month)}`)
+  ws.columns = [
+    { header: 'N° achat', key: 'id', width: 14 },
+    { header: 'Date', key: 'date', width: 22 },
+    { header: 'Médicaments', key: 'medications', width: 40 },
+    { header: 'Quantités et unités', key: 'quantities', width: 26 },
+    { header: 'Prix unitaires (Ar)', key: 'prices', width: 22 },
+    { header: 'Montants (Ar)', key: 'amounts', width: 22 },
+    { header: 'Total achat (Ar)', key: 'total', width: 22 },
+  ]
+  for (const purchase of purchases) {
+    const row = ws.addRow({
+      id: purchase.id, date: purchase.created_at,
+      medications: purchase.items.map(item => item.medication_name).join('\n'),
+      quantities: purchase.items.map(item => `${item.quantity} ${item.unit || 'comprimé'}`).join('\n'),
+      prices: purchase.items.map(item => Number(item.unit_price || 0)).join('\n'),
+      amounts: purchase.items.map(item => Number(item.unit_price || 0) * Number(item.quantity)).join('\n'),
+      total: purchase.total,
+    })
+    row.alignment = { vertical: 'top', wrapText: true }
+    row.height = Math.max(24, purchase.items.length * 18)
+  }
+  ws.addRow({ medications: `${purchases.length} achat(s) — Total du mois`, total: purchases.reduce((sum, purchase) => sum + purchase.total, 0) }).font = { bold: true }
+  ws.getColumn('total').numFmt = '#,##0.00'
+  ws.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } }
+  ws.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D7280' } }
+  ws.views = [{ state: 'frozen', ySplit: 1 }]
+  ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: purchases.length + 1, column: 7 } }
+  await wb.xlsx.writeFile(filePath)
+}
+
+export { writeArchiveExcel, writeStockExcel, writeDispensationsExcel }
