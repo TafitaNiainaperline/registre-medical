@@ -72,7 +72,7 @@ export function buildTreatmentsFromText(text: string, medications: Medication[])
     throw new Error(`Médicament non disponible dans le stock : ${unknown.join(', ')}. Écrivez le nom enregistré, par exemple : Cerum x2 sachet.`)
   }
   if (wrongUnits.length) {
-    throw new Error(`Unité incorrecte. Utilisez l'unité enregistrée : ${wrongUnits.join(', ')}.`)
+    throw new Error(`Forme pharmaceutique incorrecte. Utilisez la forme pharmaceutique enregistrée : ${wrongUnits.join(', ')}.`)
   }
 
   const treatments = Array.from(byMedication.values())

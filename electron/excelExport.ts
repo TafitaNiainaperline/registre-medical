@@ -185,7 +185,7 @@ async function writeDispensationsExcel({ filePath, year, month, rows }: { filePa
     { header: 'N° achat', key: 'id', width: 14 },
     { header: 'Date', key: 'date', width: 22 },
     { header: 'Médicaments', key: 'medications', width: 40 },
-    { header: 'Quantités et unités', key: 'quantities', width: 26 },
+    { header: 'Quantités et formes pharmaceutiques', key: 'quantities', width: 40 },
     { header: 'Prix unitaires (Ar)', key: 'prices', width: 22 },
     { header: 'Montants (Ar)', key: 'amounts', width: 22 },
     { header: 'Total achat (Ar)', key: 'total', width: 22 },

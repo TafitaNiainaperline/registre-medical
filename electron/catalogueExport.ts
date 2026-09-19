@@ -8,10 +8,10 @@ export function catalogueReport(rows: StockReportRow[], itemType: ItemType = 'me
     filename: isAct ? 'actes_medicaux' : 'stock_medicaments',
     rows: rows.filter((row) => (row.item_type || 'medication') === itemType),
     columns: [
-      { header: isAct ? 'Acte médical' : 'Médicament', key: 'name', width: isAct ? 64 : 42, percent: isAct ? 75 : 46, align: 'left' as const },
+      { header: isAct ? 'Acte médical' : 'Médicament', key: 'name', width: isAct ? 64 : 42, percent: isAct ? 75 : 38, align: 'left' as const },
       { header: 'Prix (Ar)', key: 'price', width: 18, percent: isAct ? 25 : 20, align: 'right' as const },
       ...(!isAct ? [
-        { header: 'Unité', key: 'unit', width: 16, percent: 18, align: 'center' as const },
+        { header: 'Forme pharmaceutique', key: 'unit', width: 28, percent: 26, align: 'center' as const },
         { header: 'Stock', key: 'stock', width: 14, percent: 16, align: 'center' as const },
       ] : []),
     ],

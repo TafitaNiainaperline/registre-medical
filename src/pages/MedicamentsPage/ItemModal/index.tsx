@@ -51,14 +51,14 @@ const ItemModal = ({ itemType, editing, form, isAdmin, onChange, onSubmit, onClo
           </label>
 
           <label className="field">
-            <span>{isAct ? 'Tarif de l’acte (Ar)' : 'Prix par unité (Ar)'}</span>
+            <span>{isAct ? 'Tarif de l’acte (Ar)' : 'Prix unitaire (Ar)'}</span>
             <input type="number" min="0" placeholder="0" value={form.price} onChange={(e) => set({ price: e.target.value })} />
           </label>
 
           {!isAct && (
             <>
               <label className="field">
-                <span>Unité</span>
+                <span>Forme pharmaceutique</span>
                 <select value={form.unit} onChange={(e) => set({ unit: e.target.value })}>
                   {UNITS.map((unit) => <option key={unit} value={unit}>{unit}</option>)}
                 </select>

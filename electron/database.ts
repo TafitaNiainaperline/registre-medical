@@ -1398,7 +1398,7 @@ function treatmentsFromFreeText(d: Database, text: string): Treatment[] {
   }
 
   if (wrongUnits.length) {
-    throw new Error(`Unité incorrecte. Utilisez l'unité enregistrée : ${wrongUnits.join(', ')}.`)
+    throw new Error(`Forme pharmaceutique incorrecte. Utilisez la forme pharmaceutique enregistrée : ${wrongUnits.join(', ')}.`)
   }
 
   return Array.from(byMedicationId.values())

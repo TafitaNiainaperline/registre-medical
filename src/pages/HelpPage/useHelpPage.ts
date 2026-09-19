@@ -65,7 +65,7 @@ const guideSections: GuideSection[] = [
     tone: 'violet',
     items: [
       'Utilisez les boutons séparés « Ajouter un médicament » et « Ajouter un acte médical » pour ouvrir le formulaire correspondant.',
-      'Pour un médicament, renseignez le nom, le prix par unité, l’unité et le seuil d’alerte. Le stock initial est réservé à l’administrateur ; un stock vide signifie « Non suivi ».',
+      'Pour un médicament, renseignez le nom, le prix unitaire, la forme pharmaceutique et le seuil d’alerte. Le stock initial est réservé à l’administrateur ; un stock vide signifie « Non suivi ».',
       'Pour un acte médical, renseignez le nom et le tarif. Les actes ne possèdent pas de stock.',
       'Recherchez par nom et utilisez les filtres « Tous », « Médicaments » ou « Actes médicaux ». La modification est accessible à l’administrateur.',
       'Cliquez sur le bouton + d’un médicament pour ajouter du stock, ou sur sa quantité en stock pour consulter l’historique.',

@@ -140,7 +140,7 @@ const MedicamentsPage = () => {
                 <th>Nom</th>
                 <th className="num">Prix (Ar)</th>
                 {!isActCategory && <>
-                  <th className="center">Unité</th>
+                  <th className="center">Forme pharmaceutique</th>
                   <th className="center">Stock</th>
                   <th className="center">Seuil</th>
                 </>}

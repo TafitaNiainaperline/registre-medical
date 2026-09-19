@@ -86,7 +86,7 @@ const DispensationPage = () => {
               <div className="medication-quantity">
                   <input aria-label={'Quantité du médicament ' + (index + 1) + ' (' + unitOf(line.medication_id) + ')'} disabled={saving} type="number" min="1" placeholder="Qté" value={line.quantity}
                     onChange={(e) => updateLine(line.id, { quantity: e.target.value })} required />
-                  <small>{line.medication_id ? unitOf(line.medication_id) : 'unité'}</small>
+                  <small>{line.medication_id ? unitOf(line.medication_id) : 'Forme pharmaceutique'}</small>
               </div>
               <button type="button" className="remove-medication" disabled={saving || lines.length === 1}
                 title="Retirer ce médicament" aria-label={'Retirer le médicament ' + (index + 1)} onClick={() => removeLine(line.id)}><Icon name="close" /></button>
@@ -155,7 +155,7 @@ const DispensationPage = () => {
             <thead>
               <tr>
                 <th>Médicament</th>
-                <th className="center">Unité</th>
+                <th className="center">Forme pharmaceutique</th>
                 <th className="center">Qté</th>
                 <th className="num">Total</th>
                 <th className="center">Actions</th>

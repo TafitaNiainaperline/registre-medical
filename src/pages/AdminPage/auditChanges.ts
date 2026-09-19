@@ -5,7 +5,7 @@ const fields: Record<string, string> = {
   observation: 'Observation', cost: 'Montant (Ar)', registry_number: 'Numéro de registre',
   appointment_date: 'Rendez-vous', tdr_result: 'Résultat TDR', reference: 'Référence',
   pf_method: 'Produit PF', cpn_type: 'Consultation CPN', treatments_json: 'Soins',
-  name: 'Nom', item_type: 'Type', price: 'Prix (Ar)', unit: 'Unité', description: 'Description',
+  name: 'Nom', item_type: 'Type', price: 'Prix (Ar)', unit: 'Forme pharmaceutique', description: 'Description',
   stock: 'Stock', stock_threshold: 'Seuil d’alerte', outflow_date: 'Date de dépense',
   designation: 'Désignation', amount: 'Montant (Ar)', medication_id: 'Médicament',
   medication_name: 'Nom du médicament', quantity: 'Quantité', unit_price: 'Prix unitaire (Ar)',
