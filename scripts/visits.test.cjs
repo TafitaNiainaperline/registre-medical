@@ -840,6 +840,15 @@ test('purchase history combines number and calendar date and finds archived purc
   assert.equal(filterPurchaseHistory([midnight], { number: '', date: day, currentMonth: '2026-09' }).length, 1)
 })
 
+test('monthly archives retain past activity and include an empty new month across years', () => {
+  const { monthlyArchives, archiveMonthKey } = loader()('src/utils/monthlyArchives.ts')
+  const dates = ['2026-12-31 12:00:00Z', '2026-12-01', '2026-08-10', '2025-09-10']
+  const archives = monthlyArchives(dates, '2027-01')
+  assert.deepEqual(archives.map(archiveMonthKey), ['2027-01', '2026-12', '2026-08', '2025-09'])
+  assert.equal(archives[0].label, 'janvier 2027')
+  assert.deepEqual(monthlyArchives([], '2027-01').map(archiveMonthKey), ['2027-01'])
+})
+
 test('monthly display refresh runs once on month changes, including wake-up and year changes', () => {
   let today = '2026-09-30'
   let tick

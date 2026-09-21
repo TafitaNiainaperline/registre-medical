@@ -1,12 +1,14 @@
 import { useEffect, useRef } from 'react'
 import Icon from '../../components/Icon'
 import DatePicker from '../../components/DatePicker'
+import MonthlyArchiveBanner from '../../components/MonthlyArchiveBanner'
 import { formatDateTime, formatDay } from '../../utils/date'
 import { useDispensationPage } from './useDispensationPage'
 import './DispensationPage.scss'
 
 const DispensationPage = () => {
   const {
+    archives, activeArchive, changeArchive,
     medications, filtered, lines, addLine, removeLine, updateLine, searchNumber, searchDate, changeNumber, changeDate, resetFilters, exportMonth, canExportMonth, monthTotal, periodLabel,
     message, submit, editingId, setEditingId, editForm, setEditForm, startEdit, saveEdit,
     exporting, downloadReceipt, totalPrice, unitOf, creating, saving, openCreate, closeCreate,
@@ -47,6 +49,8 @@ const DispensationPage = () => {
           {message.text}
         </div>
       )}
+
+      <MonthlyArchiveBanner current={activeArchive} archives={archives} allArchives={archives} onChange={changeArchive} />
 
       <div className="dispensation-actions">
         <button type="button" className="btn-light" onClick={() => listRef.current?.scrollIntoView({ block: 'start' })}>
@@ -127,7 +131,7 @@ const DispensationPage = () => {
           </button>
         </div>
         <div className="purchase-month-summary" role="status">
-          <span>{searchDate ? formatDay(searchDate) : searchNumber.trim() ? 'Recherche par numéro · Toutes les dates' : periodLabel} · {filtered.length} achat{filtered.length !== 1 ? 's' : ''}</span>
+          <span>{searchDate ? formatDay(searchDate) : periodLabel} · {filtered.length} achat{filtered.length !== 1 ? 's' : ''}</span>
           <strong>Total {searchDate || searchNumber.trim() ? 'affiché' : 'du mois'} : {monthTotal.toLocaleString()} Ar</strong>
         </div>
 

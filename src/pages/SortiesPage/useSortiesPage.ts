@@ -1,10 +1,11 @@
 import { notify as showToast, confirmAction } from '../../utils/notifications'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import type { CashOutflow } from '../../../electron/types'
+import type { Archive, CashOutflow } from '../../../electron/types'
 import { errorMessage } from '../../utils/error'
 import { todayIso } from '../../utils/date'
 import { watchCurrentMonth } from '../../utils/watchCurrentMonth'
+import { archiveForMonth, archiveMonthKey, monthlyArchives } from '../../utils/monthlyArchives'
 
 type Totals = {
   entries: number
@@ -16,7 +17,11 @@ export const useSortiesPage = () => {
   const [creating, setCreating] = useState(false)
   const [outflows, setOutflows] = useState<CashOutflow[]>([])
   const [totals, setTotals] = useState<Totals>({ entries: 0, outflows: 0, balance: 0 })
-  const [archiveLabel, setArchiveLabel] = useState('')
+  const [currentMonth, setCurrentMonth] = useState(() => todayIso().slice(0, 7))
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth)
+  const [archives, setArchives] = useState<Archive[]>([archiveForMonth(currentMonth)])
+  const activeArchive = archiveForMonth(selectedMonth)
+  const archiveLabel = activeArchive.label
   const [form, setForm] = useState({ date: todayIso(), designation: '', amount: '' })
   const [error, storeError] = useState('')
   const setError = (text: string) => {
@@ -28,36 +33,45 @@ export const useSortiesPage = () => {
   const [editForm, setEditForm] = useState({ date: '', designation: '', amount: '' })
   const loadRequest = useRef(0)
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     const request = ++loadRequest.current
-    const month = todayIso().slice(0, 7)
+    const month = selectedMonth
     const period = { year: Number(month.slice(0, 4)), month: Number(month.slice(5, 7)) }
-    setArchiveLabel(new Date(period.year, period.month - 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }))
     try {
-      const [list, outflowTotal, records, dispensed] = await Promise.all([
-        window.api.listCashOutflows(period), window.api.getCashOutflowTotal(period),
+      const [list, outflowTotal, records, dispensed, recordArchives, dispensations] = await Promise.all([
+        window.api.listCashOutflows({}), window.api.getCashOutflowTotal(period),
         window.api.fetchRecordsByArchive(period), window.api.getDispensationTotal(period),
+        window.api.listArchives(), window.api.getDispensations(),
       ])
       if (request !== loadRequest.current) return
       const entries = (records || []).reduce((sum, row) => sum + (Number(row.cost) || 0), 0) + Number(dispensed || 0)
-      setOutflows(list || [])
+      setArchives(monthlyArchives([
+        ...list.map((row) => row.outflow_date),
+        ...recordArchives.map(archiveMonthKey),
+        ...dispensations.map((row) => row.created_at),
+      ], todayIso().slice(0, 7)))
+      setOutflows((list || []).filter((row) => row.outflow_date.slice(0, 7) === month))
       setTotals({ entries, outflows: Number(outflowTotal || 0), balance: entries - Number(outflowTotal || 0) })
     } catch {
       if (request !== loadRequest.current) return
       setOutflows([])
       setTotals({ entries: 0, outflows: 0, balance: 0 })
     }
-  }
+  }, [selectedMonth])
 
   useEffect(() => {
+    setOutflows([])
+    setTotals({ entries: 0, outflows: 0, balance: 0 })
     loadData()
-    const stop = watchCurrentMonth(() => {
-      setOutflows([])
-      setTotals({ entries: 0, outflows: 0, balance: 0 })
-      loadData()
-    })
-    return () => { stop(); loadRequest.current++ }
-  }, [])
+    const requests = loadRequest
+    return () => { requests.current++ }
+  }, [loadData, currentMonth])
+
+  useEffect(() => watchCurrentMonth((month) => {
+    setCurrentMonth(month)
+    setSelectedMonth(month)
+    setEditing(null)
+  }), [])
 
   // Valide les trois champs d'une sortie de caisse
   const invalidReason = (values: { date: string; designation: string; amount: string }) => {
@@ -89,7 +103,9 @@ export const useSortiesPage = () => {
         showToast('Sortie enregistrée avec succès.')
         setCreating(false)
         setTimeout(() => setSuccess(''), 3000)
-        loadData()
+        const savedMonth = form.date.slice(0, 7)
+        if (savedMonth === selectedMonth) loadData()
+        else setSelectedMonth(savedMonth)
       })
     } catch (err) {
       setError(errorMessage(err, 'Erreur lors de l\'enregistrement.'))
@@ -144,8 +160,10 @@ export const useSortiesPage = () => {
   }
 
   return {
+    archives, activeArchive,
+    changeArchive: (archive: Archive) => { setSelectedMonth(archiveMonthKey(archive)); setEditing(null) },
     creating,
-    openCreate: () => { setError(''); setCreating(true) },
+    openCreate: () => { setError(''); setForm({ date: todayIso(), designation: '', amount: '' }); setCreating(true) },
     closeCreate: () => { setError(''); setCreating(false) },
     outflows, totals, archiveLabel, form, setForm, error, success, submit, remove,
     editing, editForm, setEditForm, openEdit, closeEdit, update,

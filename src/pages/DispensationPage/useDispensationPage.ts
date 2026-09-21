@@ -7,6 +7,8 @@ import { monthlyDispensations } from '../../../electron/dispensationReport'
 import { todayIso } from '../../utils/date'
 import { filterPurchaseHistory } from '../../utils/dispensations'
 import { watchCurrentMonth } from '../../utils/watchCurrentMonth'
+import { archiveForMonth, archiveMonthKey, monthlyArchives } from '../../utils/monthlyArchives'
+import type { Archive } from '../../../electron/types'
 
 type MessageType = 'ok' | 'err'
 
@@ -24,9 +26,10 @@ export const useDispensationPage = () => {
   const [saving, setSaving] = useState(false)
   const savingRef = useRef(false)
   const [currentMonth, setCurrentMonth] = useState(() => todayIso().slice(0, 7))
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth)
   const [searchNumber, setSearchNumber] = useState('')
   const [searchDate, setSearchDate] = useState('')
-  const monthKey = searchDate ? searchDate.slice(0, 7) : currentMonth
+  const monthKey = selectedMonth
   const period = { year: Number(monthKey.slice(0, 4)), month: Number(monthKey.slice(5, 7)) }
   const [message, setMessage] = useState<{ type: MessageType; text: string }>({ type: 'ok', text: '' })
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -45,6 +48,7 @@ export const useDispensationPage = () => {
   useEffect(() => { load() }, [])
   useEffect(() => watchCurrentMonth((month) => {
     setCurrentMonth(month)
+    setSelectedMonth(month)
     setSearchNumber('')
     setSearchDate('')
     setEditingId(null)
@@ -94,6 +98,7 @@ export const useDispensationPage = () => {
         notify('Dispensation enregistrée. Total : ' + total.toLocaleString() + ' Ar. ' + warnings.join(' '))
         resetLines()
         setCurrentMonth(todayIso().slice(0, 7))
+        setSelectedMonth(todayIso().slice(0, 7))
         setSearchNumber('')
         setSearchDate('')
         setCreating(false)
@@ -148,7 +153,8 @@ export const useDispensationPage = () => {
     }
   }
 
-  const filtered = filterPurchaseHistory(dispensations, { number: searchNumber, date: searchDate, currentMonth })
+  const archives = monthlyArchives(dispensations.map((row) => row.created_at), currentMonth)
+  const filtered = filterPurchaseHistory(monthlyDispensations(dispensations, period).flatMap((purchase) => purchase.items), { number: searchNumber, date: searchDate, currentMonth: selectedMonth })
   const canExportMonth = monthlyDispensations(dispensations, period).length > 0
   const exportMonth = async () => {
     if (exportingRef.current) return
@@ -166,6 +172,13 @@ export const useDispensationPage = () => {
   }
 
   return {
+    archives, activeArchive: archiveForMonth(selectedMonth),
+    changeArchive: (archive: Archive) => {
+      setSelectedMonth(archiveMonthKey(archive))
+      setSearchNumber('')
+      setSearchDate('')
+      setEditingId(null)
+    },
     creating, saving, exporting, downloadReceipt,
     openCreate: () => {
       resetLines()
@@ -176,7 +189,7 @@ export const useDispensationPage = () => {
     closeCreate: () => { if (!savingRef.current) setCreating(false) },
     medications, filtered, lines, exportMonth, canExportMonth, searchNumber, searchDate,
     changeNumber: (value: string) => { setSearchNumber(value); setEditingId(null) },
-    changeDate: (value: string) => { setSearchDate(value); setEditingId(null) },
+    changeDate: (value: string) => { setSearchDate(value); if (value) setSelectedMonth(value.slice(0, 7)); setEditingId(null) },
     resetFilters: () => { setSearchNumber(''); setSearchDate(''); setEditingId(null) },
     monthTotal: filtered.reduce((sum, purchase) => sum + purchase.total, 0),
     periodLabel: new Date(period.year, period.month - 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }),

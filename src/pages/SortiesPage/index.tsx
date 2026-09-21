@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Icon from '../../components/Icon'
 import DatePicker from '../../components/DatePicker'
+import MonthlyArchiveBanner from '../../components/MonthlyArchiveBanner'
 import { formatDay } from '../../utils/date'
 import { normalize } from '../../utils/text'
 import { useSortiesPage } from './useSortiesPage'
@@ -8,6 +9,7 @@ import './SortiesPage.scss'
 
 const SortiesPage = () => {
   const {
+    archives, activeArchive, changeArchive,
     creating, openCreate, closeCreate, outflows, totals, archiveLabel, form, setForm, error, success, submit, remove,
     editing, editForm, setEditForm, openEdit, closeEdit, update,
   } = useSortiesPage()
@@ -42,6 +44,8 @@ const SortiesPage = () => {
           <Icon name="bank" /> Finance
         </div>
       </div>
+
+      <MonthlyArchiveBanner current={activeArchive} archives={archives} allArchives={archives} onChange={changeArchive} />
 
       <div className="cash-summary">
         <div className={`cash-balance${totals.balance < 0 ? ' negative' : ''}`}>

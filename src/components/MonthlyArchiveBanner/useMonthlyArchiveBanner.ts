@@ -5,7 +5,7 @@ export const useMonthlyArchiveBanner = (archives: Archive[], allArchives: Archiv
   const [showAll, setShowAll] = useState(false)
 
   const selectedKey = current ? `${current.year}-${String(current.month).padStart(2, '0')}` : ''
-  const visible = (showAll ? allArchives : archives).slice(0, showAll ? 24 : 6)
+  const visible = showAll ? allArchives : archives.slice(0, 6)
 
   return {
     showAll,
