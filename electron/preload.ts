@@ -101,6 +101,7 @@ const api: ElectronApi = {
 
   exportReceiptPdf: (id) =>
     ipcRenderer.invoke('receipt:pdf', id),
+  printReceipt: (id) => ipcRenderer.invoke('receipt:print', id),
 
   // ARCHIVES
   listArchives: () =>
@@ -157,6 +158,7 @@ const api: ElectronApi = {
   exportDispensationsMonth: (period) => ipcRenderer.invoke('dispensations:exportMonth', period),
   exportDispensationReceiptPdf: (id) =>
     ipcRenderer.invoke('dispensations:pdf', id),
+  printDispensationReceipt: (id) => ipcRenderer.invoke('dispensations:print', id),
 
   getDispensations: () =>
     ipcRenderer.invoke('dispensations:list'),

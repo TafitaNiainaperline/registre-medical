@@ -191,6 +191,8 @@ export type Dossier = {
 
 // ── Archives ──────────────────────────────────────────
 
+export type PrintResult = { canceled: boolean }
+
 export type Archive = {
   year: number
   month: number
@@ -386,6 +388,7 @@ export type ElectronApi = {
   suggestPatients: (nom: string, domicile?: string) => Promise<PatientMatch[]>
   getPatientAddressLog: (patientId: number) => Promise<PatientAddressEntry[]>
   exportReceiptPdf: (id: number) => Promise<SaveResult>
+  printReceipt: (id: number) => Promise<PrintResult>
 
   // Archives
   listArchives: () => Promise<Archive[]>
@@ -411,6 +414,7 @@ export type ElectronApi = {
 
   // Dispensations
   exportDispensationReceiptPdf: (id: number) => Promise<SaveResult>
+  printDispensationReceipt: (id: number) => Promise<PrintResult>
   exportDispensationsMonth: (period: { year: number; month: number }) => Promise<SaveResult>
   getDispensations: () => Promise<Dispensation[]>
   getDispensationTotal: (filters: PeriodFilters) => Promise<number>

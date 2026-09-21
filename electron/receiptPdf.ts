@@ -77,19 +77,18 @@ function buildReceiptHtml(record: MedicalRecord): string {
     ? treatments.map((t) => {
         const total = Number(t.total) || Number(t.unit_price || 0) * Number(t.quantity || 0)
         return `
-          <tr>
-            <td>${escapeHtml(t.name)}</td>
-            <td class="num">${escapeHtml(formatMoney(t.unit_price))}</td>
-            <td class="num">${escapeHtml(formatMoney(total))}</td>
-          </tr>
+          <li class="receipt-item">
+            <div class="item-name">${escapeHtml(t.name)}</div>
+            <div class="item-detail">${escapeHtml(t.quantity)} × ${escapeHtml(formatMoney(t.unit_price))}</div>
+            <div class="item-amount">${escapeHtml(formatMoney(total))}</div>
+          </li>
         `
       }).join('')
     : `
-      <tr>
-        <td>${escapeHtml(record.traitement || 'Traitement')}</td>
-        <td class="num">${escapeHtml(formatMoney(record.cost))}</td>
-        <td class="num">${escapeHtml(formatMoney(record.cost))}</td>
-      </tr>
+      <li class="receipt-item">
+        <div class="item-name">${escapeHtml(record.traitement || 'Traitement')}</div>
+        <div class="item-amount">${escapeHtml(formatMoney(record.cost))}</div>
+      </li>
     `
 
   const date = record.created_at ? formatMadagascarDateTime(record.created_at).slice(0, 10) : formatMadagascarDateTime(new Date()).slice(0, 10)
@@ -99,10 +98,10 @@ function buildReceiptHtml(record: MedicalRecord): string {
           <div class="field"><div class="label">Date</div><div class="value">${escapeHtml(date)}</div></div>
           <div class="field"><div class="label">Sexe</div><div class="value">${escapeHtml(record.sexe || '-')}</div></div>
           <div class="field"><div class="label">Domicile</div><div class="value">${escapeHtml(record.domicile || '-')}</div></div>
-        </section>`, '<th>Désignation</th><th class="num">Prix unitaire</th><th class="num">Montant</th>')
+        </section>`, 'Soins et traitements')
 }
 
-function buildInvoiceHtml(rows: string, amount: number, details: string, columns: string): string {
+function buildInvoiceHtml(rows: string, amount: number, details: string, sectionTitle: string): string {
   const logoDataUri = getLogoDataUri()
   const logoHtml = logoDataUri
     ? `<img class="receipt-logo" src="${logoDataUri}" alt="Logo du centre médical" />`
@@ -116,30 +115,34 @@ function buildInvoiceHtml(rows: string, amount: number, details: string, columns
       <title>Facture</title>
       <style>
         * { box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; color: #16323d; margin: 0; padding: 28px; background: #f4f8f9; }
-        .receipt { background: #ffffff; border: 1px solid #c8d9df; border-top: 6px solid #1c96a4; border-radius: 4px; padding: 30px; }
-        .top { display: flex; justify-content: space-between; gap: 24px; border-bottom: 1px solid #c8d9df; padding-bottom: 22px; margin-bottom: 26px; }
-        .identity { display: flex; align-items: center; gap: 16px; }
-        .receipt-logo { width: 140px; max-height: 76px; object-fit: contain; }
-        h1 { margin: 0; font-size: 32px; color: #0d7280; letter-spacing: .08em; text-transform: uppercase; }
-        h2 { margin: 0 0 8px; font-size: 16px; color: #5f7b84; text-transform: uppercase; letter-spacing: .04em; }
-        .badge { font-weight: 700; font-size: 18px; color: #16323d; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 28px; margin-bottom: 28px; padding: 18px; background: #f7fbfc; border-left: 4px solid #1c96a4; }
-        .field { border-bottom: 1px solid #dbe8ec; padding-bottom: 9px; }
-        .label { color: #5f7b84; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 5px; }
-        .value { font-weight: 700; }
-        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-        th, td { border-bottom: 1px solid #dbe8ec; padding: 12px 10px; text-align: left; vertical-align: top; }
-        th { border-top: 2px solid #1c96a4; background: #f0f8fa; color: #0d7280; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
-        .num { text-align: right; }
-        .total { margin: 24px 0 0 auto; padding: 14px 18px; width: 280px; border-top: 3px solid #1c96a4; background: #f0f8fa; text-align: right; font-size: 20px; font-weight: 800; color: #0d7280; }
-        .amount-words { margin-top: 18px; padding: 12px 14px; border: 1px solid #dbe8ec; font-size: 13px; font-style: italic; }
-        .responsible-signature { width: 280px; margin: 18px 0 0 auto; text-align: center; color: #16323d; }
-        .responsible-signature strong { display: block; width: max-content; margin: 0 auto 28px; padding-bottom: 3px; border-bottom: 1px solid #16323d; }
-        .responsible-signature span { display: block; min-height: 20px; }
-        .footer { margin-top: 34px; padding-top: 16px; border-top: 1px solid #c8d9df; text-align: center; color: #5f7b84; font-size: 7px; line-height: 1.5; }
-        .note { margin-top: 28px; padding-top: 14px; border-top: 1px solid #dbe8ec; color: #5f7b84; font-size: 12px; }
-        @page { margin: 16mm; }
+        html { margin: 0; padding: 0; }
+        body { width: 100%; max-width: 80mm; font-family: Arial, sans-serif; font-size: 9pt; line-height: 1.35; color: #000; margin: 0 auto; background: #fff; text-align: center; }
+        .receipt { width: 100%; max-width: 64mm; margin: 0 auto; padding: 4mm 2mm 8mm; overflow-wrap: anywhere; word-break: normal; }
+        .top { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 2mm; margin-bottom: 2mm; }
+        .identity { display: flex; flex-direction: column; align-items: center; width: 100%; }
+        .receipt-logo { display: block; margin: 0 auto; width: 48mm; max-width: 100%; height: auto; object-fit: contain; filter: grayscale(1); }
+        .receipt-phone { margin: 1mm 0 0; font-size: 8pt; text-align: center; }
+        .receipt-registration { margin: 0.5mm 0 0; font-size: 7pt; text-align: center; }
+        h1 { margin: 2mm 0 1mm; font-size: 12pt; letter-spacing: 1px; text-transform: uppercase; text-align: center; }
+        .grid { margin: 3mm 0; padding-bottom: 1mm; }
+        .field { margin-bottom: 1.5mm; text-align: center; }
+        .label { font-size: 8pt; }
+        .value { max-width: 100%; font-weight: bold; }
+        h2 { margin: 0; padding: 2mm 0; border-top: 1px solid #000; border-bottom: 1px solid #000; font-size: 9pt; font-weight: bold; }
+        .items { list-style: none; margin: 0; padding: 0; }
+        .receipt-item { padding: 2.5mm 0; border-bottom: 1px dotted #000; }
+        .item-name { font-weight: bold; }
+        .item-detail { margin-top: 1mm; font-size: 8pt; }
+        .item-amount { margin-top: 1mm; font-size: 9pt; font-weight: bold; }
+        .total { margin-top: 2mm; padding-top: 2mm; border-top: 1px solid #000; text-align: center; font-size: 11pt; font-weight: bold; break-inside: avoid; }
+        .amount-words { margin-top: 2mm; font-size: 7.5pt; line-height: 1.5; text-align: center; }
+        .amount-words strong { display: block; margin-top: 0.5mm; }
+        .responsible-signature { margin-top: 3mm; text-align: center; font-size: 8pt; }
+        .responsible-signature span { display: block; height: 8mm; }
+        .footer { padding: 2mm 2mm 0; border-top: 1px dashed #000; text-align: center; font-size: 6.5pt; line-height: 1.6; }
+        .footer p { margin: 0; }
+        .footer .reference { margin-top: 1mm; }
+        @page { margin: 0; }
       </style>
     </head>
     <body>
@@ -147,6 +150,9 @@ function buildInvoiceHtml(rows: string, amount: number, details: string, columns
         <div class="top">
           <div class="identity">
             ${logoHtml}
+            <p class="receipt-phone">Tél. : 033 75 983 08</p>
+            <p class="receipt-registration">NIF : 4003009731</p>
+            <p class="receipt-registration">STAT : 86100232018000141</p>
             <div>
               <h1>Facture</h1>
             </div>
@@ -155,19 +161,15 @@ function buildInvoiceHtml(rows: string, amount: number, details: string, columns
 
         ${details}
 
-        <table>
-          <thead>
-            <tr>
-              ${columns}
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
+        <section aria-label="${escapeHtml(sectionTitle)}">
+          <h2>${escapeHtml(sectionTitle)}</h2>
+          <ul class="items">${rows}</ul>
+        </section>
 
         <div class="total">Total : ${escapeHtml(formatMoney(amount))}</div>
         <div class="amount-words">Arrêtée à la somme de : <strong>${escapeHtml(amountInWords)} ariary</strong></div>
         <div class="responsible-signature"><strong>Responsable</strong><span></span></div>
-        <div class="footer">Mba hambinina sy ho salama amin'ny zavatra rehetra anie ianao,tahaka izay anambinana ny fanahinao ihany.<br />III Jon 1:2</div>
+        <div class="footer"><p>Mba hambinina sy ho salama amin'ny zavatra rehetra anie ianao, tahaka izay anambinana ny fanahinao ihany.</p><p class="reference">III Jon 1:2</p></div>
       </main>
     </body>
   </html>`
@@ -176,15 +178,14 @@ function buildInvoiceHtml(rows: string, amount: number, details: string, columns
 function buildDispensationReceiptHtml(data: Dispensation | Dispensation[]): string {
   const items = Array.isArray(data) ? data : [data]
   const amount = items.reduce((sum, item) => sum + Number(item.unit_price || 0) * Number(item.quantity), 0)
-  const rows = items.map((dispensation) => `<tr>
-    <td>${escapeHtml(formatMadagascarDateTime(dispensation.created_at))}</td>
-    <td>${escapeHtml(dispensation.medication_name)}</td>
-    <td>${escapeHtml(dispensation.unit || 'comprimé')}</td>
-    <td class="num">${escapeHtml(dispensation.quantity)}</td>
-    <td class="num">${escapeHtml(formatMoney(dispensation.unit_price))}</td>
-    <td class="num">${escapeHtml(formatMoney(Number(dispensation.unit_price || 0) * Number(dispensation.quantity)))}</td>
-  </tr>`).join('')
-  return buildInvoiceHtml(rows, amount, '', '<th>Date</th><th>Médicament</th><th>Forme pharmaceutique</th><th class="num">Qté</th><th class="num">Prix unitaire</th><th class="num">Total</th>')
+  const rows = items.map((dispensation) => `<li class="receipt-item">
+    <div class="item-name">${escapeHtml(dispensation.medication_name)}</div>
+    <div class="item-detail">${escapeHtml(dispensation.quantity)} ${escapeHtml(dispensation.unit || 'comprimé')} × ${escapeHtml(formatMoney(dispensation.unit_price))}</div>
+    <div class="item-amount">${escapeHtml(formatMoney(Number(dispensation.unit_price || 0) * Number(dispensation.quantity)))}</div>
+  </li>`).join('')
+  const first = items[0]
+  const details = first ? `<section class="grid"><div>Achat n° ${escapeHtml(Math.min(...items.map((item) => item.id)))}</div><div>${escapeHtml(formatMadagascarDateTime(first.created_at))}</div></section>` : ''
+  return buildInvoiceHtml(rows, amount, details, 'Médicaments')
 }
 
 export { buildReceiptHtml, buildDispensationReceiptHtml }

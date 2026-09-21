@@ -9,10 +9,12 @@ type Props = {
   loading: boolean
   patientName: string
   onReceipt: (row: HistoryRow) => void
+  onPrint: (row: HistoryRow) => void
+  printing: boolean
   onClose: () => void
 }
 
-const DossierHistory = ({ rows, loading, patientName, onReceipt, onClose }: Props) => (
+const DossierHistory = ({ rows, loading, patientName, onReceipt, onPrint, printing, onClose }: Props) => (
   <div className="DossierHistory">
     <div className="history-header">
       <h3><Icon name="history" size="md" /> Visites de {patientName}</h3>
@@ -54,6 +56,9 @@ const DossierHistory = ({ rows, loading, patientName, onReceipt, onClose }: Prop
                   <td>{row.observation || '-'}</td>
                   <td className="current">{row.cost} Ar</td>
                   <td>
+                    <button type="button" className="btn-light" disabled={printing} onClick={() => onPrint(row)} aria-label={`Imprimer le reçu de la visite ${index + 1}`}>
+                      {printing ? 'Impression…' : 'Imprimer'}
+                    </button>
                     <button type="button" className="btn-light" onClick={() => onReceipt(row)} aria-label={`Télécharger le reçu de la visite ${index + 1}`}>
                       <Icon name="file" /> PDF
                     </button>

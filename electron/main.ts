@@ -8,6 +8,8 @@ import { monthlyDispensations } from './dispensationReport'
 import type { DispensationPeriod } from './dispensationReport'
 import * as db from './database'
 import { buildReceiptHtml, buildDispensationReceiptHtml } from './receiptPdf'
+import { printReceipt } from './receiptPrint'
+import { prepareReceiptPage, RECEIPT_PAGE_WIDTH_MM } from './receiptLayout'
 import type {
   ArchiveFilters,
   AuditFilters,
@@ -275,15 +277,28 @@ ipcMain.handle('receipt:pdf', async (_e, id: number): Promise<SaveResult> => {
 
   const safeNumber = String(record.registry_number || record.id).replace(/[^\w.-]+/g, '_')
   const defaultName = `recu_${safeNumber}_visite_${record.id}.pdf`
-  return saveReceiptPdf(buildReceiptHtml(record), defaultName)
+  return saveReceiptPdf(buildReceiptHtml(record), defaultName, 'Télécharger le reçu', true)
 })
 
 ipcMain.handle('patients:addresses', () => db.listPatientAddresses())
 
+ipcMain.handle('receipt:print', async (event, id: number) => {
+  if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Visite invalide.')
+  const record = await db.fetchRecordById(id)
+  if (!record) throw new Error('Dossier introuvable.')
+  return printReceipt(buildReceiptHtml(record), BrowserWindow.fromWebContents(event.sender) || undefined)
+})
+
+ipcMain.handle('dispensations:print', async (event, id: number) => {
+  if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Dispensation invalide.')
+  const items = await db.getDispensationReceiptItems(id)
+  return printReceipt(buildDispensationReceiptHtml(items), BrowserWindow.fromWebContents(event.sender) || undefined)
+})
+
 ipcMain.handle('dispensations:pdf', async (_e, id: number): Promise<SaveResult> => {
   if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Dispensation invalide.')
   const items = await db.getDispensationReceiptItems(id)
-  return saveReceiptPdf(buildDispensationReceiptHtml(items), `facture_dispensation_${items[0].id}.pdf`)
+  return saveReceiptPdf(buildDispensationReceiptHtml(items), `facture_dispensation_${items[0].id}.pdf`, 'Télécharger la facture', true)
 })
 
 ipcMain.handle('dispensations:exportMonth', async (_e, period: DispensationPeriod): Promise<SaveResult> => {
@@ -323,7 +338,7 @@ async function chooseExportDestination(lockedPath: string): Promise<string | nul
   return result.canceled || !result.filePath ? null : result.filePath
 }
 
-async function saveReceiptPdf(html: string, defaultName: string, title = 'Telecharger le recu'): Promise<SaveResult> {
+async function saveReceiptPdf(html: string, defaultName: string, title = 'Telecharger le recu', thermal = false): Promise<SaveResult> {
   const result = await showSaveDialog({
     title,
     defaultPath: defaultName,
@@ -341,9 +356,11 @@ async function saveReceiptPdf(html: string, defaultName: string, title = 'Telech
 
   try {
     await receiptWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
+    const heightMm = thermal ? await prepareReceiptPage(receiptWindow) : 0
     const pdf = await receiptWindow.webContents.printToPDF({
       printBackground: true,
-      pageSize: 'A4',
+      pageSize: thermal ? { width: RECEIPT_PAGE_WIDTH_MM / 25.4, height: heightMm / 25.4 } : 'A4',
+      ...(thermal ? { margins: { top: 0, bottom: 0, left: 0, right: 0 }, scale: 1, displayHeaderFooter: false, preferCSSPageSize: true } : {}),
     })
     return await saveExportWithRetry(result.filePath,
       (destination) => fs.promises.writeFile(destination, pdf), chooseExportDestination)

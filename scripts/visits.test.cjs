@@ -44,6 +44,48 @@ test('PF and CPN save female patient sex for dashboard records on creation and e
   }
 })
 
+test('thermal printing opens the printer dialog and handles success, cancellation and failures', async () => {
+  for (const outcome of ['success', 'cancel', 'failure', 'no-printer', 'load-failure']) {
+    let destroyed = false
+    let printed = false
+    const parent = {}
+    class TicketWindow {
+      constructor(options) {
+        assert.equal(options.show, false)
+        assert.equal(options.parent, parent)
+        assert.equal(options.webPreferences.nodeIntegration, false)
+        this.webContents = {
+          getPrintersAsync: async () => outcome === 'no-printer' ? [] : [{ name: 'XP-80', displayName: 'Xprinter' }],
+          executeJavaScript: async () => 262,
+          print: (options, callback) => {
+            printed = true
+            assert.equal(options.silent, false)
+            assert.equal(options.deviceName, 'XP-80')
+            assert.equal(options.pageSize.width, 72000)
+            assert.equal(options.pageSize.height, 262000)
+            assert.equal(options.scaleFactor, 100)
+            assert.equal(options.margins.marginType, 'none')
+            callback(outcome === 'success', outcome === 'cancel' ? 'Print job canceled' : 'Print job failed')
+          },
+        }
+      }
+      async loadURL(url) {
+        assert.ok(url.startsWith('data:text/html;'))
+        if (outcome === 'load-failure') throw new Error('load failed')
+      }
+      destroy() { destroyed = true }
+    }
+    const { printReceipt } = loader({ electron: { BrowserWindow: TicketWindow } })('electron/receiptPrint.ts')
+    if (outcome === 'success' || outcome === 'cancel') {
+      assert.deepEqual(await printReceipt('<main class="receipt">Ticket</main>', parent), { canceled: outcome === 'cancel' })
+    } else {
+      await assert.rejects(printReceipt('<main class="receipt">Ticket</main>', parent), outcome === 'no-printer' ? /Aucune imprimante/ : outcome === 'failure' ? /Impression impossible/ : /load failed/)
+    }
+    assert.equal(destroyed, true)
+    assert.equal(printed, !['no-printer', 'load-failure'].includes(outcome))
+  }
+})
+
 test('locked exports support another filename, retry, and cancellation without hiding other errors', async () => {
   const { saveExportWithRetry } = loader()('electron/exportFile.ts')
   for (const code of ['EBUSY', 'EACCES', 'EPERM']) {
@@ -712,10 +754,12 @@ test('multiple dispensations save together and roll back every line when stock o
   assert.equal((await db.getDispensationReceiptItems(separate.id)).length, 1)
   const { buildDispensationReceiptHtml } = load('electron/receiptPdf.ts')
   const html = buildDispensationReceiptHtml(receiptItems)
-  assert.match(html, /<td>A<\/td>/)
-  assert.match(html, /<td>B<\/td>/)
+  assert.match(html, /<div class="item-name">A<\/div>/)
+  assert.match(html, /<div class="item-name">B<\/div>/)
+  assert.match(html, /width: 80mm/)
+  assert.match(html, /@page \{ margin: 0; \}/)
   assert.match(html, /Total : 800 Ar/)
-  assert.equal((html.match(/<tbody>([\s\S]*?)<\/tbody>/)[1].match(/<tr>/g) || []).length, 2)
+  assert.equal((html.match(/<li class="receipt-item">/g) || []).length, 2)
   await db.updateDispensation(second.id, line(b, 2))
   assert.match(buildDispensationReceiptHtml(await db.getDispensationReceiptItems(first.id)), /Total : 600 Ar/)
   await assert.rejects(db.getDispensationReceiptItems(99999))

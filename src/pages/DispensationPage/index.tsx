@@ -11,7 +11,7 @@ const DispensationPage = () => {
     archives, activeArchive, changeArchive,
     medications, filtered, lines, addLine, removeLine, updateLine, searchNumber, searchDate, changeNumber, changeDate, resetFilters, exportMonth, canExportMonth, monthTotal, periodLabel,
     message, submit, editingId, setEditingId, editForm, setEditForm, startEdit, saveEdit,
-    exporting, downloadReceipt, totalPrice, unitOf, creating, saving, openCreate, closeCreate,
+    exporting, downloadReceipt, printing, printReceipt, totalPrice, unitOf, creating, saving, openCreate, closeCreate,
   } = useDispensationPage()
   const dialogRef = useRef<HTMLDialogElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
@@ -148,6 +148,11 @@ const DispensationPage = () => {
                 <span>Total de l’achat</span>
                 <strong>{purchase.total.toLocaleString()} Ar</strong>
               </div>
+              <button type="button" className="btn-light" disabled={printing}
+                aria-label={`Imprimer la facture de l’achat ${purchase.id}`}
+                onClick={() => printReceipt(purchase.items[0])}>
+                {printing ? 'Impression…' : 'Imprimer'}
+              </button>
               <button type="button" className="btn-light" disabled={exporting}
                 aria-label={`Télécharger la facture de l’achat ${purchase.id}`}
                 onClick={() => downloadReceipt(purchase.items[0])}>
