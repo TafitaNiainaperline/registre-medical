@@ -13,14 +13,16 @@ function escapeHtml(value: unknown): string {
 
 function formatMadagascarDateTime(utcString: string | Date | null | undefined): string {
   if (!utcString) return '-'
-  const d = new Date(utcString)
+  const d = new Date(typeof utcString === 'string' && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(utcString)
+    ? `${utcString.replace(' ', 'T')}Z`
+    : utcString)
   const offset = 3 * 60
   const local = new Date(d.getTime() + offset * 60 * 1000)
-  const y = local.getFullYear()
-  const m = String(local.getMonth() + 1).padStart(2, '0')
-  const day = String(local.getDate()).padStart(2, '0')
-  const h = String(local.getHours()).padStart(2, '0')
-  const min = String(local.getMinutes()).padStart(2, '0')
+  const y = local.getUTCFullYear()
+  const m = String(local.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(local.getUTCDate()).padStart(2, '0')
+  const h = String(local.getUTCHours()).padStart(2, '0')
+  const min = String(local.getUTCMinutes()).padStart(2, '0')
   return `${y}-${m}-${day} ${h}:${min}`
 }
 
@@ -91,17 +93,16 @@ function buildReceiptHtml(record: MedicalRecord): string {
       </li>
     `
 
-  const date = record.created_at ? formatMadagascarDateTime(record.created_at).slice(0, 10) : formatMadagascarDateTime(new Date()).slice(0, 10)
+  const date = formatMadagascarDateTime(record.created_at || new Date())
   const amount = Number(record.cost) || 0
   return buildInvoiceHtml(rows, amount, `<section class="grid">
           <div class="field"><div class="label">Patient</div><div class="value">${escapeHtml(record.patient_nom)} ${escapeHtml(record.patient_prenom)}</div></div>
-          <div class="field"><div class="label">Date</div><div class="value">${escapeHtml(date)}</div></div>
           <div class="field"><div class="label">Sexe</div><div class="value">${escapeHtml(record.sexe || '-')}</div></div>
           <div class="field"><div class="label">Domicile</div><div class="value">${escapeHtml(record.domicile || '-')}</div></div>
-        </section>`, 'Soins et traitements')
+        </section>`, 'Soins et traitements', date)
 }
 
-function buildInvoiceHtml(rows: string, amount: number, details: string, sectionTitle: string): string {
+function buildInvoiceHtml(rows: string, amount: number, details: string, sectionTitle: string, date: string): string {
   const logoDataUri = getLogoDataUri()
   const logoHtml = logoDataUri
     ? `<img class="receipt-logo" src="${logoDataUri}" alt="Logo du centre médical" />`
@@ -122,6 +123,7 @@ function buildInvoiceHtml(rows: string, amount: number, details: string, section
         .identity { display: flex; flex-direction: column; align-items: center; width: 100%; }
         .receipt-logo { display: block; margin: 0 auto; width: 48mm; max-width: 100%; height: auto; object-fit: contain; filter: grayscale(1); }
         .receipt-phone { margin: 1mm 0 0; font-size: 8pt; text-align: center; }
+        .receipt-date { margin: 1mm 0 0; font-size: 8pt; }
         .receipt-registration { margin: 0.5mm 0 0; font-size: 7pt; text-align: center; }
         h1 { margin: 2mm 0 1mm; font-size: 12pt; letter-spacing: 1px; text-transform: uppercase; text-align: center; }
         .grid { margin: 3mm 0; padding-bottom: 1mm; }
@@ -156,6 +158,7 @@ function buildInvoiceHtml(rows: string, amount: number, details: string, section
             <div>
               <h1>Facture</h1>
             </div>
+            <p class="receipt-date">Date et heure : ${escapeHtml(date)}</p>
           </div>
         </div>
 
@@ -184,8 +187,8 @@ function buildDispensationReceiptHtml(data: Dispensation | Dispensation[]): stri
     <div class="item-amount">${escapeHtml(formatMoney(Number(dispensation.unit_price || 0) * Number(dispensation.quantity)))}</div>
   </li>`).join('')
   const first = items[0]
-  const details = first ? `<section class="grid"><div>Achat n° ${escapeHtml(Math.min(...items.map((item) => item.id)))}</div><div>${escapeHtml(formatMadagascarDateTime(first.created_at))}</div></section>` : ''
-  return buildInvoiceHtml(rows, amount, details, 'Médicaments')
+  const details = first ? `<section class="grid"><div>Achat n° ${escapeHtml(Math.min(...items.map((item) => item.id)))}</div></section>` : ''
+  return buildInvoiceHtml(rows, amount, details, 'Médicaments', formatMadagascarDateTime(first?.created_at))
 }
 
 export { buildReceiptHtml, buildDispensationReceiptHtml }
