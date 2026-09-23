@@ -44,6 +44,37 @@ test('PF and CPN save female patient sex for dashboard records on creation and e
   }
 })
 
+test('ultrasound visits preserve manual identifiers independently of automatic registries', async () => {
+  const load = loader({
+    electron: { app: { isPackaged: false, getPath: () => 'in-memory-test' } },
+    fs: { ...fs, existsSync: () => false, writeFileSync: () => {}, renameSync: () => {} },
+  })
+  const db = load('electron/database.ts')
+  const { displayRegistryNumber } = load('src/utils/record.ts')
+  const patient = await db.createPatient({ nom: 'Echo patient', domicile: 'Test', sexe: 'M' })
+  const input = { category: 'echographie', patient_id: patient.id, diagnostic: 'Douleur abdominale',
+    archive_year: 2026, archive_month: 9,
+    treatments: [{ item_type: 'act', name: 'Echographie', quantity: 1, unit_price: 20000 }] }
+  await assert.rejects(db.createRecord(input), /Id est requis/)
+  await assert.rejects(db.createRecord({ ...input, registry_number: 'E-007', diagnostic: ' ' }), /renseignement clinique/)
+  const firstId = await db.createRecord({ ...input, registry_number: ' E-007 ' })
+  const secondId = await db.createRecord({ ...input, registry_number: '0012/B' })
+  assert.equal((await db.fetchRecordById(firstId)).registry_number, 'E-007')
+  assert.equal((await db.fetchRecordById(secondId)).registry_number, '0012/B')
+  await db.updateRecord(firstId, { ...input, registry_number: 'E-009' })
+  const updated = await db.fetchRecordById(firstId)
+  assert.equal(updated.registry_number, 'E-009')
+  assert.equal(updated.diagnostic, input.diagnostic)
+  assert.equal(updated.cost, 20000)
+  assert.equal(updated.sexe, 'M')
+  assert.equal(displayRegistryNumber('E-009', 'echographie'), 'E-009')
+  assert.equal(displayRegistryNumber('00012', 'echographie'), '00012')
+  assert.equal(displayRegistryNumber('CONS-2026-009', 'consultation'), '009')
+  const consultationId = await db.createRecord({ ...input, category: 'consultation', registry_number: 'MANUAL' })
+  assert.match((await db.fetchRecordById(consultationId)).registry_number, /^CONS-2026-/)
+  assert.equal((await db.fetchRecordsByArchive({ category: 'echographie', year: 2026, month: 9 })).length, 2)
+})
+
 test('thermal printing opens the printer dialog and handles success, cancellation and failures', async () => {
   for (const outcome of ['success', 'cancel', 'failure', 'no-printer', 'load-failure']) {
     let destroyed = false
@@ -717,6 +748,70 @@ test('list groups three visits while history exposes each separate receipt', asy
   }
 })
 
+
+test('ultrasound register lists every visit across years and saves without treatment', async () => {
+  const state = []
+  let cursor = 0
+  const react = {
+    useState(initial) {
+      const slot = cursor++
+      if (!(slot in state)) state[slot] = typeof initial === 'function' ? initial() : initial
+      return [state[slot], (value) => { state[slot] = typeof value === 'function' ? value(state[slot]) : value }]
+    },
+    useMemo: (fn) => fn(),
+    useEffect: () => {},
+  }
+  react.useRef = (initial) => react.useState({ current: initial })[0]
+  const db = loader({
+    electron: { app: { isPackaged: false, getPath: () => 'in-memory-test' } },
+    fs: { ...fs, existsSync: () => false, writeFileSync: () => {}, renameSync: () => {} },
+  })('electron/database.ts')
+  const { useRecordsPage } = loader({ react })('src/pages/RecordsPage/useRecordsPage.ts')
+  const patient = await db.createPatient({ nom: 'Echo', domicile: 'Test', sexe: 'F' })
+  const input = { category: 'echographie', patient_id: patient.id, diagnostic: 'RC', treatments: [] }
+  for (const [year, month, registry_number] of [[2024, 12, 'A'], [2025, 1, 'B'], [2025, 1, 'C']]) {
+    await db.createRecord({ ...input, archive_year: year, archive_month: month, registry_number })
+  }
+  const requests = []
+  const previousWindow = global.window
+  global.window = { api: {
+    fetchRecordsByArchive: async (filters) => { requests.push(filters); return db.fetchRecordsByArchive(filters) },
+    fetchRecordsByPatient: db.fetchRecordsByPatient,
+    createRecord: db.createRecord,
+    updateRecord: db.updateRecord,
+  } }
+  const render = () => { cursor = 0; return useRecordsPage({ key: 'echographie' }) }
+  try {
+    await render().load({ year: 2026, month: 9 })
+    assert.deepEqual(requests, [{ category: 'echographie' }])
+    assert.equal(render().records.length, 3)
+    render().selectPatient(patient)
+    assert.equal(render().patientVisits.length, 3)
+    let page = render()
+    page.setForm({ ...page.form, registry_number: 'D', diagnostic: 'Suivi', treatments: [] })
+    await render().submit({ preventDefault() {} })
+    page = render()
+    assert.equal(page.actionError, '')
+    assert.equal(page.needsTreatmentConfirmation, false)
+    assert.equal(page.records.length, 4)
+    assert.equal(page.activeTab, 'liste')
+    const saved = page.records.find((row) => row.registry_number === 'D')
+    assert.equal(saved.cost, 0)
+    assert.deepEqual(saved.treatments, [])
+    const old = page.records.find((row) => row.registry_number === 'A')
+    page.edit(old)
+    page = render()
+    page.setForm({ ...page.form, diagnostic: 'RC corrigé' })
+    await render().submit({ preventDefault() {} })
+    const updated = await db.fetchRecordById(old.id)
+    assert.equal(updated.registry_number, 'A')
+    assert.equal(updated.archive_year, 2024)
+    assert.equal(updated.diagnostic, 'RC corrigé')
+    assert.equal(render().records.length, 4)
+  } finally {
+    global.window = previousWindow
+  }
+})
 
 test('multiple dispensations save together and roll back every line when stock or input is invalid', async () => {
   const load = loader({

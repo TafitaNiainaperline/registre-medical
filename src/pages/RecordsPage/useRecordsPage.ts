@@ -22,7 +22,7 @@ import type { RecordForm } from './types'
 
 const emptyForm: RecordForm = {
   patient: null, identity: emptyIdentity, diagnostic: '', traitement: '', observation: '', appointment_date: '',
-  tdr_result: '', reference: '', cost: '', treatments: [], pf_method: '', cpn_type: '',
+  registry_number: '', tdr_result: '', reference: '', cost: '', treatments: [], pf_method: '', cpn_type: '',
 }
 
 // Les champs libres sont remis en forme à la saisie
@@ -77,10 +77,13 @@ export const useRecordsPage = (category: Category) => {
       ? { year: archive.year, month: archive.month }
       : { year: archive?.year || selectedYear }
 
-    return Promise.all([
-      window.api.fetchRecordsByArchive({ ...period, category: category.key }),
-      window.api.fetchRecordsByArchive(period),
-    ])
+    const request = category.key === 'echographie'
+      ? window.api.fetchRecordsByArchive({ category: 'echographie' }).then((rows) => [rows, rows])
+      : Promise.all([
+        window.api.fetchRecordsByArchive({ ...period, category: category.key }),
+        window.api.fetchRecordsByArchive(period),
+      ])
+    return request
       .then(([result, suggestions]) => {
         if (category.key === 'pf') rememberPfPeriod(period)
         if (category.key === 'cpn') rememberCpnPeriod(period)
@@ -119,20 +122,25 @@ export const useRecordsPage = (category: Category) => {
       .then((r) => setMedications(r || []))
       .catch(() => setMedications([]))
 
-    window.api.listArchives()
-      .then((list) => {
-        setArchives(list || [])
-        const years = [...new Set((list || []).map((a) => a.year))].sort((a, b) => b - a)
-        if (!years.length) return
-        setAvailableYears(years)
-        const currentYear = new Date().getFullYear()
-        setSelectedYear(years.includes(currentYear) ? currentYear : years[0])
-      })
-      .catch(() => setArchives([]))
+    if (category.key === 'echographie') {
+      setActiveArchive(null)
+      load(null)
+    } else {
+      window.api.listArchives()
+        .then((list) => {
+          setArchives(list || [])
+          const years = [...new Set((list || []).map((a) => a.year))].sort((a, b) => b - a)
+          if (!years.length) return
+          setAvailableYears(years)
+          const currentYear = new Date().getFullYear()
+          setSelectedYear(years.includes(currentYear) ? currentYear : years[0])
+        })
+        .catch(() => setArchives([]))
 
-    window.api.getCurrentArchive()
-      .then((archive) => { setActiveArchive(archive); return load(archive) })
-      .catch(() => load(null))
+      window.api.getCurrentArchive()
+        .then((archive) => { setActiveArchive(archive); return load(archive) })
+        .catch(() => load(null))
+    }
 
     setForm(emptyForm)
     setEditingId(null)
@@ -145,7 +153,7 @@ export const useRecordsPage = (category: Category) => {
   }, [category.key])
 
   useEffect(() => {
-    if (!selectedYear) return
+    if (!selectedYear || category.key === 'echographie') return
     setActiveArchive(null)
     load({ year: selectedYear, month: new Date().getMonth() + 1, label: `${selectedYear}` })
   }, [selectedYear])
@@ -171,8 +179,9 @@ export const useRecordsPage = (category: Category) => {
 
   const patientVisits = records.filter((row) => form.patient
     && row.patient_id === form.patient.id
-    && Number(row.archive_year) === (activeArchive?.year || new Date().getFullYear())
-    && Number(row.archive_month) === (activeArchive?.month || new Date().getMonth() + 1))
+    && (category.key === 'echographie' || (
+      Number(row.archive_year) === (activeArchive?.year || new Date().getFullYear())
+      && Number(row.archive_month) === (activeArchive?.month || new Date().getMonth() + 1))))
 
   const needsTreatmentConfirmation = pendingConfirmation?.form === form
     && pendingConfirmation.editingId === editingId && pendingConfirmation.category === category.key
@@ -186,7 +195,8 @@ export const useRecordsPage = (category: Category) => {
     setActionOk('')
 
     const identity = form.identity
-    if (!form.diagnostic.trim()) { setActionError('Le diagnostic est requis.'); return }
+    if (category.key === 'echographie' && !form.registry_number.trim()) { setActionError('L’Id est requis.'); return }
+    if (!form.diagnostic.trim()) { setActionError(category.key === 'echographie' ? 'Le renseignement clinique est requis.' : 'Le diagnostic est requis.'); return }
     const dateError = appointmentDateError(form.appointment_date)
     if (dateError) { setActionError(dateError); return }
     if (!form.patient) {
@@ -207,7 +217,7 @@ export const useRecordsPage = (category: Category) => {
       return
     }
 
-    if (!treatments.length) {
+    if (!treatments.length && category.key !== 'echographie') {
       if (category.key !== 'consultation') {
         setActionError('Veuillez sélectionner au moins un médicament ou un acte médical.')
         return
@@ -251,6 +261,8 @@ export const useRecordsPage = (category: Category) => {
     }
 
     const payload = {
+      category: category.key,
+      ...(category.key === 'echographie' ? { registry_number: form.registry_number.trim() } : {}),
       created_by: currentUser.id || null,
       patient_id: patient.id,
       diagnostic: capitalize(form.diagnostic.trim()),
@@ -272,9 +284,8 @@ export const useRecordsPage = (category: Category) => {
         showToast('Visite modifiée.')
       } else {
         await window.api.createRecord({
-          category: category.key,
-          archive_year: activeArchive?.year,
-          archive_month: activeArchive?.month,
+          archive_year: category.key === 'echographie' ? undefined : activeArchive?.year,
+          archive_month: category.key === 'echographie' ? undefined : activeArchive?.month,
           ...payload,
         })
         setActionOk('Visite enregistrée. Son reçu reste disponible dans la liste.')
@@ -317,6 +328,7 @@ export const useRecordsPage = (category: Category) => {
     setForm({
       patient,
       identity: patient ? identityFromPatient(patient) : emptyIdentity,
+      registry_number: row.registry_number || '',
       diagnostic: capitalize(row.diagnostic || ''),
       appointment_date: row.appointment_date || '',
       tdr_result: row.tdr_result || '',
@@ -397,7 +409,10 @@ export const useRecordsPage = (category: Category) => {
     .map((row) => capitalize(String(row.pf_method || '').trim()))
     .filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr')), [suggestionRecords])
 
-  const groupedRecords = useMemo(() => mergeRecords(records), [records])
+  const groupedRecords = useMemo(() => category.key === 'echographie'
+    ? records.map((row) => ({ ...row, treatments: row.treatments || [] }))
+      .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || '') || b.id - a.id)
+    : mergeRecords(records), [records, category.key])
 
   const cpnSummary = useMemo(() => summarizeCpnRecords(records), [records])
 
@@ -409,7 +424,7 @@ export const useRecordsPage = (category: Category) => {
       : row.treatments.filter((t) => t.item_type === 'act').map((t) => t.name)
     return matches(filters.search, [
       `${row.patient_nom || ''} ${row.patient_prenom || ''}`, row.diagnostic,
-      displayRegistryNumber(row.registry_number), row.registry_number, row.reference,
+      displayRegistryNumber(row.registry_number, row.category), row.registry_number, row.reference,
       row.cpn_type, row.pf_method,
     ])
       && (!filters.diagnostic || normalize(row.diagnostic).includes(normalize(filters.diagnostic)))

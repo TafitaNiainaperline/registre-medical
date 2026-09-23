@@ -1,6 +1,6 @@
 // Types du domaine partagés entre le processus principal et le renderer
 
-export type CategoryKey = 'consultation' | 'cpn' | 'pf' | 'analyse' | 'soin'
+export type CategoryKey = 'consultation' | 'cpn' | 'pf' | 'analyse' | 'soin' | 'echographie'
 
 export type UserRole = 'admin' | 'user'
 
@@ -146,6 +146,7 @@ export type MedicalRecord = {
 }
 
 export type RecordInput = {
+  registry_number?: string | null
   category: CategoryKey
   dossier_id?: number | null
   patient_id?: number | null

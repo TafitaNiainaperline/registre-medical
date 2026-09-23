@@ -29,6 +29,8 @@ const RecordsPage = ({ category }: Props) => {
     filteredRecords, diagnosticSummary, cpnSummary, pfSummary,
   } = useRecordsPage(category)
 
+  const isEchographie = category.key === 'echographie'
+  const clinicalLabel = isEchographie ? 'RC (renseignement clinique)' : 'Diagnostic'
   const isConsultation = category.key === 'consultation'
   // Dans les registres CPN et PF, l'âge est saisi en années.
   const isAdultRegistry = category.key === 'cpn' || category.key === 'pf'
@@ -53,12 +55,13 @@ const RecordsPage = ({ category }: Props) => {
         <div>
           <h1>Registre {category.label}</h1>
           {isConsultation && <p>Médicaments et actes médicaux.</p>}
+          {isEchographie && <p>Registre continu : toutes les échographies restent visibles au fil des mois et des années.</p>}
         </div>
 
         <div className="tools">
-          <select value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))}>
+          {!isEchographie && <select value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))}>
             {availableYears.map((year) => <option key={year} value={year}>{year}</option>)}
-          </select>
+          </select>}
 
           <div className={`page-badge ${category.key}`}>
             <Icon name={category.icon} /> {category.label}
@@ -66,12 +69,12 @@ const RecordsPage = ({ category }: Props) => {
         </div>
       </div>
 
-      <MonthlyArchiveBanner
+      {!isEchographie && <MonthlyArchiveBanner
         current={activeArchive}
         archives={archives.filter((a) => a.year === selectedYear)}
         allArchives={archives}
         onChange={(archive) => { setActiveArchive(archive); load(archive) }}
-      />
+      />}
 
       {isAdultRegistry && (
         <section className={`registry-summary ${category.key}`} aria-label={category.key === 'cpn' ? 'Compteurs CPN' : 'Compteurs produits PF'}>
@@ -122,7 +125,7 @@ const RecordsPage = ({ category }: Props) => {
 
       {diagnosticSummary.length > 0 && (
         <div className="diagnostics">
-          <strong><Icon name="check-circle" /> Synthèse diagnostics ce mois :</strong>
+          <strong><Icon name="check-circle" /> {isEchographie ? 'Synthèse RC :' : 'Synthèse diagnostics ce mois :'}</strong>
 
           <div className="list">
             {diagnosticSummary.slice(0, 6).map(([diagnostic, count]) => (
@@ -137,7 +140,7 @@ const RecordsPage = ({ category }: Props) => {
             ))}
 
             {diagnosticSummary.length > 6 && (
-              <span className="more">+{diagnosticSummary.length - 6} autres diagnostics</span>
+              <span className="more">+{diagnosticSummary.length - 6} {isEchographie ? 'autres RC' : 'autres diagnostics'}</span>
             )}
           </div>
         </div>
@@ -150,7 +153,7 @@ const RecordsPage = ({ category }: Props) => {
           <Icon name="search" />
           <input
             type="text"
-            placeholder="Recherche par nom, diagnostic ou N° registre..."
+            placeholder={isEchographie ? 'Recherche par nom, RC ou Id...' : 'Recherche par nom, diagnostic ou N° registre...'}
             value={filters.search}
             onChange={(e) => setFilters({ ...filters, search: e.target.value })}
           />
@@ -196,13 +199,13 @@ const RecordsPage = ({ category }: Props) => {
         <table>
           <thead>
             <tr>
-              <th>N° registre</th>
+              <th>{isEchographie ? 'Id' : 'N° registre'}</th>
               {isConsultation && <th>Référence</th>}
               <th>Patient</th>
               {!isAdultRegistry && <th>Sexe</th>}
               <th>Âge</th>
               <th>Domicile</th>
-              <th>Diagnostic</th>
+              <th>{clinicalLabel}</th>
               <th>Traitement</th>
               <th>Observation</th>
               {extraColumn && <th>{extraColumn.label}</th>}
@@ -221,7 +224,7 @@ const RecordsPage = ({ category }: Props) => {
 
             {filteredRecords.map((row) => (
               <tr key={row.id}>
-                <td className="registry">{displayRegistryNumber(row.registry_number)}</td>
+                <td className="registry">{displayRegistryNumber(row.registry_number, row.category)}</td>
                 {isConsultation && <td className="reference">{row.reference || '-'}</td>}
                 <td><strong>{row.patient_nom}</strong> {row.patient_prenom}</td>
                 {!isAdultRegistry && <td>{row.sexe || '-'}</td>}
@@ -283,9 +286,9 @@ const RecordsPage = ({ category }: Props) => {
           <div className="visit-context" role="status">
             <Icon name="history" />
             <div>
-              <strong>{patientVisits.length ? `Nouvelle visite · ${form.patient.nom}` : `Première visite du mois · ${form.patient.nom}`}</strong>
+              <strong>{patientVisits.length ? `Nouvelle visite · ${form.patient.nom}` : `${isEchographie ? 'Première échographie' : 'Première visite du mois'} · ${form.patient.nom}`}</strong>
               <p>{patientVisits.length
-                ? `${patientVisits.length} visite(s) enregistrée(s) ce mois · N° ${displayRegistryNumber(patientVisits[0].registry_number)}. Chaque visite possède son propre reçu.`
+                ? `${patientVisits.length} visite(s) enregistrée(s)${isEchographie ? '' : ' ce mois'} · ${isEchographie ? 'Id' : 'N°'} ${displayRegistryNumber(patientVisits[0].registry_number, category.key)}. Chaque visite possède son propre reçu.`
                 : 'Cette saisie sera ajoutée à l’historique du patient avec son propre reçu.'}</p>
             </div>
             {patientVisits.length > 0 && <button type="button" className="btn-light" onClick={() => viewHistory(patientVisits[0])}>Voir l’historique</button>}
@@ -309,13 +312,20 @@ const RecordsPage = ({ category }: Props) => {
         </fieldset>
 
         <fieldset className="block diagnostic">
-            <legend>Diagnostic et suivi</legend>
+            <legend>{isEchographie ? clinicalLabel : 'Diagnostic et suivi'}</legend>
+
+            {isEchographie && (
+              <label>
+                Id
+                <input name="registry_number" placeholder="Identifiant saisi manuellement" value={form.registry_number} onChange={change} required />
+              </label>
+            )}
 
             <SuggestionInput
               value={form.diagnostic}
               onChange={(value) => setForm({ ...form, diagnostic: capitalize(value, true) })}
               suggestions={diagnosticOptions}
-              placeholder="Diagnostic obligatoire"
+              placeholder={isEchographie ? 'Renseignement clinique obligatoire' : 'Diagnostic obligatoire'}
               id="diagnostic"
               required
             />
@@ -366,7 +376,7 @@ const RecordsPage = ({ category }: Props) => {
           </fieldset>
 
           <fieldset className="block traitement">
-            <legend>{isConsultation ? 'Traitement (facultatif)' : 'Traitement'}</legend>
+            <legend>{isConsultation || isEchographie ? 'Traitement (facultatif)' : 'Traitement'}</legend>
 
             <div className="treatments">
               <TreatmentSelector

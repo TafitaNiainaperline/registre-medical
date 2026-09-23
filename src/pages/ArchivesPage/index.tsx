@@ -44,7 +44,7 @@ const ArchivesPage = () => {
               const open = expanded === group.key
               return <Fragment key={group.key}>
                 <tr>
-                  <td className="registry">{displayRegistryNumber(row.registry_number)}</td>
+                  <td className="registry">{displayRegistryNumber(row.registry_number, row.category)}</td>
                   <td><strong>{row.patient_nom} {row.patient_prenom}</strong><small className="patient-meta">{row.sexe || 'Sexe non renseigné'} · {displayAge(row.age)}</small></td>
                   {!category && <td>{categoryLabel(row.category)}</td>}
                   <td className="center">{group.visits.length}</td><td className="date">{formatDate(row.created_at)}</td>
@@ -56,7 +56,7 @@ const ArchivesPage = () => {
                   <div id={`archive-visits-${row.id}`} className="visit-list">
                     {group.visits.map((visit) => <article key={visit.id}>
                       <div className="visit-heading"><strong>{formatDate(visit.created_at)}</strong><strong>{Number(visit.cost || 0).toLocaleString()} Ar</strong></div>
-                      <p><span>Diagnostic</span> {visit.diagnostic || 'Non renseigné'}</p>
+                      <p><span>{visit.category === 'echographie' ? 'RC (renseignement clinique)' : 'Diagnostic'}</span> {visit.diagnostic || 'Non renseigné'}</p>
                       <p><span>Traitements</span> {treatmentsLabel(visit.treatments, { separator: ' • ', withPrice: true }) || visit.traitement || 'Aucun traitement'}</p>
                       {visit.observation && <p><span>Observation</span> {visit.observation}</p>}
                     </article>)}

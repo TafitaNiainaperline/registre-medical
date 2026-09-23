@@ -53,13 +53,13 @@ async function writeArchiveExcel({ filePath, year, month, records }: ArchiveExce
   })
 
   ws.columns = [
-    { header: 'N° registre', key: 'registry', width: 12 },
+    { header: records.some((r) => r.category === 'echographie') ? 'N° registre / Id' : 'N° registre', key: 'registry', width: 12 },
     { header: 'Référence', key: 'reference', width: 16 },
     { header: 'Nom', key: 'nom', width: 18 },
     { header: 'Prénom', key: 'prenom', width: 18 },
     { header: 'Âge', key: 'age', width: 10 },
     { header: 'Sexe', key: 'sexe', width: 8 },
-    { header: 'Diagnostic', key: 'diagnostic', width: 26 },
+    { header: records.some((r) => r.category === 'echographie') ? 'Diagnostic / RC (renseignement clinique)' : 'Diagnostic', key: 'diagnostic', width: 26 },
     { header: 'Médicaments', key: 'meds', width: 30 },
     { header: 'Quantités', key: 'qty', width: 12 },
     { header: 'Prix unitaires (Ar)', key: 'unit', width: 16 },
@@ -91,7 +91,7 @@ async function writeArchiveExcel({ filePath, year, month, records }: ArchiveExce
 
     const createdAt = r.created_at ? formatMadagascarDate(r.created_at) : ''
     const registryNumber = String(r.registry_number || '').match(/(\d+)$/)
-    const displayRegistry = registryNumber ? String(registryNumber[1]).padStart(3, '0') : '-'
+    const displayRegistry = r.category === 'echographie' ? (r.registry_number || '-') : registryNumber ? String(registryNumber[1]).padStart(3, '0') : '-'
 
     const row = ws.addRow({
       registry: displayRegistry,

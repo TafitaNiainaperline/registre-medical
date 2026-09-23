@@ -86,7 +86,8 @@ export function birthDateToAgeEntry(birthDate: string | null | undefined, at: Da
 }
 
 // « CONS-2026-007 » → « 007 »
-export function displayRegistryNumber(value: string | null | undefined): string {
+export function displayRegistryNumber(value: string | null | undefined, category?: string): string {
+  if (category === 'echographie') return value || '-'
   const match = String(value || '').match(/(\d+)$/)
   if (!match) return value || '-'
   return String(Number(match[1]) || 0).padStart(3, '0')

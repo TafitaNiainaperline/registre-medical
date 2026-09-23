@@ -30,10 +30,11 @@ const DossierHistory = ({ rows, loading, patientName, onReceipt, onPrint, printi
           <thead>
             <tr>
               <th>Visite</th>
-              <th>N°</th>
+              <th>{rows[0].category === 'echographie' ? 'Id' : 'N°'}</th>
               <th>Date / Heure</th>
               {rows[0].category === 'cpn' && <th>N° CPN</th>}
               {rows[0].category === 'pf' && <th>Produit PF</th>}
+              {rows[0].category === 'echographie' && <th>RC (renseignement clinique)</th>}
               <th>Traitement</th>
               <th>Observation</th>
               <th>Montant de la visite</th>
@@ -48,10 +49,11 @@ const DossierHistory = ({ rows, loading, patientName, onReceipt, onPrint, printi
                   <td className={isCurrent ? 'visit current' : 'visit'}>
                     {`Visite ${index + 1}`}{isCurrent && <small> · Dernière</small>}
                   </td>
-                  <td className="registry">{displayRegistryNumber(row.registry_number)}</td>
+                  <td className="registry">{displayRegistryNumber(row.registry_number, row.category)}</td>
                   <td className="date">{formatDateTime(row.created_at)}</td>
                   {rows[0].category === 'cpn' && <td>{row.cpn_type || '-'}</td>}
                   {rows[0].category === 'pf' && <td>{row.pf_method || '-'}</td>}
+                  {rows[0].category === 'echographie' && <td>{row.diagnostic}</td>}
                   <td>{treatmentsLabel(row.treatments) || row.traitement || '-'}</td>
                   <td>{row.observation || '-'}</td>
                   <td className="current">{row.cost} Ar</td>

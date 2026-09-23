@@ -4,6 +4,7 @@ import type { PatientIdentity } from '../../components/PatientPicker/usePatientP
 export type RecordForm = {
   patient: Patient | null
   identity: PatientIdentity
+  registry_number: string
   diagnostic: string
   traitement: string
   observation: string

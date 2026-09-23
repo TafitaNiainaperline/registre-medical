@@ -54,7 +54,7 @@ type BindValue = SqlValue
 type MedicationLookup = Pick<Medication, 'id' | 'name' | 'item_type' | 'price' | 'unit' | 'stock'>
 
 // Champs suffisants pour identifier un couple patient / maladie
-type RegistryLookupSource = { category: CategoryKey; patient_id?: number | null }
+type RegistryLookupSource = { registry_number?: string | null; category: CategoryKey; patient_id?: number | null }
 
 let db: Database | null = null
 let dbPath: string | null = null
@@ -643,6 +643,11 @@ function getRegistryNumberForRecord(
   month: number,
   existingId: number | null = null
 ): string {
+  if (data.category === 'echographie') {
+    const number = String(data.registry_number || '').trim()
+    if (!number) throw new Error('L’Id est requis.')
+    return number
+  }
   const opened = findMonthlyDossier(d, data.patient_id, data.category, year, month, existingId)
   if (opened?.registry_number) return opened.registry_number
 
@@ -667,6 +672,7 @@ function backfillRegistryNumbers(d: Database): boolean {
   const assigned = new Map<string, string>()
 
   rows.forEach((row) => {
+    if (row.category === 'echographie') return
     const key = monthlyDossierKey(row.patient_id, row.category, Number(row.archive_year), Number(row.archive_month))
     if (row.registry_number) {
       assigned.set(key, row.registry_number)
@@ -1430,7 +1436,7 @@ function setRegistryPatientSex(d: Database, category: string | undefined, patien
 }
 
 async function createRecord(data: RecordInput): Promise<number | undefined> {
-  if (!String(data.diagnostic || '').trim()) throw new Error('Le diagnostic est requis.')
+  if (!String(data.diagnostic || '').trim()) throw new Error(data.category === 'echographie' ? 'Le renseignement clinique est requis.' : 'Le diagnostic est requis.')
   const dateError = appointmentDateError(data.appointment_date)
   if (dateError) throw new Error(dateError)
   const d = await getDB()
@@ -1594,7 +1600,7 @@ async function addTreatmentsToRecord(recordId: number, data: ContinueRecordInput
 }
 
 async function updateRecord(id: number, data: RecordUpdateInput): Promise<void> {
-  if (!String(data.diagnostic || '').trim()) throw new Error('Le diagnostic est requis.')
+  if (!String(data.diagnostic || '').trim()) throw new Error(data.category === 'echographie' ? 'Le renseignement clinique est requis.' : 'Le diagnostic est requis.')
   const dateError = appointmentDateError(data.appointment_date)
   if (dateError) throw new Error(dateError)
   const d = await getDB()

@@ -144,7 +144,7 @@ const PatientsPage = () => {
                   {records.map((record) => (
                     <article className={`visit ${record.category}`} key={record.id}>
                       <div className="head">
-                        <span className="registry">N° {displayRegistryNumber(record.registry_number)}</span>
+                        <span className="registry">{record.category === 'echographie' ? 'Id' : 'N°'} {displayRegistryNumber(record.registry_number, record.category)}</span>
                         <span className="category">{labelOf(record.category)}</span>
                         <span className="date">{formatDateTime(record.created_at)}</span>
                       </div>
