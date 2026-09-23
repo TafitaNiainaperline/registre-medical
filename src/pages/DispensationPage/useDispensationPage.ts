@@ -21,7 +21,7 @@ export const useDispensationPage = () => {
   const [lines, setLines] = useState([{ id: 0, medication_id: '', quantity: '' }])
   const resetLines = () => setLines([{ id: nextLineId.current++, medication_id: '', quantity: '' }])
   const [exporting, setExporting] = useState(false)
-  const [printing, setPrinting] = useState(false)
+  const [printingId, setPrintingId] = useState<number | null>(null)
   const printingRef = useRef(false)
   const exportingRef = useRef(false)
   const [creating, setCreating] = useState(false)
@@ -143,7 +143,7 @@ export const useDispensationPage = () => {
   const printReceipt = async (dispensation: Dispensation) => {
     if (printingRef.current) return
     printingRef.current = true
-    setPrinting(true)
+    setPrintingId(dispensation.id)
     try {
       const result = await window.api.printDispensationReceipt(dispensation.id)
       if (!result.canceled) notify('Facture envoyée à l’imprimante.')
@@ -151,7 +151,7 @@ export const useDispensationPage = () => {
       notify(errorMessage(err, 'Impossible d’imprimer la facture.'), 'err')
     } finally {
       printingRef.current = false
-      setPrinting(false)
+      setPrintingId(null)
     }
   }
 
@@ -196,7 +196,7 @@ export const useDispensationPage = () => {
       setSearchDate('')
       setEditingId(null)
     },
-    creating, saving, exporting, downloadReceipt, printing, printReceipt,
+    creating, saving, exporting, downloadReceipt, printingId, printReceipt,
     openCreate: () => {
       resetLines()
       setMessage({ text: '', type: 'ok' })

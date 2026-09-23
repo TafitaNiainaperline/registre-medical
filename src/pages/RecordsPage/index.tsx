@@ -24,7 +24,7 @@ const RecordsPage = ({ category }: Props) => {
     form, setForm, editingId, filters, setFilters, actionError, actionOk,
     patientVisits, saving, historyRow, dossierHistory, historyLoading, isAdmin, closeHistory,
     needsTreatmentConfirmation, dismissTreatmentConfirmation, confirmWithoutTreatment,
-    change, submit, edit, viewHistory, downloadReceipt, printReceipt, printing, remove, load,
+    change, submit, edit, viewHistory, downloadReceipt, printReceipt, printingId, remove, load,
     cancelEdit, clearFilters, diagnosticOptions, pfMethodOptions, selectPatient, clearPatient, setIdentity,
     filteredRecords, diagnosticSummary, cpnSummary, pfSummary,
   } = useRecordsPage(category)
@@ -146,7 +146,7 @@ const RecordsPage = ({ category }: Props) => {
         </div>
       )}
 
-      {historyRow && <DossierHistory rows={dossierHistory} loading={historyLoading} patientName={historyRow.patient_nom || ''} onReceipt={downloadReceipt} onPrint={printReceipt} printing={printing} onClose={closeHistory} />}
+      {historyRow && <DossierHistory rows={dossierHistory} loading={historyLoading} patientName={historyRow.patient_nom || ''} onReceipt={downloadReceipt} onPrint={printReceipt} printingId={printingId} onClose={closeHistory} />}
 
       <div className="search-bar">
         <div className="search-field">
@@ -295,7 +295,7 @@ const RecordsPage = ({ category }: Props) => {
           </div>
         )}
 
-        {historyRow && <DossierHistory rows={dossierHistory} loading={historyLoading} patientName={historyRow.patient_nom || ''} onReceipt={downloadReceipt} onPrint={printReceipt} printing={printing} onClose={closeHistory} />}
+        {historyRow && <DossierHistory rows={dossierHistory} loading={historyLoading} patientName={historyRow.patient_nom || ''} onReceipt={downloadReceipt} onPrint={printReceipt} printingId={printingId} onClose={closeHistory} />}
 
         <form className={`record-form ${category.key}`} onSubmit={submit}>
           <fieldset className="block patient">

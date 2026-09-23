@@ -347,12 +347,12 @@ export const useRecordsPage = (category: Category) => {
     await loadPatientHistory(row)
   }
 
-  const [printing, setPrinting] = useState(false)
+  const [printingId, setPrintingId] = useState<number | null>(null)
   const printingRef = useRef(false)
   const printReceipt = async (row: { id: number }) => {
     if (printingRef.current) return
     printingRef.current = true
-    setPrinting(true)
+    setPrintingId(row.id)
     setActionError('')
     setActionOk('')
     try {
@@ -365,7 +365,7 @@ export const useRecordsPage = (category: Category) => {
       setActionError(errorMessage(err, 'Impossible d’imprimer le reçu.'))
     } finally {
       printingRef.current = false
-      setPrinting(false)
+      setPrintingId(null)
     }
   }
 
@@ -455,7 +455,7 @@ export const useRecordsPage = (category: Category) => {
       if (needsTreatmentConfirmation) return submit({ preventDefault() {} }, true)
     },
     isAdmin: currentUser.role === 'admin',
-    change, submit, edit, viewHistory, downloadReceipt, printReceipt, printing, remove, load,
+    change, submit, edit, viewHistory, downloadReceipt, printReceipt, printingId, remove, load,
     closeHistory: () => { historyRequest.current++; setHistoryRow(null) },
     selectPatient: (patient: Patient) => {
       historyRequest.current++
