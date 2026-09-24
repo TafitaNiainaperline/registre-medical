@@ -7,7 +7,7 @@ import DatePicker from '../../components/DatePicker'
 import DossierHistory from './DossierHistory'
 import TreatmentConfirmation from './TreatmentConfirmation'
 import type { Category } from '../../constants'
-import { formatDateTime, formatDay } from '../../utils/date'
+import { formatDateTime, formatDay, todayIso } from '../../utils/date'
 import { capitalize } from '../../utils/text'
 import { ageUnit, displayAge, displayRegistryNumber, treatmentsLabel } from '../../utils/record'
 import { appointmentStatus, useRecordsPage } from './useRecordsPage'
@@ -30,6 +30,7 @@ const RecordsPage = ({ category }: Props) => {
   } = useRecordsPage(category)
 
   const isEchographie = category.key === 'echographie'
+  const today = todayIso()
   const clinicalLabel = isEchographie ? 'RC (renseignement clinique)' : 'Diagnostic'
   const isConsultation = category.key === 'consultation'
   // Dans les registres CPN et PF, l'âge est saisi en années.
@@ -250,8 +251,8 @@ const RecordsPage = ({ category }: Props) => {
                   {row.appointment_date ? (
                     <>
                       <strong>{formatDay(row.appointment_date, { weekday: true })}</strong>
-                      <span className={row.appointment_date <= new Date().toISOString().slice(0, 10) ? 'status due' : 'status'}>
-                        {appointmentStatus(row.appointment_date)}
+                      <span className={`status ${row.appointment_date < today ? 'past' : row.appointment_date === today ? 'today' : 'upcoming'}`}>
+                        {appointmentStatus(row.appointment_date, today)}
                       </span>
                     </>
                   ) : '-'}

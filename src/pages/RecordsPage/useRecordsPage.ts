@@ -28,9 +28,8 @@ const emptyForm: RecordForm = {
 // Les champs libres sont remis en forme à la saisie
 const TEXT_FIELDS = new Set(['diagnostic', 'traitement', 'observation', 'pf_method', 'reference'])
 
-export function appointmentStatus(date: string | null): string {
+export function appointmentStatus(date: string | null, today = todayIso()): string {
   if (!date) return ''
-  const today = todayIso()
   if (date < today) return 'Rendez-vous passé'
   if (date === today) return 'Rendez-vous aujourd’hui'
   return 'Rendez-vous à venir'

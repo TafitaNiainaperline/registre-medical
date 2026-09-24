@@ -302,7 +302,8 @@
 
       strong { display: block; color: #184a6e; }
       .status { font-size: 0.85em; color: var(--brand); }
-      .status.due { color: #e65100; }
+      .status.past { color: var(--soft); }
+      .status.today { color: #e65100; font-weight: 700; }
     }
   }
 
@@ -317,6 +318,7 @@
     .diagnostics .tag.active { background: #24404f; border-color: transparent; }
     .diagnostics .tag .count { background: #0f1920; }
     table th { background: #1b2a34; }
+    table .appointment .status.today { color: #ffb74d; }
 
     table .badge.age {
       &.ans { background: #17333d; color: #8fe4ef; }
