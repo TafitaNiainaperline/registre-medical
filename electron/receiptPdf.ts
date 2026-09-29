@@ -1,5 +1,6 @@
 import fs from 'fs'
 import path from 'path'
+import { RECEIPT_PAGE_WIDTH_MM, RECEIPT_CONTENT_WIDTH_MM } from './receiptLayout'
 import type { Dispensation, MedicalRecord, Treatment } from './types'
 
 function escapeHtml(value: unknown): string {
@@ -17,6 +18,7 @@ function formatMadagascarDateTime(utcString: string | Date | null | undefined): 
     ? `${utcString.replace(' ', 'T')}Z`
     : utcString)
   const offset = 3 * 60
+  
   const local = new Date(d.getTime() + offset * 60 * 1000)
   const y = local.getUTCFullYear()
   const m = String(local.getUTCMonth() + 1).padStart(2, '0')
@@ -60,8 +62,8 @@ function numberToFrenchWords(value: number): string {
 
 function getLogoDataUri(): string {
   const candidates = [
-    path.join(__dirname, '../public/Logo.png'),
-    path.join(__dirname, '../dist/Logo.png'),
+    path.join(__dirname, '../public/LOGO_CAB_noir.jpg'),
+    path.join(__dirname, '../dist/LOGO_CAB_noir.jpg'),
   ]
 
   const logoPath = candidates.find((candidate) => fs.existsSync(candidate))
@@ -117,33 +119,32 @@ function buildInvoiceHtml(rows: string, amount: number, details: string, section
       <style>
         * { box-sizing: border-box; }
         html { margin: 0; padding: 0; }
-        body { width: 100%; max-width: 80mm; font-family: Arial, sans-serif; font-size: 9pt; line-height: 1.35; color: #000; margin: 0 auto; background: #fff; text-align: center; }
-        .receipt { width: 100%; max-width: 64mm; margin: 0 auto; padding: 4mm 2mm 8mm; overflow-wrap: anywhere; word-break: normal; }
-        .top { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 2mm; margin-bottom: 2mm; }
+        body { width: 100%; max-width: ${RECEIPT_PAGE_WIDTH_MM}mm; font-family: Arial, sans-serif; font-size: 9pt; line-height: 1.35; color: #000; margin: 0 auto; background: #fff; text-align: center; }
+        .receipt { width: 100%; max-width: ${RECEIPT_CONTENT_WIDTH_MM}mm; margin: 0 auto; padding: 2mm 1mm 3mm; overflow-wrap: anywhere; word-break: normal; }
+        .top { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 1mm; margin-bottom: 1mm; }
         .identity { display: flex; flex-direction: column; align-items: center; width: 100%; }
-        .receipt-logo { display: block; margin: 0 auto; width: 48mm; max-width: 100%; height: auto; object-fit: contain; filter: grayscale(1); }
+        .receipt-logo { display: block; margin: 0 auto; width: 38mm; max-width: 100%; height: auto; max-height: 20mm; object-fit: contain; filter: grayscale(1); }
         .receipt-phone { margin: 1mm 0 0; font-size: 8pt; text-align: center; }
         .receipt-date { margin: 1mm 0 0; font-size: 8pt; }
         .receipt-registration { margin: 0.5mm 0 0; font-size: 7pt; text-align: center; }
-        h1 { margin: 2mm 0 1mm; font-size: 12pt; letter-spacing: 1px; text-transform: uppercase; text-align: center; }
-        .grid { margin: 3mm 0; padding-bottom: 1mm; }
-        .field { margin-bottom: 1.5mm; text-align: center; }
+        h1 { margin: 1mm 0 0; font-size: 12pt; letter-spacing: 1px; text-transform: uppercase; text-align: center; }
+        .grid { margin: 1.5mm 0; }
+        .field { display: grid; grid-template-columns: 15mm minmax(0, 1fr); gap: 1mm; margin-bottom: 0.5mm; text-align: left; }
         .label { font-size: 8pt; }
         .value { max-width: 100%; font-weight: bold; }
-        h2 { margin: 0; padding: 2mm 0; border-top: 1px solid #000; border-bottom: 1px solid #000; font-size: 9pt; font-weight: bold; }
+        h2 { margin: 0; padding: 1mm 0; border-top: 1px solid #000; border-bottom: 1px solid #000; font-size: 9pt; font-weight: bold; }
         .items { list-style: none; margin: 0; padding: 0; }
-        .receipt-item { padding: 2.5mm 0; border-bottom: 1px dotted #000; }
-        .item-name { font-weight: bold; }
-        .item-detail { margin-top: 1mm; font-size: 8pt; }
-        .item-amount { margin-top: 1mm; font-size: 9pt; font-weight: bold; }
-        .total { margin-top: 2mm; padding-top: 2mm; border-top: 1px solid #000; text-align: center; font-size: 11pt; font-weight: bold; break-inside: avoid; }
-        .amount-words { margin-top: 2mm; font-size: 7.5pt; line-height: 1.5; text-align: center; }
-        .amount-words strong { display: block; margin-top: 0.5mm; }
-        .responsible-signature { margin-top: 3mm; text-align: center; font-size: 8pt; }
-        .responsible-signature span { display: block; height: 8mm; }
-        .footer { padding: 2mm 2mm 0; border-top: 1px dashed #000; text-align: center; font-size: 6.5pt; line-height: 1.6; }
+        .receipt-item { display: grid; grid-template-columns: minmax(0, 1fr) 24mm; column-gap: 2mm; padding: 1mm 0; border-bottom: 1px dotted #000; text-align: left; break-inside: avoid; }
+        .item-name { grid-column: 1; min-width: 0; font-weight: bold; }
+        .item-detail { grid-column: 1; font-size: 8pt; }
+        .item-amount { grid-column: 2; grid-row: 1 / span 2; align-self: center; text-align: right; font-size: 9pt; font-weight: bold; }
+        .total { margin-top: 1mm; padding-top: 1mm; border-top: 1px solid #000; text-align: right; font-size: 11pt; font-weight: bold; break-inside: avoid; }
+        .amount-words { margin-top: 1mm; font-size: 7.5pt; line-height: 1.3; text-align: left; }
+        .responsible-signature { margin-top: 1.5mm; text-align: center; font-size: 8pt; }
+        .responsible-signature span { display: block; height: 6mm; }
+        .footer { padding: 1mm 0 0; border-top: 1px dashed #000; text-align: center; font-size: 6.5pt; line-height: 1.3; }
         .footer p { margin: 0; }
-        .footer .reference { margin-top: 1mm; }
+        .footer .reference { margin-top: 0.5mm; }
         @page { margin: 0; }
       </style>
     </head>

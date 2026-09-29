@@ -13,7 +13,8 @@ export async function printReceipt(html: string, parent?: BrowserWindow): Promis
     if (!printers.length) throw new Error('Aucune imprimante installée. Installez le pilote de votre Xprinter dans Windows.')
     await ticket.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
     const heightMm = await prepareReceiptPage(ticket)
-    const thermalPrinter = printers.find((printer) => /xp[-_ ]?80/i.test(printer.name + ' ' + printer.displayName))
+    const thermalPrinter = printers.find((printer) => /xp[-_ ]?80[-_ ]?ts\b/i.test(printer.name + ' ' + printer.displayName))
+      ?? printers.find((printer) => /xp[-_ ]?80/i.test(printer.name + ' ' + printer.displayName))
       ?? printers.find((printer) => /xprinter/i.test(printer.name + ' ' + printer.displayName))
     return await new Promise<PrintResult>((resolve, reject) => {
       ticket.webContents.print({
