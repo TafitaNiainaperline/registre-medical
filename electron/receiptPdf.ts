@@ -123,7 +123,7 @@ function buildInvoiceHtml(rows: string, amount: number, details: string, section
         .receipt { width: 100%; max-width: ${RECEIPT_CONTENT_WIDTH_MM}mm; margin: 0 auto; padding: 2mm 1mm 3mm; overflow-wrap: anywhere; word-break: normal; }
         .top { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 1mm; margin-bottom: 1mm; }
         .identity { display: flex; flex-direction: column; align-items: center; width: 100%; }
-        .receipt-logo { display: block; margin: 0 auto; width: 38mm; max-width: 100%; height: auto; max-height: 20mm; object-fit: contain; filter: grayscale(1); }
+        .receipt-logo { display: block; margin: 0 auto; width: 68mm; max-width: 100%; height: auto; object-fit: contain; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
         .receipt-phone { margin: 1mm 0 0; font-size: 8pt; text-align: center; }
         .receipt-date { margin: 1mm 0 0; font-size: 8pt; }
         .receipt-registration { margin: 0.5mm 0 0; font-size: 7pt; text-align: center; }
