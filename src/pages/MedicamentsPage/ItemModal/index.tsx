@@ -14,12 +14,6 @@ type Props = {
   onClose: () => void
 }
 
-const UNITS = [
-  'comprimé', 'gélule', 'sachet', 'sirop', 'solution buvable', 'ampoule', 'injection', 'perfusion',
-  'pommade', 'crème', 'gel', 'spray', 'gouttes', 'suppositoire', 'ovule', 'patch', 'inhalateur',
-  'poudre', 'pastille', 'plaquette', 'boîte', 'flacon', 'tube', 'sachet individuel',
-]
-
 // Même modale pour créer et pour modifier, médicament comme acte
 const ItemModal = ({ itemType, editing, form, isAdmin, onChange, onSubmit, onClose }: Props) => {
   const isAct = itemType === 'act'
@@ -59,9 +53,12 @@ const ItemModal = ({ itemType, editing, form, isAdmin, onChange, onSubmit, onClo
             <>
               <label className="field">
                 <span>Forme pharmaceutique</span>
-                <select value={form.unit} onChange={(e) => set({ unit: e.target.value })}>
-                  {UNITS.map((unit) => <option key={unit} value={unit}>{unit}</option>)}
-                </select>
+                <input
+                  type="text"
+                  placeholder="Ex. comprimé, sirop, flacon"
+                  value={form.unit}
+                  onChange={(e) => set({ unit: e.target.value })}
+                />
               </label>
 
               <fieldset className="stock-fields wide">

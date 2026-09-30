@@ -89,7 +89,7 @@ export const useMedicamentsPage = () => {
       item_type: modalType || 'medication',
       name,
       price: Number(form.price) || 0,
-      unit: isAct ? null : (form.unit || 'comprimé'),
+      unit: isAct ? null : (form.unit.trim() || 'comprimé'),
       stock: isAct || !isAdmin || form.stock === '' ? null : Number(form.stock),
       stock_threshold: isAct ? DEFAULT_THRESHOLD : (form.stock_threshold === '' ? DEFAULT_THRESHOLD : Number(form.stock_threshold)),
       date: isAct ? undefined : form.date,
