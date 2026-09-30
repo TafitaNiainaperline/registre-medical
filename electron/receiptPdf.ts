@@ -62,8 +62,8 @@ function numberToFrenchWords(value: number): string {
 
 function getLogoDataUri(): string {
   const candidates = [
-    path.join(__dirname, '../public/LOGO_CAB_noir.jpg'),
-    path.join(__dirname, '../dist/LOGO_CAB_noir.jpg'),
+    path.join(__dirname, '../public/logo  farany.png'),
+    path.join(__dirname, '../dist/logo  farany.png'),
   ]
 
   const logoPath = candidates.find((candidate) => fs.existsSync(candidate))
