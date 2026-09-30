@@ -35,7 +35,7 @@ const menuSections: MenuSection[] = [
     title: 'Pharmacie',
     items: [
       { to: '/dispensation', icon: 'pill', label: 'Dispensation' },
-      { to: '/medicaments', icon: 'package', label: 'Médicaments' },
+      { to: '/medicaments', icon: 'package', label: 'Médicament et consommable' },
     ],
   },
   {

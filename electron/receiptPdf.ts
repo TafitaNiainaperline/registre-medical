@@ -140,8 +140,6 @@ function buildInvoiceHtml(rows: string, amount: number, details: string, section
         .item-amount { grid-column: 2; grid-row: 1 / span 2; align-self: center; text-align: right; font-size: 9pt; font-weight: bold; }
         .total { margin-top: 1mm; padding-top: 1mm; border-top: 1px solid #000; text-align: right; font-size: 11pt; font-weight: bold; break-inside: avoid; }
         .amount-words { margin-top: 1mm; font-size: 7.5pt; line-height: 1.3; text-align: left; }
-        .responsible-signature { margin-top: 1.5mm; text-align: center; font-size: 8pt; }
-        .responsible-signature span { display: block; height: 6mm; }
         .footer { padding: 1mm 0 0; border-top: 1px dashed #000; text-align: center; font-size: 6.5pt; line-height: 1.3; }
         .footer p { margin: 0; }
         .footer .reference { margin-top: 0.5mm; }
@@ -172,7 +170,6 @@ function buildInvoiceHtml(rows: string, amount: number, details: string, section
 
         <div class="total">Total : ${escapeHtml(formatMoney(amount))}</div>
         <div class="amount-words">Arrêtée à la somme de : <strong>${escapeHtml(amountInWords)} ariary</strong></div>
-        <div class="responsible-signature"><strong>Responsable</strong><span></span></div>
         <div class="footer"><p>Mba hambinina sy ho salama amin'ny zavatra rehetra anie ianao, tahaka izay anambinana ny fanahinao ihany.</p><p class="reference">III Jon 1:2</p></div>
       </main>
     </body>
@@ -184,7 +181,7 @@ function buildDispensationReceiptHtml(data: Dispensation | Dispensation[]): stri
   const amount = items.reduce((sum, item) => sum + Number(item.unit_price || 0) * Number(item.quantity), 0)
   const rows = items.map((dispensation) => `<li class="receipt-item">
     <div class="item-name">${escapeHtml(dispensation.medication_name)}</div>
-    <div class="item-detail">${escapeHtml(dispensation.quantity)} ${escapeHtml(dispensation.unit || 'comprimé')} × ${escapeHtml(formatMoney(dispensation.unit_price))}</div>
+    <div class="item-detail">${escapeHtml(dispensation.quantity)} × ${escapeHtml(formatMoney(dispensation.unit_price))}</div>
     <div class="item-amount">${escapeHtml(formatMoney(Number(dispensation.unit_price || 0) * Number(dispensation.quantity)))}</div>
   </li>`).join('')
   const first = items[0]
