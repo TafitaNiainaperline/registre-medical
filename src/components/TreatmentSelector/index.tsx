@@ -11,7 +11,7 @@ type Props = {
 const TreatmentSelector = ({ medications, value, onChange }: Props) => {
   const {
     treatments, byId, filteredMeds, searchName, isDropdownOpen,
-    setSearchName, setIsDropdownOpen, updateQty, remove, pick, total, toNumber,
+    setSearchName, setIsDropdownOpen, updateQty, finishQty, quantityDrafts, remove, pick, total, toNumber,
   } = useTreatmentSelector(medications, value, onChange)
 
   return (
@@ -71,8 +71,9 @@ const TreatmentSelector = ({ medications, value, onChange }: Props) => {
                       className="qty"
                       type="number"
                       min="1"
-                      value={t.quantity}
+                      value={quantityDrafts[String(t.medication_id)] ?? t.quantity}
                       onChange={(e) => updateQty(t.medication_id, e.target.value)}
+                      onBlur={() => finishQty(t.medication_id)}
                     />
                   )}
                   <span className="line-total">{toNumber(t.unit_price) * toNumber(t.quantity)} Ar</span>

@@ -17,6 +17,14 @@ export const useTreatmentSelector = (
 
   const [searchName, setSearchName] = useState('')
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [quantityDrafts, setQuantityDrafts] = useState<Record<string, string>>({})
+  const finishQty = (medicationId: number | null) => {
+    setQuantityDrafts((current) => {
+      const next = { ...current }
+      delete next[String(medicationId)]
+      return next
+    })
+  }
 
   const byId = useMemo(() => {
     const map = new Map<string, Medication>()
@@ -65,20 +73,26 @@ export const useTreatmentSelector = (
   }
 
   const updateQty = (medicationId: number | null, nextQty: string) => {
+    if (nextQty === '') {
+      setQuantityDrafts((current) => ({ ...current, [String(medicationId)]: '' }))
+      return
+    }
     const q = Math.max(1, toNumber(nextQty, 1))
     const med = byId.get(String(medicationId))
     const total = treatments.reduce((sum, t) =>
-      sum + (String(t.medication_id) === String(medicationId) ? q : toNumber(t.quantity)), 0)
+      sum + (String(t.medication_id) === String(medicationId) ? q : 0), 0)
 
     if (exceedsStock(med, total)) {
       showToast(`Stock insuffisant pour "${med?.name}" ! Disponible : ${med?.stock}`, 'err')
       return
     }
 
+    finishQty(medicationId)
     onChange?.(treatments.map((t) => String(t.medication_id) === String(medicationId) ? { ...t, quantity: q } : t))
   }
 
   const remove = (medicationId: number | null) => {
+    finishQty(medicationId)
     onChange?.(treatments.filter((t) => String(t.medication_id) !== String(medicationId)))
   }
 
@@ -86,6 +100,6 @@ export const useTreatmentSelector = (
 
   return {
     treatments, byId, filteredMeds, searchName, isDropdownOpen,
-    setSearchName, setIsDropdownOpen, updateQty, remove, pick, total, toNumber,
+    setSearchName, setIsDropdownOpen, updateQty, finishQty, quantityDrafts, remove, pick, total, toNumber,
   }
 }

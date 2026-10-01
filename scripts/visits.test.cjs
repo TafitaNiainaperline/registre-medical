@@ -24,6 +24,89 @@ function loader(mocks = {}) {
   }
 }
 
+test('low-stock treatment quantities ignore other medications and allow the last available units', () => {
+  const notices = []
+  const load = loader({
+    react: { useMemo: (compute) => compute(), useState: (initial) => [initial, () => {}] },
+    '../../utils/notifications': { notify: (text) => notices.push(text) },
+  })
+  const { useTreatmentSelector } = load('src/components/TreatmentSelector/useTreatmentSelector.ts')
+  const medications = [
+    { id: 1, name: 'A', item_type: 'medication', stock: 5, stock_threshold: 5 },
+    { id: 2, name: 'B', item_type: 'medication', stock: 20, stock_threshold: 5 },
+  ]
+  const treatments = [
+    { medication_id: 1, quantity: 1 },
+    { medication_id: 2, quantity: 10 },
+  ]
+  let updated
+  const selector = useTreatmentSelector(medications, treatments, (next) => { updated = next })
+  selector.updateQty(1, '3')
+  assert.deepEqual(updated.map((line) => line.quantity), [3, 10])
+  selector.updateQty(1, '5')
+  assert.deepEqual(updated.map((line) => line.quantity), [5, 10])
+  assert.equal(notices.length, 0)
+  selector.updateQty(1, '6')
+  assert.equal(notices.length, 1)
+  assert.deepEqual(updated.map((line) => line.quantity), [5, 10])
+
+  medications[0] = { ...medications[0], name: 'Parabufen', stock: 50 }
+  const parabufen = useTreatmentSelector(medications, treatments, (next) => { updated = next })
+  parabufen.updateQty(1, '41')
+  assert.deepEqual(updated.map((line) => line.quantity), [41, 10])
+  assert.equal(notices.length, 1)
+})
+
+test('treatment quantity can be cleared and retyped without saving an empty quantity', () => {
+  const state = []
+  let cursor = 0
+  const load = loader({
+    react: {
+      useMemo: (compute) => compute(),
+      useState: (initial) => {
+        const index = cursor++
+        if (!(index in state)) state[index] = initial
+        return [state[index], (next) => { state[index] = typeof next === 'function' ? next(state[index]) : next }]
+      },
+    },
+    '../../utils/notifications': { notify: () => {} },
+  })
+  const { useTreatmentSelector } = load('src/components/TreatmentSelector/useTreatmentSelector.ts')
+  const medications = [{ id: 1, name: 'Parabufen', stock: 50 }]
+  let treatments = [{ medication_id: 1, quantity: 41 }]
+  const render = () => {
+    cursor = 0
+    return useTreatmentSelector(medications, treatments, (next) => { treatments = next })
+  }
+  render().updateQty(1, '')
+  assert.equal(render().quantityDrafts['1'], '')
+  assert.equal(treatments[0].quantity, 41)
+  render().updateQty(1, '2')
+  assert.equal(render().quantityDrafts['1'], undefined)
+  assert.equal(treatments[0].quantity, 2)
+  render().updateQty(1, '')
+  render().finishQty(1)
+  assert.equal(render().quantityDrafts['1'], undefined)
+  assert.equal(treatments[0].quantity, 2)
+})
+
+test('dispensations can sell below the alert threshold until stock is exhausted', async () => {
+  const load = loader({
+    electron: { app: { isPackaged: false, getPath: () => 'in-memory-test' } },
+    fs: { ...fs, existsSync: () => false, writeFileSync: () => {}, renameSync: () => {} },
+  })
+  const db = load('electron/database.ts')
+  await db.createMedication({ name: 'Seuil test', price: 100, stock: 5, stock_threshold: 5, unit: 'comprimé' })
+  const med = (await db.listMedications()).find((item) => item.name === 'Seuil test')
+  for (const [quantity, remaining] of [[2, 3], [2, 1], [1, 0]]) {
+    await db.createDispensation({ medication_id: med.id, quantity })
+    const current = (await db.listMedications()).find((item) => item.id === med.id)
+    assert.equal(current.stock, remaining)
+    assert.equal(current.stock_threshold, 5)
+  }
+  await assert.rejects(db.createDispensation({ medication_id: med.id, quantity: 1 }), /Stock insuffisant/)
+})
+
 test('PF and CPN save female patient sex for dashboard records on creation and editing', async () => {
   const load = loader({
     electron: { app: { isPackaged: false, getPath: () => 'in-memory-test' } },
