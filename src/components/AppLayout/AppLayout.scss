@@ -19,6 +19,7 @@
     border-right: 1px solid var(--border);
 
     .brand {
+      position: relative;
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
@@ -46,6 +47,20 @@
         background-clip: text;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+      }
+
+      // Bascule clair/sombre : icône seule, coin supérieur gauche
+      .theme {
+        position: absolute;
+        top: 0;
+        left: 0;
+        padding: 0.45em;
+        border-radius: 50%;
+        background: transparent;
+        color: var(--brand-dark);
+        box-shadow: none;
+
+        &:hover { background: #e2f4f7; opacity: 1; transform: none; }
       }
     }
 
@@ -110,14 +125,12 @@
         font-size: 0.85em;
       }
 
-      .theme, .logout {
+      .logout {
         width: 100%;
         justify-content: flex-start;
         padding: 0.625em 0.75em;
         font-size: 0.9em;
       }
-
-      .theme { background: linear-gradient(135deg, var(--brand), #15707a); }
 
       // Action destructive : discrète au repos, franche au survol
       .logout {
@@ -154,7 +167,7 @@
       .brand .name { background: linear-gradient(135deg, #4fd1e0 0%, #2bb3c4 100%); background-clip: text; -webkit-background-clip: text; }
       nav .link { color: #c6d7dd; &:hover, &.active { background: #20313c; color: #fff; } }
       .bottom .user { background: #1b2b35; color: #d6e7ec; }
-      .bottom .theme { background: linear-gradient(135deg, #33495a, #22313d); }
+      .brand .theme { color: #4fd1e0; &:hover { background: #20313c; } }
     }
   }
 }
@@ -227,9 +240,10 @@
         .logo { width: 2.75em; height: 2.75em; flex-shrink: 0; }
         .name { font-size: 1.05em; }
 
+        .theme { position: static; margin-left: auto; }
+
         .close {
           display: flex;
-          margin-left: auto;
           padding: 0.35em;
           background: transparent;
           color: var(--soft);

@@ -23,6 +23,18 @@ const AppLayout = () => {
           <span className="logo" role="img" aria-label="Logo" />
           <span className="name">Registre Medical</span>
 
+          <button
+            type="button"
+            className="theme"
+            onClick={toggleTheme}
+            role="switch"
+            aria-label="Mode sombre"
+            aria-checked={darkMode}
+            title={darkMode ? 'Passer en mode clair' : 'Passer en mode sombre'}
+          >
+            <Icon name={darkMode ? 'sun' : 'moon'} size="md" />
+          </button>
+
           <button type="button" className="close" onClick={closeMenu} aria-label="Fermer le menu">
             <Icon name="close" size="md" />
           </button>
@@ -60,19 +72,6 @@ const AppLayout = () => {
             <Icon name="user" />
             <span>{currentUser.name || currentUser.username}</span>
           </div>
-
-          <button
-            type="button"
-            className="theme"
-            onClick={toggleTheme}
-            role="switch"
-            aria-label="Mode sombre"
-            aria-checked={darkMode}
-            title={darkMode ? 'Passer en mode clair' : 'Passer en mode sombre'}
-          >
-            <Icon name={darkMode ? 'moon' : 'sun'} />
-            <span>{darkMode ? 'Mode sombre' : 'Mode clair'}</span>
-          </button>
 
           <button className="logout" onClick={logout} title="Se déconnecter">
             <Icon name="logout" />

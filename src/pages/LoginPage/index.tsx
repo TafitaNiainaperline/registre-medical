@@ -45,6 +45,7 @@ const LoginPage = () => {
               onChange={change}
               required
               autoComplete={isRegister ? 'new-password' : 'current-password'}
+              autoFocus={!isRegister && !!form.username}
             />
             <button type="button" className="eye-btn" onClick={toggleShowPwd} tabIndex={-1}>
               <Icon name={showPwd ? 'eye-off' : 'eye'} size="md" />
