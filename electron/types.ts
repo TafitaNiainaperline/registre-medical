@@ -394,6 +394,7 @@ export type ElectronApi = {
   // Archives
   listArchives: () => Promise<Archive[]>
   getCurrentArchive: () => Promise<Archive>
+  nextEchographieId: () => Promise<string>
 
   // Médicaments
   listMedications: () => Promise<Medication[]>

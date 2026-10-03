@@ -616,6 +616,21 @@ function nextRegistryNumber(d: Database, category: CategoryKey, year: number): s
   return `${prefix}-${year}-${String(maxSeq + 1).padStart(3, '0')}`
 }
 
+// Id échographie suivant : plus grand Id numérique + 1, sinon 1
+async function nextEchographieId(): Promise<string> {
+  const d = await getDB()
+  const rows = toObjects<{ registry_number: string | null }>(d.exec(
+    `SELECT registry_number FROM medical_records
+     WHERE category = 'echographie' AND registry_number IS NOT NULL`
+  ))
+  const maxId = rows.reduce((max, row) => {
+    const match = String(row.registry_number || '').trim().match(/(\d+)$/)
+    const value = match ? Number(match[1]) : 0
+    return Number.isFinite(value) && value > max ? value : max
+  }, 0)
+  return String(maxId + 1)
+}
+
 // Dossier déjà ouvert ce mois-ci pour ce patient dans ce registre
 function findMonthlyDossier(
   d: Database,
@@ -2356,7 +2371,7 @@ export {
   loginUser, registerUser,
   getAllUsers, toggleUserActive, resetUserPassword, deleteUser,
   fetchRecords, fetchRecordsByArchive, fetchRecordById, fetchRecordsByDossier, fetchAppointments, fetchStats, fetchStatsByArchive, createRecord, updateRecord, deleteRecord, clearAppointment,
-  listArchives, getCurrentArchive,
+  listArchives, getCurrentArchive, nextEchographieId,
   listMedications, createMedication, updateMedication, getMedicationHistory,
   addMedicationStock,
   getMedicationMovements, getMedicationStockHistory, clearMedicationMovements,

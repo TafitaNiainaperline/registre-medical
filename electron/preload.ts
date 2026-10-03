@@ -110,6 +110,9 @@ const api: ElectronApi = {
   getCurrentArchive: () =>
     ipcRenderer.invoke('archives:current'),
 
+  nextEchographieId: () =>
+    ipcRenderer.invoke('records:nextEchographieId'),
+
   // MEDICATIONS
   listMedications: () =>
     ipcRenderer.invoke('meds:list'),

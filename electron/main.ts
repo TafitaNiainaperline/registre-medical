@@ -379,6 +379,10 @@ ipcMain.handle('archives:current', () => {
   return db.getCurrentArchive()
 })
 
+ipcMain.handle('records:nextEchographieId', () => {
+  return db.nextEchographieId()
+})
+
 // ─────────────────────────────────────────────────────
 // MEDICATIONS
 ipcMain.handle('meds:list', () => {

@@ -71,6 +71,24 @@ export const useRecordsPage = (category: Category) => {
 
   const currentUser = getCurrentUser()
 
+  // Id échographie auto : max en base + 1, sans écraser une saisie manuelle ni une modification
+  const autoEchographieId = useRef('')
+  const editingRef = useRef<number | null>(null)
+  useEffect(() => { editingRef.current = editingId }, [editingId])
+  const refreshEchographieId = () => {
+    if (category.key !== 'echographie') return
+    window.api.nextEchographieId()
+      .then((nextId) => {
+        const previous = autoEchographieId.current
+        autoEchographieId.current = nextId
+        if (editingRef.current) return
+        setForm((current) => !current.registry_number || current.registry_number === previous
+          ? { ...current, registry_number: nextId }
+          : current)
+      })
+      .catch((err: unknown) => console.error('nextEchographieId failed:', err))
+  }
+
   const load = (archive: Archive | null = activeArchive) => {
     const period = archive?.year && archive?.month
       ? { year: archive.year, month: archive.month }
@@ -124,6 +142,7 @@ export const useRecordsPage = (category: Category) => {
     if (category.key === 'echographie') {
       setActiveArchive(null)
       load(null)
+      refreshEchographieId()
     } else {
       window.api.listArchives()
         .then((list) => {
@@ -186,6 +205,8 @@ export const useRecordsPage = (category: Category) => {
     && pendingConfirmation.editingId === editingId && pendingConfirmation.category === category.key
 
   useEffect(() => { setPendingConfirmation(null) }, [activeTab])
+
+  useEffect(() => { if (activeTab === 'nouveau') refreshEchographieId() }, [activeTab])
 
   const submit = async (e: { preventDefault: () => void }, confirmed = false): Promise<void> => {
     e.preventDefault()
@@ -296,6 +317,7 @@ export const useRecordsPage = (category: Category) => {
       setHistoryRow(null)
       setActiveTab('liste')
       await load()
+      refreshEchographieId()
     } catch (err) {
       console.error('submit failed:', err)
       setActionError(errorMessage(err, 'Erreur lors de l’enregistrement.'))
@@ -389,6 +411,7 @@ export const useRecordsPage = (category: Category) => {
     await window.api.deleteRecord(id)
     showToast('Visite supprimée.')
     await load()
+    refreshEchographieId()
   })
 
 
@@ -472,7 +495,12 @@ export const useRecordsPage = (category: Category) => {
       nom: capitalize(identity.nom, true),
       domicile: capitalize(identity.domicile, true),
     } }),
-    cancelEdit: () => { setEditingId(null); setForm(emptyForm) },
+    cancelEdit: () => {
+      editingRef.current = null
+      setEditingId(null)
+      setForm(emptyForm)
+      refreshEchographieId()
+    },
     clearFilters: () => setFilters({ search: '', diagnostic: '', age: '', date: '', act: '' }),
     diagnosticOptions,
     pfMethodOptions,

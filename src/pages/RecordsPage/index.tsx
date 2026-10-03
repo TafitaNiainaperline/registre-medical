@@ -318,7 +318,7 @@ const RecordsPage = ({ category }: Props) => {
             {isEchographie && (
               <label>
                 Id
-                <input name="registry_number" placeholder="Identifiant saisi manuellement" value={form.registry_number} onChange={change} required />
+                <input name="registry_number" placeholder="Id automatique (modifiable)" value={form.registry_number} onChange={change} required />
               </label>
             )}
 
