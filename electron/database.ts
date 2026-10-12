@@ -386,6 +386,9 @@ function initTables(d: Database): void {
     `ALTER TABLE medical_records ADD COLUMN tdr_result TEXT`,
     `ALTER TABLE medical_records ADD COLUMN pf_method TEXT`,
     `ALTER TABLE medical_records ADD COLUMN cpn_type TEXT`,
+    `ALTER TABLE medical_records ADD COLUMN prescriber TEXT`,
+    `ALTER TABLE medical_records ADD COLUMN prescriber_number TEXT`,
+    `ALTER TABLE medical_records ADD COLUMN performed_by TEXT`,
     `ALTER TABLE medical_records ADD COLUMN reference TEXT`,
     `ALTER TABLE medical_records ADD COLUMN patient_id INTEGER`,
     `ALTER TABLE dossiers ADD COLUMN patient_id INTEGER`,
@@ -1092,6 +1095,9 @@ function ensureMedicalRecordsSchema(d: Database): boolean {
     ensureCol('tdr_result', 'ALTER TABLE medical_records ADD COLUMN tdr_result TEXT')
     ensureCol('pf_method', 'ALTER TABLE medical_records ADD COLUMN pf_method TEXT')
     ensureCol('cpn_type', 'ALTER TABLE medical_records ADD COLUMN cpn_type TEXT')
+    ensureCol('prescriber', 'ALTER TABLE medical_records ADD COLUMN prescriber TEXT')
+    ensureCol('prescriber_number', 'ALTER TABLE medical_records ADD COLUMN prescriber_number TEXT')
+    ensureCol('performed_by', 'ALTER TABLE medical_records ADD COLUMN performed_by TEXT')
     ensureCol('reference', 'ALTER TABLE medical_records ADD COLUMN reference TEXT')
     ensureCol('patient_id', 'ALTER TABLE medical_records ADD COLUMN patient_id INTEGER')
 
@@ -1487,8 +1493,8 @@ async function createRecord(data: RecordInput): Promise<number | undefined> {
   try {
     setRegistryPatientSex(d, data.category, data.patient_id)
     d.run(`INSERT INTO medical_records
-      (category, dossier_id, patient_id, diagnostic, traitement, observation, cost, created_by, registry_number, archive_year, archive_month, treatments_json, appointment_date, tdr_result, pf_method, cpn_type, reference)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (category, dossier_id, patient_id, diagnostic, traitement, observation, cost, created_by, registry_number, archive_year, archive_month, treatments_json, appointment_date, tdr_result, pf_method, cpn_type, reference, prescriber, performed_by, prescriber_number)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           data.category,
           data.dossier_id || null,
@@ -1507,6 +1513,9 @@ async function createRecord(data: RecordInput): Promise<number | undefined> {
           data.pf_method || null,
           data.cpn_type || null,
         data.reference || null,
+        data.category === 'echographie' ? (data.prescriber?.trim() || null) : null,
+        data.category === 'echographie' ? (data.performed_by?.trim() || null) : null,
+        data.category === 'echographie' ? (data.prescriber_number?.trim() || null) : null,
       ])
 
     const idRes = toObjects<{ id: number }>(d.exec('SELECT last_insert_rowid() as id'))
@@ -1566,8 +1575,8 @@ async function addTreatmentsToRecord(recordId: number, data: ContinueRecordInput
   try {
     setRegistryPatientSex(d, existing.category, existing.patient_id)
     d.run(`INSERT INTO medical_records
-      (category, dossier_id, patient_id, diagnostic, traitement, observation, cost, created_by, registry_number, archive_year, archive_month, treatments_json, appointment_date, tdr_result, pf_method, cpn_type, reference)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (category, dossier_id, patient_id, diagnostic, traitement, observation, cost, created_by, registry_number, archive_year, archive_month, treatments_json, appointment_date, tdr_result, pf_method, cpn_type, reference, prescriber, performed_by, prescriber_number)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         existing.category,
         dossierId,
@@ -1586,6 +1595,9 @@ async function addTreatmentsToRecord(recordId: number, data: ContinueRecordInput
         existing.pf_method || null,
         existing.cpn_type || null,
         existing.reference || null,
+        existing.prescriber || null,
+        existing.performed_by || null,
+        existing.prescriber_number || null,
       ])
 
     const newRecordId = toObjects<{ id: number }>(d.exec('SELECT last_insert_rowid() as id'))[0]?.id
@@ -1673,7 +1685,7 @@ async function updateRecord(id: number, data: RecordUpdateInput): Promise<void> 
     }
 
     d.run(`UPDATE medical_records SET
-      diagnostic=?, traitement=?, observation=?, cost=?, registry_number=?, treatments_json=?, appointment_date=?, tdr_result=?, pf_method=?, cpn_type=?, reference=?,
+      diagnostic=?, traitement=?, observation=?, cost=?, registry_number=?, treatments_json=?, appointment_date=?, tdr_result=?, pf_method=?, cpn_type=?, reference=?, prescriber=?, performed_by=?, prescriber_number=?,
       patient_id=COALESCE(?, patient_id) WHERE id=?`,
       [
         data.diagnostic,
@@ -1687,6 +1699,9 @@ async function updateRecord(id: number, data: RecordUpdateInput): Promise<void> 
         data.pf_method || null,
         data.cpn_type || null,
         data.reference || null,
+        existing.category === 'echographie' ? (data.prescriber?.trim() || null) : null,
+        existing.category === 'echographie' ? (data.performed_by?.trim() || null) : null,
+        existing.category === 'echographie' ? (data.prescriber_number?.trim() || null) : null,
         patientId,
         id
       ])

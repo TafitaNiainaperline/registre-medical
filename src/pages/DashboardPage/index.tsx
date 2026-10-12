@@ -7,7 +7,7 @@ const DashboardPage = () => {
     selectedYear, setSelectedYear, selectedMonth, setSelectedMonth, availableYears, stats, dispensations,
     periodLabel, loading, error, ready,
     totalRecords, totalAmount, cashOutflowTotal, balance, tdr,
-    sexSummary, ageGroupSummary, diagnosticSummary, pfSummary, cpnSummary, diagnosticsByCategory,
+    sexSummary, ageGroupSummary, diagnosticSummary, pfSummary, cpnSummary, echographieSummary, diagnosticsByCategory,
   } = useDashboardPage()
 
   return (
@@ -150,6 +150,22 @@ const DashboardPage = () => {
           <strong className="value">{dispensations.count}</strong>
           <span className="subtitle">Total : {dispensations.total.toLocaleString()} Ar</span>
         </article>
+      </div>
+
+      <div className="panel">
+        <h3><Icon name="users" size="md" /> Échographies réalisées par personne</h3>
+        <p>{periodLabel} — nombre d’examens réalisés</p>
+        {echographieSummary.length === 0 ? <p className="muted">Aucune échographie pour ce mois.</p> : (
+          <table>
+            <thead><tr><th>Réalisé par</th><th>Nombre d’échographies</th></tr></thead>
+            <tbody>
+              {echographieSummary.map(([name, count]) => (
+                <tr key={name}><td>{name}</td><td>{count}</td></tr>
+              ))}
+            </tbody>
+            <tfoot><tr><th>Total</th><td>{echographieSummary.reduce((sum, [, count]) => sum + count, 0)}</td></tr></tfoot>
+          </table>
+        )}
       </div>
 
       {ageGroupSummary.length > 0 && (

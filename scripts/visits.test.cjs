@@ -140,13 +140,18 @@ test('ultrasound visits preserve manual identifiers independently of automatic r
     treatments: [{ item_type: 'act', name: 'Echographie', quantity: 1, unit_price: 20000 }] }
   await assert.rejects(db.createRecord(input), /Id est requis/)
   await assert.rejects(db.createRecord({ ...input, registry_number: 'E-007', diagnostic: ' ' }), /renseignement clinique/)
-  const firstId = await db.createRecord({ ...input, registry_number: ' E-007 ' })
+  const firstId = await db.createRecord({ ...input, registry_number: ' E-007 ', prescriber: ' Dr A ', performed_by: ' Technicien B ' })
+  const first = await db.fetchRecordById(firstId)
+  assert.equal(first.prescriber, 'Dr A')
+  assert.equal(first.performed_by, 'Technicien B')
   const secondId = await db.createRecord({ ...input, registry_number: '0012/B' })
   assert.equal((await db.fetchRecordById(firstId)).registry_number, 'E-007')
   assert.equal((await db.fetchRecordById(secondId)).registry_number, '0012/B')
-  await db.updateRecord(firstId, { ...input, registry_number: 'E-009' })
+  await db.updateRecord(firstId, { ...input, registry_number: 'E-009', prescriber: ' Dr C ', performed_by: ' Technicien D ' })
   const updated = await db.fetchRecordById(firstId)
   assert.equal(updated.registry_number, 'E-009')
+  assert.equal(updated.prescriber, 'Dr C')
+  assert.equal(updated.performed_by, 'Technicien D')
   assert.equal(updated.diagnostic, input.diagnostic)
   assert.equal(updated.cost, 20000)
   assert.equal(updated.sexe, 'M')
@@ -659,6 +664,34 @@ test('dashboard CPN matches registry counters and keeps its period separate from
   } finally {
     global.window = previousWindow
   }
+})
+
+test('ultrasound dashboard counts exams per performer for the selected month without merging repeat patients', async () => {
+  const load = loader()
+  const { summarizeEchographie } = load('src/pages/DashboardPage/summarizeEchographie.ts')
+  const { loadDashboardMonth } = load('src/pages/DashboardPage/loadDashboardMonth.ts')
+  const rows = [
+    { id: 1, patient_id: 1, category: 'echographie', performed_by: ' Alice ', archive_year: 2026, archive_month: 12 },
+    { id: 2, patient_id: 1, category: 'echographie', performed_by: 'alice', archive_year: 2026, archive_month: 12 },
+    { id: 3, category: 'echographie', performed_by: 'Bob', archive_year: 2026, archive_month: 12 },
+    { id: 4, category: 'echographie', performed_by: null, archive_year: 2026, archive_month: 12 },
+    { id: 5, category: 'consultation', performed_by: 'Alice', archive_year: 2026, archive_month: 12 },
+    { id: 6, category: 'echographie', performed_by: 'Alice', archive_year: 2027, archive_month: 1 },
+  ]
+  const previousWindow = global.window
+  global.window = { api: {
+    fetchRecordsByArchive: async ({ year, month }) => rows.filter((row) => row.archive_year === year && row.archive_month === month),
+    getDispensationTotal: async () => 0,
+    getDispensations: async () => [],
+    getCashOutflowTotal: async () => 0,
+  } }
+  try {
+    assert.deepEqual(summarizeEchographie((await loadDashboardMonth({ year: 2026, month: 12 })).records),
+      [['Alice', 2], ['Bob', 1], ['Non renseigné', 1]])
+    assert.deepEqual(summarizeEchographie((await loadDashboardMonth({ year: 2027, month: 1 })).records), [['Alice', 1]])
+    assert.deepEqual(summarizeEchographie((await loadDashboardMonth({ year: 2027, month: 2 })).records), [])
+    assert.equal(rows.filter((row) => row.category === 'echographie').length, 5)
+  } finally { global.window = previousWindow }
 })
 
 test('monthly dashboard filters registers, dispensation counts and financial totals to one month', async () => {

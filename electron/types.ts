@@ -138,6 +138,9 @@ export type MedicalRecord = {
   appointment_date: string | null
   tdr_result: TdrResult | null
   pf_method: string | null
+  prescriber_number: string | null
+  prescriber: string | null
+  performed_by: string | null
   cpn_type: string | null
   reference: string | null
   created_at: string
@@ -161,6 +164,9 @@ export type RecordInput = {
   appointment_date?: string | null
   tdr_result?: TdrResult | null
   pf_method?: string | null
+  prescriber_number?: string | null
+  prescriber?: string | null
+  performed_by?: string | null
   cpn_type?: string | null
   reference?: string | null
 }

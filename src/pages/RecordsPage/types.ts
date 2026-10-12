@@ -13,6 +13,9 @@ export type RecordForm = {
   cost: number | string
   treatments: Treatment[]
   pf_method: string
+  prescriber_number: string
+  prescriber: string
+  performed_by: string
   cpn_type: string
   reference: string
 }

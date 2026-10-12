@@ -43,7 +43,7 @@ const RecordsPage = ({ category }: Props) => {
     : category.key === 'pf' ? { label: 'Produit PF', value: 'pf_method' as const }
     : null
 
-  const columnCount = 12 - (isAdultRegistry ? 1 : 0) + (isConsultation ? 1 : 0) + (extraColumn ? 1 : 0)
+  const columnCount = 12 - (isAdultRegistry ? 1 : 0) + (isConsultation ? 1 : 0) + (extraColumn ? 1 : 0) + (isEchographie ? 2 : 0)
   const hasFilters = Object.values(filters).some(Boolean)
   const registrySummary = category.key === 'cpn' ? cpnSummary : pfSummary
   const registryFilterLabel = category.key === 'cpn'
@@ -207,6 +207,7 @@ const RecordsPage = ({ category }: Props) => {
               <th>Âge</th>
               <th>Domicile</th>
               <th>{clinicalLabel}</th>
+              {isEchographie && <><th>Prescripteur</th><th>Réalisé par</th></>}
               <th>Traitement</th>
               <th>Observation</th>
               {extraColumn && <th>{extraColumn.label}</th>}
@@ -232,6 +233,7 @@ const RecordsPage = ({ category }: Props) => {
                 <td><span className={`badge age ${ageUnit(row.age_months)}`}>{displayAge(row.age)}</span></td>
                 <td>{row.domicile}</td>
                 <td>{row.diagnostic}</td>
+                {isEchographie && <><td>{row.prescriber || '-'}{row.prescriber_number && <div>N° : {row.prescriber_number}</div>}</td><td>{row.performed_by || '-'}</td></>}
                 <td className="treatments">{treatmentsLabel(row.treatments) || row.traitement}</td>
                 <td>{row.observation || '-'}</td>
 
@@ -330,6 +332,23 @@ const RecordsPage = ({ category }: Props) => {
               id="diagnostic"
               required
             />
+
+            {isEchographie && (
+              <>
+                <label htmlFor="prescriber">
+                  Prescripteur (obligatoire)
+                  <input id="prescriber" name="prescriber" placeholder="Nom du prescripteur" value={form.prescriber} onChange={change} required />
+                </label>
+                <label htmlFor="prescriber_number">
+                  Numéro du prescripteur (optionnel)
+                  <input id="prescriber_number" name="prescriber_number" placeholder="Numéro du prescripteur" value={form.prescriber_number} onChange={change} />
+                </label>
+                <label htmlFor="performed_by">
+                  Réalisé par (obligatoire)
+                  <input id="performed_by" name="performed_by" placeholder="Nom de la personne ayant réalisé l’échographie" value={form.performed_by} onChange={change} required />
+                </label>
+              </>
+            )}
 
             <div className="field appointment">
               <span>Rendez-vous</span>

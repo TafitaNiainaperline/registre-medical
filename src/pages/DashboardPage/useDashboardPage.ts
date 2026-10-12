@@ -4,6 +4,8 @@ import { categories } from '../../constants'
 import { normalize } from '../../utils/text'
 import { mergeRecords, summarizePfRecords, summarizeCpnRecords } from '../../utils/record'
 import { loadDashboardMonth } from './loadDashboardMonth'
+import { summarizeEchographie } from './summarizeEchographie'
+import { watchCurrentMonth } from '../../utils/watchCurrentMonth'
 import type { Counted } from './types'
 
 // Tranches d'âge officielles, exprimées en mois
@@ -56,6 +58,13 @@ export const useDashboardPage = () => {
   const loading = !ready || loadedPeriod !== periodKey
   const periodLabel = new Date(selectedYear, selectedMonth - 1, 1)
     .toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+
+  useEffect(() => watchCurrentMonth((monthKey) => {
+    const [year, month] = monthKey.split('-').map(Number)
+    setSelectedYear(year)
+    setSelectedMonth(month)
+    setAvailableYears((years) => [...new Set([...years, year])].sort((a, b) => b - a))
+  }), [])
 
   useEffect(() => {
     let canceled = false
@@ -126,6 +135,7 @@ export const useDashboardPage = () => {
     diagnosticSummary: countDistinctPatients(records, diagnosticOf).sort(byCountDesc),
     pfSummary: summarizePfRecords(mergeRecords(records)),
     cpnSummary: summarizeCpnRecords(records),
+    echographieSummary: summarizeEchographie(records),
     diagnosticsByCategory: categories.map((category) => ({
       ...category,
       diagnostics: countDistinctPatients(records.filter((row) => row.category === category.key), diagnosticOf)

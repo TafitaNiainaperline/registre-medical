@@ -22,11 +22,11 @@ import type { RecordForm } from './types'
 
 const emptyForm: RecordForm = {
   patient: null, identity: emptyIdentity, diagnostic: '', traitement: '', observation: '', appointment_date: '',
-  registry_number: '', tdr_result: '', reference: '', cost: '', treatments: [], pf_method: '', cpn_type: '',
+  registry_number: '', tdr_result: '', reference: '', cost: '', treatments: [], pf_method: '', cpn_type: '', prescriber: '', performed_by: '', prescriber_number: '',
 }
 
 // Les champs libres sont remis en forme à la saisie
-const TEXT_FIELDS = new Set(['diagnostic', 'traitement', 'observation', 'pf_method', 'reference'])
+const TEXT_FIELDS = new Set(['diagnostic', 'traitement', 'observation', 'pf_method', 'reference', 'prescriber', 'performed_by'])
 
 export function appointmentStatus(date: string | null, today = todayIso()): string {
   if (!date) return ''
@@ -215,6 +215,8 @@ export const useRecordsPage = (category: Category) => {
     setActionOk('')
 
     const identity = form.identity
+    if (category.key === 'echographie' && !form.prescriber.trim()) { setActionError('Le prescripteur est requis.'); return }
+    if (category.key === 'echographie' && !form.performed_by.trim()) { setActionError('Le nom de la personne ayant réalisé l’échographie est requis.'); return }
     if (category.key === 'pf' && !form.pf_method.trim()) { setActionError('Le produit PF est requis.'); return }
     if (category.key === 'cpn' && !form.cpn_type.trim()) { setActionError('Le N° CPN est requis.'); return }
     if (category.key === 'echographie' && !form.registry_number.trim()) { setActionError('L’Id est requis.'); return }
@@ -292,6 +294,9 @@ export const useRecordsPage = (category: Category) => {
       tdr_result: category.key === 'consultation' ? (form.tdr_result || null) : null,
       reference: category.key === 'consultation' ? (capitalize(form.reference.trim()) || null) : null,
       pf_method: category.key === 'pf' ? (capitalize(form.pf_method.trim()) || null) : null,
+      prescriber_number: category.key === 'echographie' ? (form.prescriber_number.trim() || null) : null,
+      prescriber: category.key === 'echographie' ? (form.prescriber.trim() || null) : null,
+      performed_by: category.key === 'echographie' ? (form.performed_by.trim() || null) : null,
       cpn_type: category.key === 'cpn' ? (form.cpn_type || null) : null,
       traitement: capitalize(form.traitement.trim()),
       treatments,
@@ -361,6 +366,9 @@ export const useRecordsPage = (category: Category) => {
       cost: row.cost || '',
       treatments: row.treatments.map(toTreatment),
       pf_method: row.pf_method || '',
+      prescriber_number: row.prescriber_number || '',
+      prescriber: row.prescriber || '',
+      performed_by: row.performed_by || '',
       cpn_type: row.cpn_type || '',
     })
   }
@@ -449,7 +457,7 @@ export const useRecordsPage = (category: Category) => {
     return matches(filters.search, [
       `${row.patient_nom || ''} ${row.patient_prenom || ''}`, row.diagnostic,
       displayRegistryNumber(row.registry_number, row.category), row.registry_number, row.reference,
-      row.cpn_type, row.pf_method,
+      row.cpn_type, row.pf_method, row.prescriber, row.performed_by, row.prescriber_number,
     ])
       && (!filters.diagnostic || normalize(row.diagnostic).includes(normalize(filters.diagnostic)))
       && (!filters.age || normalize(row.age).includes(normalize(filters.age)))
