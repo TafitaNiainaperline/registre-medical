@@ -215,6 +215,8 @@ export const useRecordsPage = (category: Category) => {
     setActionOk('')
 
     const identity = form.identity
+    if (category.key === 'pf' && !form.pf_method.trim()) { setActionError('Le produit PF est requis.'); return }
+    if (category.key === 'cpn' && !form.cpn_type.trim()) { setActionError('Le N° CPN est requis.'); return }
     if (category.key === 'echographie' && !form.registry_number.trim()) { setActionError('L’Id est requis.'); return }
     if (!form.diagnostic.trim()) { setActionError(category.key === 'echographie' ? 'Le renseignement clinique est requis.' : 'Le diagnostic est requis.'); return }
     const dateError = appointmentDateError(form.appointment_date)

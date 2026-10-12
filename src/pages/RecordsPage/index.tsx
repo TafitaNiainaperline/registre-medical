@@ -355,24 +355,31 @@ const RecordsPage = ({ category }: Props) => {
             )}
 
             {category.key === 'pf' && (
-              <SuggestionInput
-                id="pf_method"
-                placeholder="Produits PF"
-                value={form.pf_method}
-                suggestions={pfMethodOptions}
-                onChange={(value) => setForm({ ...form, pf_method: capitalize(value, true) })}
-              />
+              <label htmlFor="pf_method">
+                Produits PF (obligatoire)
+                <SuggestionInput
+                  id="pf_method"
+                  placeholder="Produits PF"
+                  required
+                  value={form.pf_method}
+                  suggestions={pfMethodOptions}
+                  onChange={(value) => setForm({ ...form, pf_method: capitalize(value, true) })}
+                />
+              </label>
             )}
 
             {category.key === 'cpn' && (
-              <select name="cpn_type" aria-label="Numéro de consultation prénatale" value={form.cpn_type} onChange={change}>
-                <option value="">N° CPN (optionnel)</option>
-                <option value="CPN1">CPN1</option>
-                <option value="CPN2">CPN2</option>
-                <option value="CPN3">CPN3</option>
-                <option value="CPN4">CPN4</option>
-                <option value="CPN5">CPN5</option>
-              </select>
+              <label htmlFor="cpn_type">
+                N° CPN (obligatoire)
+                <select id="cpn_type" name="cpn_type" aria-label="Numéro de consultation prénatale" value={form.cpn_type} onChange={change} required>
+                  <option value="">Sélectionner le N° CPN</option>
+                  <option value="CPN1">CPN1</option>
+                  <option value="CPN2">CPN2</option>
+                  <option value="CPN3">CPN3</option>
+                  <option value="CPN4">CPN4</option>
+                  <option value="CPN5">CPN5</option>
+                </select>
+              </label>
             )}
           </fieldset>
 
