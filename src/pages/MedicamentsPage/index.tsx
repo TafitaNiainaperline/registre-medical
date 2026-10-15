@@ -1,4 +1,7 @@
 import Icon from '../../components/Icon'
+import { useState } from 'react'
+import type { Medication } from '../../../electron/types'
+import MedicationUsage from './MedicationUsage'
 import { formatDate } from '../../utils/date'
 import StockModal from './StockModal'
 import StockHistoryModal from './StockHistoryModal'
@@ -9,7 +12,9 @@ import './MedicamentsPage.scss'
 
 
 const MedicamentsPage = () => {
+  const [usageTarget, setUsageTarget] = useState<Medication | null>(null)
   const {
+    usageCounts,
     currentUser, isAdmin, filteredTopSelling, form, setForm, editingId, modalType, search, setSearch, message,
     openCreate, openEdit, closeModal, submit, exportStock,
     stockTarget, stockQuantity, setStockQuantity, stockDate, setStockDate, openStock, closeStock, confirmStock,
@@ -19,6 +24,7 @@ const MedicamentsPage = () => {
 
   return (
     <>
+      {usageTarget && <MedicationUsage medication={usageTarget} onClose={() => setUsageTarget(null)} />}
       {stockTarget && (
         <StockModal
           medication={stockTarget}
@@ -144,13 +150,14 @@ const MedicamentsPage = () => {
                   <th className="center">Stock</th>
                   <th className="center">Seuil</th>
                 </>}
+                <th className="num">{isActCategory ? 'Quantité réalisée' : 'Quantité utilisée'}</th>
                 <th className="center">Date</th>
                 <th className="center">Actions</th>
               </tr>
             </thead>
             <tbody>
               {groupRows.length === 0 && (
-                <tr><td className="empty" colSpan={isActCategory ? 4 : 7}>
+                <tr><td className="empty" colSpan={isActCategory ? 5 : 8}>
                   {isActCategory ? 'Aucun acte médical à afficher.' : 'Aucun médicament à afficher.'}
                   {search && <button type="button" className="btn-light" onClick={() => setSearch('')}>Effacer la recherche</button>}
                 </td></tr>
@@ -182,9 +189,13 @@ const MedicamentsPage = () => {
                     </td>
                     <td className="center">{row.stock_threshold ?? 100}</td>
                     </>}
+                    <td className="num" title="Toutes les périodes et archives">{usageCounts?.has(row.id) ? usageCounts.get(row.id)!.toLocaleString('fr-FR') : '—'}</td>
                     <td className="center date">{formatDate(row.created_at)}</td>
                     <td className="actions">
                       <div>
+                        <button type="button" className="btn-light" onClick={() => setUsageTarget(row)}>
+                          <Icon name="eye" /> Quantités utilisées
+                        </button>
                         {!isAct && (
                           <button className="icon-btn add" title="Ajouter du stock" onClick={() => openStock(row)}>
                             <Icon name="plus" />

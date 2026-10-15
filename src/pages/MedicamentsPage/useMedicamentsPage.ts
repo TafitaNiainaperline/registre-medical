@@ -5,6 +5,7 @@ import { getCurrentUser } from '../../utils/currentUser'
 import { errorMessage } from '../../utils/error'
 import { capitalize, normalize } from '../../utils/text'
 import { formatDate, formatDay, todayIso } from '../../utils/date'
+import { medicationUsage } from '../../utils/medicationUsage'
 import type { ActSummaryEntry, MedicationForm } from './types'
 
 type MessageType = 'ok' | 'err'
@@ -24,6 +25,7 @@ export const useMedicamentsPage = () => {
   const isAdmin = currentUser.role === 'admin'
 
   const [rows, setRows] = useState<Medication[]>([])
+  const [usageCounts, setUsageCounts] = useState<Map<number, number> | null>(null)
   const [records, setRecords] = useState<MedicalRecord[]>([])
   const [topSelling, setTopSelling] = useState<TopSellingMedication[]>([])
   const [form, setForm] = useState<MedicationForm>(emptyForm)
@@ -44,6 +46,9 @@ export const useMedicamentsPage = () => {
 
   useEffect(() => {
     load()
+    Promise.all([window.api.listMedications(), window.api.fetchRecordsByArchive({}), window.api.getDispensations()])
+      .then(([items, visits, dispensations]) => setUsageCounts(new Map(items.map((item) => [item.id, medicationUsage(item, visits, dispensations).total]))))
+      .catch(() => setUsageCounts(null))
     window.api.fetchRecordsByArchive({}).then((r) => setRecords(r || [])).catch(() => setRecords([]))
     window.api.getTopSellingMedications().then(setTopSelling).catch(() => setTopSelling([]))
   }, [])
@@ -190,7 +195,7 @@ export const useMedicamentsPage = () => {
       const name = String(treatment.name || '').trim()
       if (!name) return
       const entry = actTotals.get(name) || { name, count: 0, total: 0 }
-      entry.count += 1
+      entry.count += Number(treatment.quantity) || 0
       entry.total += (Number(treatment.unit_price) || 0) * (Number(treatment.quantity) || 1)
       actTotals.set(name, entry)
     })
@@ -205,6 +210,7 @@ export const useMedicamentsPage = () => {
   }
 
   return {
+    usageCounts,
     currentUser, isAdmin, rows, topSelling, form, setForm, editingId, modalType, search, setSearch, message,
     openCreate, openEdit, closeModal, submit, notify, exportStock,
     stockTarget, stockQuantity, setStockQuantity, stockDate, setStockDate, openStock, closeStock, confirmStock,

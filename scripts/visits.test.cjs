@@ -24,6 +24,34 @@ function loader(mocks = {}) {
   }
 }
 
+test('medication usage counts every visit and dispensation across registers without mixing catalogue identities', () => {
+  const load = loader()
+  const { medicationUsage } = load('src/utils/medicationUsage.ts')
+  const { categories } = load('src/constants.ts')
+  const medication = { id: 7, name: 'Paracétamol' }
+  const records = categories.map((category, index) => ({ id: index + 1, category: category.key,
+    patient_nom: 'Patient', patient_id: 1, created_at: '2025-01-01',
+    treatments: [
+      { medication_id: 7, name: 'Ancien nom', quantity: 2, item_type: 'medication' },
+      { medication_id: 8, name: 'Paracétamol', quantity: 100, item_type: 'medication' },
+      { medication_id: 7, name: 'Acte', quantity: 100, item_type: 'act' },
+    ] }))
+  records.push({ id: 20, category: 'consultation', patient_id: 1, created_at: '2026-10-01',
+    treatments: [{ name: 'PARACETAMOL', quantity: 3 }] })
+  records.push({ id: 21, category: 'consultation', created_at: '2026-10-02', traitement: 'Paracétamol', treatments: null })
+  const result = medicationUsage(medication, records, [
+    { id: 1, medication_id: 7, quantity: 4, created_at: '2026-10-03' },
+    { id: 2, medication_id: 8, quantity: 100, created_at: '2026-10-03' },
+  ])
+  assert.equal(result.total, 19)
+  assert.equal(result.entries.length, 8)
+  assert.equal(result.entries[0].source, 'Dispensation')
+  assert.equal(result.totals.find(item => item.source === 'Dispensation').quantity, 4)
+  assert.equal(result.totals[0].quantity, 5)
+  assert.equal(result.totals.reduce((sum, item) => sum + item.quantity, 0), 19)
+  assert.equal(medicationUsage(medication, [], []).total, 0)
+})
+
 test('low-stock treatment quantities ignore other medications and allow the last available units', () => {
   const notices = []
   const load = loader({
