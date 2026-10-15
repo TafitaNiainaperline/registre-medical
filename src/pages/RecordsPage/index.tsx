@@ -26,7 +26,7 @@ const RecordsPage = ({ category }: Props) => {
     needsTreatmentConfirmation, dismissTreatmentConfirmation, confirmWithoutTreatment,
     change, submit, edit, viewHistory, downloadReceipt, printReceipt, printingId, remove, load,
     cancelEdit, clearFilters, diagnosticOptions, pfMethodOptions, selectPatient, clearPatient, setIdentity,
-    filteredRecords, diagnosticSummary, cpnSummary, pfSummary,
+    filteredRecords, treatmentSummary, treatmentOptions, diagnosticSummary, cpnSummary, pfSummary,
   } = useRecordsPage(category)
 
   const isEchographie = category.key === 'echographie'
@@ -56,7 +56,7 @@ const RecordsPage = ({ category }: Props) => {
         <div>
           <h1>Registre {category.label}</h1>
           {isConsultation && <p>Médicaments et actes médicaux.</p>}
-          {isEchographie && <p>Registre continu : toutes les échographies restent visibles au fil des mois et des années.</p>}
+          {isEchographie && <p>Retrouvez toutes les échographies enregistrées, mois après mois et année après année.</p>}
         </div>
 
         <div className="tools">
@@ -184,6 +184,18 @@ const RecordsPage = ({ category }: Props) => {
           onChange={(e) => setFilters({ ...filters, act: e.target.value })}
         />
 
+        <input
+          type="search"
+          placeholder="Rechercher un médicament ou un acte…"
+          aria-label="Rechercher un médicament ou un acte"
+          list={`treatment-options-${category.key}`}
+          value={filters.treatment}
+          onChange={(e) => setFilters({ ...filters, treatment: e.target.value })}
+        />
+        <datalist id={`treatment-options-${category.key}`}>
+          {treatmentOptions.map((name) => <option key={name} value={name} />)}
+        </datalist>
+
         {hasFilters && (
           <button type="button" className="btn-light" onClick={clearFilters}>
             <Icon name="close" /> Effacer
@@ -195,6 +207,20 @@ const RecordsPage = ({ category }: Props) => {
         </span>
       </div>
 
+
+      <section className={`registry-summary ${category.key}`} aria-label="Quantités des médicaments et des actes" aria-live="polite">
+        <h2>Médicaments et actes — {isEchographie ? 'toutes les années' : 'période sélectionnée'}</h2>
+        <p>Quantités de toutes les visites correspondant aux filtres.</p>
+        <dl className="summary-cards">
+          {treatmentSummary.map((item) => (
+            <div className="summary-card" key={`${item.isAct}|${item.name}|${item.unit}`}>
+              <dt>{item.name} · {item.visits} visite{item.visits !== 1 ? 's' : ''}</dt>
+              <dd>{item.quantity.toLocaleString('fr-FR')} {item.isAct ? 'acte(s)' : item.unit || 'unité(s)'}</dd>
+            </div>
+          ))}
+        </dl>
+        {treatmentSummary.length === 0 && <p>Aucun médicament ou acte avec une quantité enregistrée.</p>}
+      </section>
 
       <div className="table-wrap">
         <table>

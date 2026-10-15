@@ -50,7 +50,7 @@ export const useRecordsPage = (category: Category) => {
 
   const [form, setForm] = useState<RecordForm>(emptyForm)
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [filters, setFilters] = useState({ search: '', diagnostic: '', age: '', date: '', act: '' })
+  const [filters, setFilters] = useState({ search: '', diagnostic: '', age: '', date: '', act: '', treatment: '' })
 
   const [actionError, storeError] = useState('')
   const setActionError = (text: string) => {
@@ -165,7 +165,7 @@ export const useRecordsPage = (category: Category) => {
     historyRequest.current++
     setHistoryRow(null)
     setActiveTab('nouveau')
-    setFilters({ search: '', diagnostic: '', age: '', date: '', act: '' })
+    setFilters({ search: '', diagnostic: '', age: '', date: '', act: '', treatment: '' })
     setActionError('')
     setActionOk('')
   }, [category.key])
@@ -451,7 +451,16 @@ export const useRecordsPage = (category: Category) => {
 
   const pfSummary = useMemo(() => summarizePfRecords(groupedRecords), [groupedRecords])
 
-  const filteredRecords = groupedRecords.filter((row) => {
+  const treatmentOptions = useMemo(() => {
+    const names = new Map<string, string>()
+    records.forEach((row) => row.treatments?.forEach((treatment) => {
+      const name = treatment.name.trim()
+      if (name) names.set(normalize(name), name)
+    }))
+    return Array.from(names.values()).sort((a, b) => a.localeCompare(b, 'fr'))
+  }, [records])
+
+  const matchesRecord = (row: MergedRecord) => {
     const registryValues = category.key === 'cpn' ? [row.cpn_type]
       : category.key === 'pf' ? [row.pf_method]
       : row.treatments.filter((t) => t.item_type === 'act').map((t) => t.name)
@@ -463,10 +472,33 @@ export const useRecordsPage = (category: Category) => {
       && (!filters.diagnostic || normalize(row.diagnostic).includes(normalize(filters.diagnostic)))
       && (!filters.age || normalize(row.age).includes(normalize(filters.age)))
       && (!filters.date || row.created_at?.slice(0, 10) === filters.date)
+      && matches(filters.treatment, [...row.treatments.map((t) => t.name), row.traitement])
       && (category.key === 'pf'
         ? pfProductKey(row.pf_method).includes(pfProductKey(filters.act))
         : matches(filters.act, registryValues))
+  }
+
+  // Filtrer les visites avant le regroupement conserve les soins des visites antérieures.
+  const matchingVisits = records.map((row) => ({ ...row, treatments: row.treatments || [] })).filter(matchesRecord)
+  const filteredRecords = category.key === 'echographie'
+    ? matchingVisits.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || '') || b.id - a.id)
+    : mergeRecords(matchingVisits)
+  const treatmentCounts = new Map<string, { name: string; unit: string; quantity: number; visits: number; isAct: boolean }>()
+  matchingVisits.forEach((row) => {
+    const seen = new Set<string>()
+    row.treatments?.forEach((t) => {
+      if (!matches(filters.treatment, [t.name])) return
+      const isAct = t.item_type === 'act'
+      const unit = t.unit || ''
+      const key = `${isAct}|${normalize(t.name)}|${normalize(unit)}`
+      const total = treatmentCounts.get(key) || { name: t.name, unit, quantity: 0, visits: 0, isAct }
+      total.quantity += Number(t.quantity) || 0
+      if (!seen.has(key)) total.visits++
+      seen.add(key)
+      treatmentCounts.set(key, total)
+    })
   })
+  const treatmentSummary = Array.from(treatmentCounts.values()).sort((a, b) => a.name.localeCompare(b.name, 'fr'))
 
   const diagnosticSummary = useMemo(() => {
     const counts = new Map<string, number>()
@@ -512,10 +544,12 @@ export const useRecordsPage = (category: Category) => {
       setForm(emptyForm)
       refreshEchographieId()
     },
-    clearFilters: () => setFilters({ search: '', diagnostic: '', age: '', date: '', act: '' }),
+    clearFilters: () => setFilters({ search: '', diagnostic: '', age: '', date: '', act: '', treatment: '' }),
     diagnosticOptions,
     pfMethodOptions,
     filteredRecords,
+    treatmentSummary,
+    treatmentOptions,
     diagnosticSummary,
     cpnSummary,
     pfSummary,
