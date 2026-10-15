@@ -2,7 +2,7 @@
 import Icon from '../../components/Icon'
 import { categories } from '../../constants'
 import { formatDate } from '../../utils/date'
-import { displayAge, displayRegistryNumber, treatmentsLabel } from '../../utils/record'
+import { displayAge, displayRegistryNumber } from '../../utils/record'
 import { archiveKey, useArchivesPage } from './useArchivesPage'
 import './ArchivesPage.scss'
 
@@ -29,7 +29,7 @@ const ArchivesPage = () => {
       <label>Registre<select value={category} onChange={(event) => { setExpanded(null); setCategory(event.target.value) }}>
         <option value="">Tous les registres</option>{categories.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}
       </select></label>
-      <label className="archive-search">Recherche<input type="search" placeholder="Patient, diagnostic ou numéro…" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
+      <label className="archive-search">Recherche<input type="search" placeholder="Patient, diagnostic, numéro, médicament ou acte…" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
       <button type="button" className="btn-light" onClick={reload} disabled={loading} aria-label="Actualiser les archives"><Icon name="history" /></button>
       <button type="button" className="btn-light" onClick={exportExcel} disabled={!canExport}><Icon name="excel" /> Exporter le mois</button>
     </div>
@@ -57,7 +57,27 @@ const ArchivesPage = () => {
                     {group.visits.map((visit) => <article key={visit.id}>
                       <div className="visit-heading"><strong>{formatDate(visit.created_at)}</strong><strong>{Number(visit.cost || 0).toLocaleString()} Ar</strong></div>
                       <p><span>{visit.category === 'echographie' ? 'RC (renseignement clinique)' : 'Diagnostic'}</span> {visit.diagnostic || 'Non renseigné'}</p>
-                      <p><span>Traitements</span> {treatmentsLabel(visit.treatments, { separator: ' • ', withPrice: true }) || visit.traitement || 'Aucun traitement'}</p>
+                      {visit.treatments?.length ? (
+                        <div className="table-wrap visit-treatments">
+                          <table aria-label="Détail des médicaments et actes médicaux de la visite">
+                            <thead><tr><th>Médicament / acte médical</th><th>Type</th><th>Quantité</th><th className="num">Prix unitaire (Ar)</th><th className="num">Total (Ar)</th></tr></thead>
+                            <tbody>{visit.treatments.map((treatment, index) => (
+                              <tr key={index}>
+                                <td>{treatment.name}</td>
+                                <td>{treatment.item_type === 'act' ? 'Acte médical' : 'Médicament'}</td>
+                                <td>{treatment.quantity.toLocaleString('fr-FR')}{treatment.unit ? ` ${treatment.unit}` : ''}</td>
+                                <td className="num">{Number(treatment.unit_price || 0).toLocaleString('fr-FR')}</td>
+                                <td className="num amount">{(Number(treatment.quantity) * Number(treatment.unit_price || 0)).toLocaleString('fr-FR')}</td>
+                              </tr>
+                            ))}</tbody>
+                            <tfoot>
+                              <tr><th colSpan={4}>Total médicaments</th><td className="num">{visit.treatments.filter((item) => item.item_type !== 'act').reduce((sum, item) => sum + Number(item.quantity) * Number(item.unit_price || 0), 0).toLocaleString('fr-FR')}</td></tr>
+                              <tr><th colSpan={4}>Total actes médicaux</th><td className="num">{visit.treatments.filter((item) => item.item_type === 'act').reduce((sum, item) => sum + Number(item.quantity) * Number(item.unit_price || 0), 0).toLocaleString('fr-FR')}</td></tr>
+                              <tr><th colSpan={4}>Total de la visite</th><td className="num amount">{Number(visit.cost || 0).toLocaleString('fr-FR')}</td></tr>
+                            </tfoot>
+                          </table>
+                        </div>
+                      ) : <p><span>Médicaments et actes médicaux</span> {visit.traitement || 'Aucun traitement ni acte médical'}</p>}
                       {visit.observation && <p><span>Observation</span> {visit.observation}</p>}
                     </article>)}
                   </div>

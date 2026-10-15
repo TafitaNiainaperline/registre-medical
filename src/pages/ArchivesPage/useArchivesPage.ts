@@ -70,7 +70,8 @@ export const useArchivesPage = () => {
   }
 
   const groups = groupArchiveVisits(rows).filter((group) => group.visits.some((row) =>
-    matches(search, [row.patient_nom, row.patient_prenom, row.diagnostic, row.registry_number])))
+    matches(search, [row.patient_nom, row.patient_prenom, row.diagnostic, row.registry_number,
+      row.traitement, ...(row.treatments || []).map((treatment) => treatment.name)])))
   const visibleRows = groups.flatMap((group) => group.visits)
   return {
     archives, selected, setSelected, category, setCategory, search, setSearch,
