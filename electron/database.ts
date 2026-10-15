@@ -1514,7 +1514,7 @@ async function createRecord(data: RecordInput): Promise<number | undefined> {
           data.cpn_type || null,
         data.reference || null,
         data.category === 'echographie' ? (data.prescriber?.trim() || null) : null,
-        data.category === 'echographie' ? (data.performed_by?.trim() || null) : null,
+        data.category === 'echographie' || data.category === 'consultation' ? (data.performed_by?.trim() || null) : null,
         data.category === 'echographie' ? (data.prescriber_number?.trim() || null) : null,
       ])
 
@@ -1700,7 +1700,7 @@ async function updateRecord(id: number, data: RecordUpdateInput): Promise<void> 
         data.cpn_type || null,
         data.reference || null,
         existing.category === 'echographie' ? (data.prescriber?.trim() || null) : null,
-        existing.category === 'echographie' ? (data.performed_by?.trim() || null) : null,
+        existing.category === 'echographie' || existing.category === 'consultation' ? (data.performed_by?.trim() || null) : null,
         existing.category === 'echographie' ? (data.prescriber_number?.trim() || null) : null,
         patientId,
         id

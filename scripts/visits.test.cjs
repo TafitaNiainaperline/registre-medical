@@ -127,6 +127,22 @@ test('PF and CPN save female patient sex for dashboard records on creation and e
   }
 })
 
+test('external consultations retain their examiner when created and edited', async () => {
+  const load = loader({
+    electron: { app: { isPackaged: false, getPath: () => 'in-memory-test' } },
+    fs: { ...fs, existsSync: () => false, writeFileSync: () => {}, renameSync: () => {} },
+  })
+  const db = load('electron/database.ts')
+  const patient = await db.createPatient({ nom: 'Patient consultation', domicile: 'Test' })
+  const input = { category: 'consultation', patient_id: patient.id, diagnostic: 'Suivi', treatments: [] }
+  const id = await db.createRecord({ ...input, performed_by: ' Dr A ' })
+  assert.equal((await db.fetchRecordById(id)).performed_by, 'Dr A')
+  await db.updateRecord(id, { ...input, performed_by: ' Dr B ' })
+  assert.equal((await db.fetchRecordById(id)).performed_by, 'Dr B')
+  await db.updateRecord(id, { ...input, performed_by: '' })
+  assert.equal((await db.fetchRecordById(id)).performed_by, null)
+})
+
 test('ultrasound visits preserve manual identifiers independently of automatic registries', async () => {
   const load = loader({
     electron: { app: { isPackaged: false, getPath: () => 'in-memory-test' } },

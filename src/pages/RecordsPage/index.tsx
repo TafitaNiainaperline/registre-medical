@@ -43,7 +43,7 @@ const RecordsPage = ({ category }: Props) => {
     : category.key === 'pf' ? { label: 'Produit PF', value: 'pf_method' as const }
     : null
 
-  const columnCount = 12 - (isAdultRegistry ? 1 : 0) + (isConsultation ? 1 : 0) + (extraColumn ? 1 : 0) + (isEchographie ? 2 : 0)
+  const columnCount = 12 - (isAdultRegistry ? 1 : 0) + (isConsultation ? 2 : 0) + (extraColumn ? 1 : 0) + (isEchographie ? 2 : 0)
   const hasFilters = Object.values(filters).some(Boolean)
   const registrySummary = category.key === 'cpn' ? cpnSummary : pfSummary
   const registryFilterLabel = category.key === 'cpn'
@@ -208,6 +208,7 @@ const RecordsPage = ({ category }: Props) => {
               <th>Domicile</th>
               <th>{clinicalLabel}</th>
               {isEchographie && <><th>Prescripteur</th><th>Réalisé par</th></>}
+              {isConsultation && <th>Examinateur</th>}
               <th>Traitement</th>
               <th>Observation</th>
               {extraColumn && <th>{extraColumn.label}</th>}
@@ -234,6 +235,7 @@ const RecordsPage = ({ category }: Props) => {
                 <td>{row.domicile}</td>
                 <td>{row.diagnostic}</td>
                 {isEchographie && <><td>{row.prescriber || '-'}{row.prescriber_number && <div>N° : {row.prescriber_number}</div>}</td><td>{row.performed_by || '-'}</td></>}
+                {isConsultation && <td>{row.performed_by || '-'}</td>}
                 <td className="treatments">{treatmentsLabel(row.treatments) || row.traitement}</td>
                 <td>{row.observation || '-'}</td>
 
@@ -360,6 +362,13 @@ const RecordsPage = ({ category }: Props) => {
                 weekday
               />
             </div>
+
+            {isConsultation && (
+              <label htmlFor="performed_by">
+                Examinateur (obligatoire)
+                <input id="performed_by" name="performed_by" placeholder="Nom de la personne ayant effectué la consultation" value={form.performed_by} onChange={change} required />
+              </label>
+            )}
 
             {isConsultation && (
               <input name="reference" placeholder="Référence (optionnel)" value={form.reference} onChange={change} />

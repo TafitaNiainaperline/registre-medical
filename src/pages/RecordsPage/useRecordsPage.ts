@@ -215,6 +215,7 @@ export const useRecordsPage = (category: Category) => {
     setActionOk('')
 
     const identity = form.identity
+    if (category.key === 'consultation' && !form.performed_by.trim()) { setActionError('Le nom de l’examinateur est requis.'); return }
     if (category.key === 'echographie' && !form.prescriber.trim()) { setActionError('Le prescripteur est requis.'); return }
     if (category.key === 'echographie' && !form.performed_by.trim()) { setActionError('Le nom de la personne ayant réalisé l’échographie est requis.'); return }
     if (category.key === 'pf' && !form.pf_method.trim()) { setActionError('Le produit PF est requis.'); return }
@@ -296,7 +297,7 @@ export const useRecordsPage = (category: Category) => {
       pf_method: category.key === 'pf' ? (capitalize(form.pf_method.trim()) || null) : null,
       prescriber_number: category.key === 'echographie' ? (form.prescriber_number.trim() || null) : null,
       prescriber: category.key === 'echographie' ? (form.prescriber.trim() || null) : null,
-      performed_by: category.key === 'echographie' ? (form.performed_by.trim() || null) : null,
+      performed_by: category.key === 'echographie' || category.key === 'consultation' ? (form.performed_by.trim() || null) : null,
       cpn_type: category.key === 'cpn' ? (form.cpn_type || null) : null,
       traitement: capitalize(form.traitement.trim()),
       treatments,
