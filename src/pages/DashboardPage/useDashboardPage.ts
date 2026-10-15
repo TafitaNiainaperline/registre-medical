@@ -136,6 +136,7 @@ export const useDashboardPage = () => {
     pfSummary: summarizePfRecords(mergeRecords(records)),
     cpnSummary: summarizeCpnRecords(records),
     echographieSummary: summarizeEchographie(records),
+    echographiePrescriberSummary: summarizeEchographie(records, 'prescriber'),
     diagnosticsByCategory: categories.map((category) => ({
       ...category,
       diagnostics: countDistinctPatients(records.filter((row) => row.category === category.key), diagnosticOf)

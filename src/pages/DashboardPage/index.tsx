@@ -7,7 +7,7 @@ const DashboardPage = () => {
     selectedYear, setSelectedYear, selectedMonth, setSelectedMonth, availableYears, stats, dispensations,
     periodLabel, loading, error, ready,
     totalRecords, totalAmount, cashOutflowTotal, balance, tdr,
-    sexSummary, ageGroupSummary, diagnosticSummary, pfSummary, cpnSummary, echographieSummary, diagnosticsByCategory,
+    sexSummary, ageGroupSummary, diagnosticSummary, pfSummary, cpnSummary, echographieSummary, echographiePrescriberSummary, diagnosticsByCategory,
   } = useDashboardPage()
 
   return (
@@ -152,21 +152,26 @@ const DashboardPage = () => {
         </article>
       </div>
 
-      <div className="panel">
-        <h3><Icon name="users" size="md" /> Échographies réalisées par personne</h3>
-        <p>{periodLabel} — nombre d’examens réalisés</p>
-        {echographieSummary.length === 0 ? <p className="muted">Aucune échographie pour ce mois.</p> : (
+      {[
+        { title: 'Échographies réalisées par personne', description: 'nombre d’examens réalisés', column: 'Réalisé par', entries: echographieSummary },
+        { title: 'Échographies prescrites par personne', description: 'nombre d’examens prescrits', column: 'Prescrit par', entries: echographiePrescriberSummary },
+      ].map((summary) => (
+      <div className="panel" key={summary.title}>
+        <h3><Icon name="users" size="md" /> {summary.title}</h3>
+        <p>{periodLabel} — {summary.description}</p>
+        {summary.entries.length === 0 ? <p className="muted">Aucune échographie pour ce mois.</p> : (
           <table>
-            <thead><tr><th>Réalisé par</th><th>Nombre d’échographies</th></tr></thead>
+            <thead><tr><th>{summary.column}</th><th>Nombre d’échographies</th></tr></thead>
             <tbody>
-              {echographieSummary.map(([name, count]) => (
+              {summary.entries.map(([name, count]) => (
                 <tr key={name}><td>{name}</td><td>{count}</td></tr>
               ))}
             </tbody>
-            <tfoot><tr><th>Total</th><td>{echographieSummary.reduce((sum, [, count]) => sum + count, 0)}</td></tr></tfoot>
+            <tfoot><tr><th>Total</th><td>{summary.entries.reduce((sum, [, count]) => sum + count, 0)}</td></tr></tfoot>
           </table>
         )}
       </div>
+      ))}
 
       {ageGroupSummary.length > 0 && (
         <div className="panel">
