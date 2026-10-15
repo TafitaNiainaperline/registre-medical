@@ -127,6 +127,25 @@ test('PF and CPN save female patient sex for dashboard records on creation and e
   }
 })
 
+test('medication sales count only matching medicines while preserving complete purchases', () => {
+  const { groupDispensations, searchMedicationSales } = loader()('src/utils/dispensations.ts')
+  const rows = [
+    { id: 1, batch_id: 'a', medication_id: 1, medication_name: 'Paracétamol 500', quantity: 3, unit_price: 100, unit: 'comprimé', created_at: '2026-10-01' },
+    { id: 2, batch_id: 'a', medication_id: 2, medication_name: 'Amoxicilline', quantity: 10, unit_price: 200, unit: 'comprimé', created_at: '2026-10-01' },
+    { id: 3, medication_id: 1, medication_name: 'Paracétamol 500', quantity: 2, unit_price: 150, unit: 'comprimé', created_at: '2026-10-02' },
+    { id: 4, medication_id: 3, medication_name: 'Paracétamol sirop', quantity: 1, unit_price: 5000, unit: 'flacon', created_at: '2026-10-03' },
+  ]
+  const purchases = groupDispensations(rows)
+  const result = searchMedicationSales(purchases, ' PARACETAMOL 500 ')
+  assert.equal(result.filtered.length, 2)
+  assert.equal(result.filtered.find((purchase) => purchase.id === 1).items.length, 2)
+  assert.deepEqual(result.sales, [{ name: 'Paracétamol 500', unit: 'comprimé', quantity: 5, total: 600 }])
+  assert.equal(result.total, 600)
+  assert.equal(searchMedicationSales(purchases, 'paracetamol').sales.length, 2)
+  assert.deepEqual(searchMedicationSales(purchases, 'absent').sales, [])
+  assert.equal(searchMedicationSales(purchases, '').filtered.length, purchases.length)
+})
+
 test('external consultations retain their examiner when created and edited', async () => {
   const load = loader({
     electron: { app: { isPackaged: false, getPath: () => 'in-memory-test' } },

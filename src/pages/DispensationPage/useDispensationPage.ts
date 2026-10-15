@@ -5,7 +5,7 @@ import type { Dispensation, Medication } from '../../../electron/types'
 import { errorMessage } from '../../utils/error'
 import { monthlyDispensations } from '../../../electron/dispensationReport'
 import { todayIso } from '../../utils/date'
-import { filterPurchaseHistory } from '../../utils/dispensations'
+import { filterPurchaseHistory, searchMedicationSales } from '../../utils/dispensations'
 import { watchCurrentMonth } from '../../utils/watchCurrentMonth'
 import { archiveForMonth, archiveMonthKey, monthlyArchives } from '../../utils/monthlyArchives'
 import type { Archive } from '../../../electron/types'
@@ -31,6 +31,7 @@ export const useDispensationPage = () => {
   const [selectedMonth, setSelectedMonth] = useState(currentMonth)
   const [searchNumber, setSearchNumber] = useState('')
   const [searchDate, setSearchDate] = useState('')
+  const [searchMedication, setSearchMedication] = useState('')
   const monthKey = selectedMonth
   const period = { year: Number(monthKey.slice(0, 4)), month: Number(monthKey.slice(5, 7)) }
   const [message, setMessage] = useState<{ type: MessageType; text: string }>({ type: 'ok', text: '' })
@@ -171,7 +172,8 @@ export const useDispensationPage = () => {
   }
 
   const archives = monthlyArchives(dispensations.map((row) => row.created_at), currentMonth)
-  const filtered = filterPurchaseHistory(monthlyDispensations(dispensations, period).flatMap((purchase) => purchase.items), { number: searchNumber, date: searchDate, currentMonth: selectedMonth })
+  const purchases = filterPurchaseHistory(monthlyDispensations(dispensations, period).flatMap((purchase) => purchase.items), { number: searchNumber, date: searchDate, currentMonth: selectedMonth })
+  const { filtered, sales: medicationSales, total: medicationSalesTotal } = searchMedicationSales(purchases, searchMedication)
   const canExportMonth = monthlyDispensations(dispensations, period).length > 0
   const exportMonth = async () => {
     if (exportingRef.current) return
@@ -205,9 +207,11 @@ export const useDispensationPage = () => {
     },
     closeCreate: () => { if (!savingRef.current) setCreating(false) },
     medications, filtered, lines, exportMonth, canExportMonth, searchNumber, searchDate,
+    searchMedication, medicationSales, medicationSalesTotal,
+    changeMedication: (value: string) => { setSearchMedication(value); setEditingId(null) },
     changeNumber: (value: string) => { setSearchNumber(value); setEditingId(null) },
     changeDate: (value: string) => { setSearchDate(value); if (value) setSelectedMonth(value.slice(0, 7)); setEditingId(null) },
-    resetFilters: () => { setSearchNumber(''); setSearchDate(''); setEditingId(null) },
+    resetFilters: () => { setSearchNumber(''); setSearchDate(''); setSearchMedication(''); setEditingId(null) },
     monthTotal: filtered.reduce((sum, purchase) => sum + purchase.total, 0),
     periodLabel: new Date(period.year, period.month - 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }),
     addLine: () => {

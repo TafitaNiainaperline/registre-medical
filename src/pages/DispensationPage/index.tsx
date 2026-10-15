@@ -9,6 +9,7 @@ import './DispensationPage.scss'
 const DispensationPage = () => {
   const {
     archives, activeArchive, changeArchive,
+    searchMedication, changeMedication, medicationSales, medicationSalesTotal,
     medications, filtered, lines, addLine, removeLine, updateLine, searchNumber, searchDate, changeNumber, changeDate, resetFilters, exportMonth, canExportMonth, monthTotal, periodLabel,
     message, submit, editingId, setEditingId, editForm, setEditForm, startEdit, saveEdit,
     exporting, downloadReceipt, printingId, printReceipt, totalPrice, unitOf, creating, saving, openCreate, closeCreate,
@@ -124,7 +125,12 @@ const DispensationPage = () => {
               value={searchNumber} onChange={(e) => changeNumber(e.target.value)} />
           </div>
           <DatePicker value={searchDate} onChange={changeDate} label="Choisir une date" clearLabel="Effacer le filtre de date" />
-          {(searchNumber || searchDate) && <button type="button" className="btn-light" onClick={resetFilters}>Réinitialiser</button>}
+          <div className="search-field purchase-number">
+            <Icon name="search" />
+            <input type="search" aria-label="Rechercher un médicament vendu" placeholder="Médicament vendu (ex. paracétamol)…"
+              value={searchMedication} onChange={(e) => changeMedication(e.target.value)} />
+          </div>
+          {(searchNumber || searchDate || searchMedication) && <button type="button" className="btn-light" onClick={resetFilters}>Réinitialiser</button>}
           <button type="button" className="btn-light export-month" disabled={exporting || !canExportMonth} onClick={exportMonth}
             title={`Exporter tous les achats de ${periodLabel}`}>
             <Icon name="excel" /> {exporting ? 'Export en cours…' : `Exporter ${periodLabel}`}
@@ -132,11 +138,30 @@ const DispensationPage = () => {
         </div>
         <div className="purchase-month-summary" role="status">
           <span>{searchDate ? formatDay(searchDate) : periodLabel} · {filtered.length} achat{filtered.length !== 1 ? 's' : ''}</span>
-          <strong>Total {searchDate || searchNumber.trim() ? 'affiché' : 'du mois'} : {monthTotal.toLocaleString()} Ar</strong>
+          <strong>Total des achats {searchDate || searchNumber.trim() || searchMedication.trim() ? 'affichés' : 'du mois'} : {monthTotal.toLocaleString()} Ar</strong>
         </div>
 
+        {searchMedication.trim() && (
+          <div className="medication-sales" role="status">
+            <h4>Ventes des médicaments recherchés</h4>
+            <p>{searchDate ? formatDay(searchDate) : periodLabel} — selon les filtres sélectionnés</p>
+            {medicationSales.length === 0 ? <p>Aucune vente pour ce médicament.</p> : (
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>Médicament</th><th>Forme pharmaceutique</th><th>Quantité vendue</th><th>Montant vendu</th></tr></thead>
+                  <tbody>{medicationSales.map((sale) => (
+                    <tr key={`${sale.name}:${sale.unit}`}><td>{sale.name}</td><td>{sale.unit}</td><td>{sale.quantity.toLocaleString('fr-FR')}</td><td>{sale.total.toLocaleString('fr-FR')} Ar</td></tr>
+                  ))}</tbody>
+                  <tfoot><tr><th colSpan={3}>Total des médicaments recherchés</th><td>{medicationSalesTotal.toLocaleString('fr-FR')} Ar</td></tr></tfoot>
+                </table>
+              </div>
+            )}
+            <p>Les achats ci-dessous affichent tous leurs médicaments.</p>
+          </div>
+        )}
+
         <div className="purchase-list">
-          {filtered.length === 0 && <p className="empty">{searchDate || searchNumber.trim() ? 'Aucun achat ne correspond à ces critères.' : `Aucun achat enregistré en ${periodLabel}.`}</p>}
+          {filtered.length === 0 && <p className="empty">{searchDate || searchNumber.trim() || searchMedication.trim() ? 'Aucun achat ne correspond à ces critères.' : `Aucun achat enregistré en ${periodLabel}.`}</p>}
           {filtered.map((purchase) => (
           <article className="purchase-card" key={purchase.id} aria-labelledby={`purchase-${purchase.id}`}>
             <div className="purchase-header">

@@ -6,6 +6,23 @@ import { normalize } from './text'
 
 type Purchase = ReturnType<typeof groupDispensations>[number]
 
+export function searchMedicationSales(purchases: Purchase[], search: string) {
+  const terms = normalize(search).split(' ').filter(Boolean)
+  const matches = (item: Dispensation) => terms.every((term) => normalize(item.medication_name).includes(term))
+  const filtered = purchases.filter((purchase) => purchase.items.some(matches))
+  const groups = new Map<string, { name: string; unit: string; quantity: number; total: number }>()
+  for (const item of filtered.flatMap((purchase) => purchase.items).filter(matches)) {
+    const unit = item.unit || 'comprimé'
+    const key = `${item.medication_id}:${unit}`
+    const group = groups.get(key) || { name: item.medication_name || 'Médicament', unit, quantity: 0, total: 0 }
+    group.quantity += Number(item.quantity)
+    group.total += Number(item.quantity) * Number(item.unit_price || 0)
+    groups.set(key, group)
+  }
+  const sales = [...groups.values()].sort((a, b) => a.name.localeCompare(b.name, 'fr'))
+  return { filtered, sales, total: sales.reduce((sum, sale) => sum + sale.total, 0) }
+}
+
 export function filterPurchaseHistory(rows: Dispensation[], filters: { number: string; date: string; currentMonth: string }) {
   const number = normalize(filters.number)
   const reference = number.match(/^(?:achat\s*)?(?:(?:n[°ºo]?|numero|#)\s*)?(\d+)$/)
