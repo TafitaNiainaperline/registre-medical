@@ -31,7 +31,7 @@ const ArchivesPage = () => {
       </select></label>
       <label className="archive-search">Recherche<input type="search" placeholder="Patient, diagnostic, numéro, médicament ou acte…" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
       <button type="button" className="btn-light" onClick={reload} disabled={loading} aria-label="Actualiser les archives"><Icon name="history" /></button>
-      <button type="button" className="btn-light" onClick={exportExcel} disabled={!canExport}><Icon name="excel" /> Exporter le mois</button>
+      <button type="button" className="btn-light" onClick={exportExcel} disabled={!canExport}><Icon name="excel" /> {search.trim() ? 'Exporter les résultats' : 'Exporter le mois'}</button>
     </div>
     {message && <div role="status">{message}</div>}
     <div className="table-wrap">

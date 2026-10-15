@@ -2,12 +2,15 @@ import ExcelJS from 'exceljs'
 import type { Dispensation, ItemType, MedicalRecord, StockReportRow } from './types'
 import { monthlyDispensations } from './dispensationReport'
 import { catalogueReport } from './catalogueExport'
+import { filterArchiveRecords } from './archiveSearch'
 
 type ArchiveExcelOptions = {
   filePath: string
   year: number
   month: number
   records: MedicalRecord[]
+  search?: string
+  category?: string
 }
 
 type StockExcelOptions = {
@@ -43,7 +46,8 @@ function pad2(n: number): string {
   return String(n).padStart(2, '0')
 }
 
-async function writeArchiveExcel({ filePath, year, month, records }: ArchiveExcelOptions): Promise<void> {
+async function writeArchiveExcel({ filePath, year, month, records, search = '', category = '' }: ArchiveExcelOptions): Promise<void> {
+  records = filterArchiveRecords(records, search)
   const wb = new ExcelJS.Workbook()
   wb.creator = 'Registre Médical'
   wb.created = new Date()
@@ -60,7 +64,8 @@ async function writeArchiveExcel({ filePath, year, month, records }: ArchiveExce
     { header: 'Âge', key: 'age', width: 10 },
     { header: 'Sexe', key: 'sexe', width: 8 },
     { header: records.some((r) => r.category === 'echographie') ? 'Diagnostic / RC (renseignement clinique)' : 'Diagnostic', key: 'diagnostic', width: 26 },
-    { header: 'Médicaments', key: 'meds', width: 30 },
+    { header: 'Médicaments et actes médicaux', key: 'meds', width: 30 },
+    { header: 'Type de prestation', key: 'types', width: 20 },
     { header: 'Quantités', key: 'qty', width: 12 },
     { header: 'Prix unitaires (Ar)', key: 'unit', width: 16 },
     { header: 'Sous-totaux (Ar)', key: 'line_total', width: 16 },
@@ -82,7 +87,7 @@ async function writeArchiveExcel({ filePath, year, month, records }: ArchiveExce
   ;(records || []).forEach((r) => {
     const meds = Array.isArray(r.treatments) ? r.treatments : []
     const medsNames = meds.map((m) => m.name).join('\n')
-    const medsQty = meds.map((m) => m.item_type === 'act' ? '' : `${m.quantity}${m.unit ? ` ${m.unit}` : ''}`).join('\n')
+    const medsQty = meds.map((m) => `${m.quantity}${m.unit ? ` ${m.unit}` : ''}`).join('\n')
     const medsUnit = meds.map((m) => `${m.unit_price}`).join('\n')
     const medsLineTotal = meds.map((m) => `${(Number(m.total) || (Number(m.unit_price) * Number(m.quantity)))}`).join('\n')
     const computedFromMeds = meds.reduce((s, m) => s + (Number(m.total) || (Number(m.unit_price) * Number(m.quantity))), 0)
@@ -102,6 +107,7 @@ async function writeArchiveExcel({ filePath, year, month, records }: ArchiveExce
       sexe: r.sexe || '',
       diagnostic: r.diagnostic || '',
       meds: medsNames || (r.traitement || ''),
+      types: meds.map((m) => m.item_type === 'act' ? 'Acte médical' : 'Médicament').join('\n'),
       qty: medsQty,
       unit: medsUnit,
       line_total: medsLineTotal,
@@ -113,7 +119,23 @@ async function writeArchiveExcel({ filePath, year, month, records }: ArchiveExce
     })
 
     row.alignment = { vertical: 'top', wrapText: true }
+    row.height = Math.max(24, meds.length * 18)
   })
+
+  ws.views = [{ state: 'frozen', ySplit: 1 }]
+  ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: records.length + 1, column: ws.columns.length } }
+  const info = wb.addWorksheet('Filtres appliqués')
+  info.columns = [{ header: 'Filtre', key: 'filter', width: 32 }, { header: 'Valeur', key: 'value', width: 85 }]
+  info.addRows([
+    { filter: 'Période', value: `${year}-${pad2(month)}` },
+    { filter: 'Registre', value: category || 'Tous les registres' },
+    { filter: 'Recherche', value: search.trim() || 'Aucune' },
+    { filter: 'Visites exportées', value: records.length },
+    { filter: 'Portée', value: 'Toutes les visites des dossiers correspondant à la recherche, avec leurs médicaments et actes médicaux.' },
+    { filter: 'Total des visites (Ar)', value: grandTotal },
+  ])
+  info.getRow(1).font = { bold: true }
+  info.getColumn('value').alignment = { wrapText: true, vertical: 'top' }
 
   ws.addRow({})
   const totalRow = ws.addRow({

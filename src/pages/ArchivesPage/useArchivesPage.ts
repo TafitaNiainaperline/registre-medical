@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Archive, MedicalRecord } from '../../../electron/types'
 import { errorMessage } from '../../utils/error'
-import { matches } from '../../utils/text'
+import { matchesArchiveRecord } from '../../../electron/archiveSearch'
 import { notify } from '../../utils/notifications'
 import { groupArchiveVisits } from './groupArchiveVisits'
 
@@ -58,6 +58,7 @@ export const useArchivesPage = () => {
         year: selected.year,
         month: selected.month,
         category: category || undefined,
+        search,
       })
       if (result?.canceled) return
       setMessage(`Export réussi : ${result.filePath}`)
@@ -70,8 +71,7 @@ export const useArchivesPage = () => {
   }
 
   const groups = groupArchiveVisits(rows).filter((group) => group.visits.some((row) =>
-    matches(search, [row.patient_nom, row.patient_prenom, row.diagnostic, row.registry_number,
-      row.traitement, ...(row.treatments || []).map((treatment) => treatment.name)])))
+    matchesArchiveRecord(row, search)))
   const visibleRows = groups.flatMap((group) => group.visits)
   return {
     archives, selected, setSelected, category, setCategory, search, setSearch,

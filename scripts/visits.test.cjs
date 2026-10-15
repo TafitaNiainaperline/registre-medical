@@ -127,6 +127,36 @@ test('PF and CPN save female patient sex for dashboard records on creation and e
   }
 })
 
+test('archive Excel applies medication and act searches and records its filters', async () => {
+  const ExcelJS = require('exceljs')
+  let workbook
+  class CapturedWorkbook extends ExcelJS.Workbook {
+    constructor() {
+      super()
+      workbook = this
+      this.xlsx.writeFile = async () => {}
+    }
+  }
+  const { writeArchiveExcel } = loader({ exceljs: { ...ExcelJS, Workbook: CapturedWorkbook } })('electron/excelExport.ts')
+  const base = { patient_id: 1, category: 'consultation', archive_year: 2026, archive_month: 10, registry_number: '001', cost: 1000 }
+  const records = [
+    { ...base, id: 1, treatments: [{ name: 'Échographie', item_type: 'act', quantity: 1, unit_price: 1000 }] },
+    { ...base, id: 2, treatments: [{ name: 'Paracétamol', item_type: 'medication', quantity: 2, unit_price: 500 }] },
+    { ...base, id: 3, patient_id: 2, registry_number: '002', treatments: [{ name: 'Autre', quantity: 1, unit_price: 9000 }] },
+  ]
+  for (const search of ['echographie', 'paracetamol']) {
+    await writeArchiveExcel({ filePath: 'unused.xlsx', year: 2026, month: 10, records, search, category: 'consultation' })
+    const sheet = workbook.worksheets[0]
+    assert.equal(sheet.getRow(2).getCell('meds').value, 'Échographie')
+    assert.equal(sheet.getRow(2).getCell('types').value, 'Acte médical')
+    assert.equal(sheet.getRow(2).getCell('qty').value, '1')
+    assert.equal(sheet.getRow(3).getCell('meds').value, 'Paracétamol')
+    assert.equal(sheet.lastRow.getCell('total').value, 2000)
+    assert.equal(workbook.getWorksheet('Filtres appliqués').getRow(4).getCell('value').value, search)
+    assert.ok(sheet.autoFilter)
+  }
+})
+
 test('medication sales count only matching medicines while preserving complete purchases', () => {
   const { groupDispensations, searchMedicationSales } = loader()('src/utils/dispensations.ts')
   const rows = [

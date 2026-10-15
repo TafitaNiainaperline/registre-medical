@@ -448,12 +448,14 @@ ipcMain.handle('export:excelByArchive', async (_e, filters: ArchiveFilters): Pro
   })
   if (result.canceled || !result.filePath) return { canceled: true }
 
-  const rows = await db.fetchRecordsByArchive(filters)
+  const rows = await db.fetchRecordsByArchive({ ...filters, search: undefined })
   await exportExcel.writeArchiveExcel({
     filePath: result.filePath,
     year,
     month,
     records: rows || [],
+    search: filters.search,
+    category: filters.category,
   })
   return { canceled: false, filePath: result.filePath }
 })
