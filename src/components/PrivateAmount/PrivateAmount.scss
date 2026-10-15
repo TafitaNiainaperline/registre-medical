@@ -1,0 +1,19 @@
+.PrivateAmount {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  > button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.3rem;
+    min-width: 1.8rem;
+    min-height: 1.8rem;
+    color: var(--soft);
+    background: var(--field-bg);
+    box-shadow: none;
+    border: 1px solid var(--border);
+    border-radius: 0.4rem;
+  }
+}

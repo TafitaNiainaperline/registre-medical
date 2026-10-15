@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import Icon from '../../components/Icon'
+import PrivateAmount from '../../components/PrivateAmount'
 import DatePicker from '../../components/DatePicker'
 import MonthlyArchiveBanner from '../../components/MonthlyArchiveBanner'
 import { formatDay } from '../../utils/date'
@@ -50,12 +51,12 @@ const SortiesPage = () => {
       <div className="cash-summary">
         <div className={`cash-balance${totals.balance < 0 ? ' negative' : ''}`}>
           <span>Solde de caisse</span>
-          <strong>{totals.balance.toLocaleString()} Ar</strong>
+          <strong><PrivateAmount amount={totals.balance} label="le solde de caisse" /></strong>
           <small>{archiveLabel || 'Période en cours'}</small>
         </div>
         <div className="cash-breakdown">
-          <div><span>Entrées</span><strong>{totals.entries.toLocaleString()} Ar</strong></div>
-          <div><span>Dépenses</span><strong>{totals.outflows.toLocaleString()} Ar</strong></div>
+          <div><span>Entrées</span><strong><PrivateAmount amount={totals.entries} label="les entrées de caisse" /></strong></div>
+          <div><span>Dépenses</span><strong><PrivateAmount amount={totals.outflows} label="les dépenses de caisse" /></strong></div>
         </div>
       </div>
 

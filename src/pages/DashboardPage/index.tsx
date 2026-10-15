@@ -1,4 +1,5 @@
 import Icon from '../../components/Icon'
+import PrivateAmount from '../../components/PrivateAmount'
 import { useDashboardPage } from './useDashboardPage'
 import './DashboardPage.scss'
 
@@ -51,7 +52,7 @@ const DashboardPage = () => {
             <span className="currency-icon" aria-hidden="true">Ar</span>
             <h3>Montant facturé</h3>
           </div>
-          <strong className="value">{totalAmount.toLocaleString()} Ar</strong>
+          <strong className="value"><PrivateAmount amount={totalAmount} label="le montant facturé" /></strong>
           <span className="subtitle">Total du mois</span>
         </article>
 
@@ -60,9 +61,9 @@ const DashboardPage = () => {
             <Icon name="bank" size="xl" />
             <h3>Solde de caisse</h3>
           </div>
-          <strong className="value">{balance.toLocaleString()} Ar</strong>
+          <strong className="value"><PrivateAmount amount={balance} label="le solde de caisse" /></strong>
           <span className="subtitle">
-            Entrées : {totalAmount.toLocaleString()} Ar | Sorties : {cashOutflowTotal.toLocaleString()} Ar
+            Entrées : <PrivateAmount amount={totalAmount} label="les entrées de caisse" /> | Sorties : <PrivateAmount amount={cashOutflowTotal} label="les sorties de caisse" />
           </span>
         </article>
 
@@ -148,7 +149,7 @@ const DashboardPage = () => {
             <h3>Dispensations</h3>
           </div>
           <strong className="value">{dispensations.count}</strong>
-          <span className="subtitle">Total : {dispensations.total.toLocaleString()} Ar</span>
+          <span className="subtitle">Total : <PrivateAmount amount={dispensations.total} label="le total des dispensations" /></span>
         </article>
       </div>
 
