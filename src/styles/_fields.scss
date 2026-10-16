@@ -17,7 +17,7 @@
   &:focus {
     outline: none;
     border-color: var(--brand);
-    background: #fff;
+    background: var(--field-bg-focus);
     box-shadow: $focus-ring;
   }
 }

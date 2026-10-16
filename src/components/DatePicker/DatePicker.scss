@@ -128,8 +128,10 @@
   }
 
   body.dark-mode & {
+    .trigger, .chosen .change { color: #8fe4ef; }
     .chosen { background: #17333d; }
-    .calendar .day.outside { color: #4d626d; }
-    .calendar .chosen .change:hover { background: #0f1920; }
+    .chosen .change:hover, .chosen .remove:hover { background: #0f1920; }
+    .calendar .day.outside { color: var(--soft); }
+    .calendar .day.today:not(.selected) { color: #8fe4ef; }
   }
 }

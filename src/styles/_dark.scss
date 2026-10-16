@@ -3,6 +3,7 @@
 // Thème sombre : uniquement les primitives globales.
 // Chaque composant gère ses propres surcharges dans son SCSS.
 body.dark-mode {
+  color-scheme: dark;
   --bg: #0f1720;
   --panel: #16212b;
   --ink: #ecf3f6;
@@ -11,6 +12,7 @@ body.dark-mode {
   --field-border: #304554;
   --field-bg: #101b23;
   --field-bg-hover: #16232d;
+  --field-bg-focus: #16232d;
   --hairline: #22323d;
   --label: #c6d7dd;
 
@@ -26,6 +28,16 @@ body.dark-mode {
 
     &::placeholder { color: #7f98a1; }
     option { background: #0f1920; color: var(--ink); }
+  }
+
+  input:autofill {
+    -webkit-text-fill-color: var(--ink);
+    caret-color: var(--ink);
+    box-shadow: inset 0 0 0 1000px var(--field-bg);
+
+    &:focus {
+      box-shadow: inset 0 0 0 1000px var(--field-bg-focus), $focus-ring;
+    }
   }
 
   .stat-card, .panel, .record-form, .table-wrap, .search-bar, .modal {

@@ -109,6 +109,8 @@
     .banner { background: #17333d; }
     &.locked .fields input, &.locked .fields select { background: #16212b; }
     .matches { background: #16212b; }
+    .matches .match .score { background: #1b2a34; }
+    .matches .match .score.high { background: #123127; color: #d1fae5; }
     .matches .match:hover, .matches .dismiss:hover { background: #1b2a34; }
   }
 }
