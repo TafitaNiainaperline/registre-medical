@@ -26,7 +26,7 @@ const RecordsPage = ({ category }: Props) => {
     needsTreatmentConfirmation, dismissTreatmentConfirmation, confirmWithoutTreatment,
     change, submit, edit, viewHistory, downloadReceipt, printReceipt, printingId, remove, load,
     cancelEdit, clearFilters, diagnosticOptions, pfMethodOptions, selectPatient, clearPatient, setIdentity,
-    filteredRecords, treatmentSummary, treatmentOptions, diagnosticSummary, cpnSummary, pfSummary,
+    filteredRecords, treatmentOptions, diagnosticSummary, cpnSummary, pfSummary,
   } = useRecordsPage(category)
 
   const isEchographie = category.key === 'echographie'
@@ -207,20 +207,6 @@ const RecordsPage = ({ category }: Props) => {
         </span>
       </div>
 
-
-      <section className={`registry-summary ${category.key}`} aria-label="Quantités des médicaments et des actes" aria-live="polite">
-        <h2>Médicaments et actes — {isEchographie ? 'toutes les années' : 'période sélectionnée'}</h2>
-        <p>Quantités de toutes les visites correspondant aux filtres.</p>
-        <dl className="summary-cards">
-          {treatmentSummary.map((item) => (
-            <div className="summary-card" key={`${item.isAct}|${item.name}|${item.unit}`}>
-              <dt>{item.name} · {item.visits} visite{item.visits !== 1 ? 's' : ''}</dt>
-              <dd>{item.quantity.toLocaleString('fr-FR')} {item.isAct ? 'acte(s)' : item.unit || 'unité(s)'}</dd>
-            </div>
-          ))}
-        </dl>
-        {treatmentSummary.length === 0 && <p>Aucun médicament ou acte avec une quantité enregistrée.</p>}
-      </section>
 
       <div className="table-wrap">
         <table>
