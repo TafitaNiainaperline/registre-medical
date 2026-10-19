@@ -204,7 +204,7 @@ test('medication sales count only matching medicines while preserving complete p
   assert.equal(searchMedicationSales(purchases, '').filtered.length, purchases.length)
 })
 
-test('external consultations retain their examiner when created and edited', async () => {
+test('external consultations keep the original examiner after edits and clearing attempts', async () => {
   const load = loader({
     electron: { app: { isPackaged: false, getPath: () => 'in-memory-test' } },
     fs: { ...fs, existsSync: () => false, writeFileSync: () => {}, renameSync: () => {} },
@@ -215,9 +215,9 @@ test('external consultations retain their examiner when created and edited', asy
   const id = await db.createRecord({ ...input, performed_by: ' Dr A ' })
   assert.equal((await db.fetchRecordById(id)).performed_by, 'Dr A')
   await db.updateRecord(id, { ...input, performed_by: ' Dr B ' })
-  assert.equal((await db.fetchRecordById(id)).performed_by, 'Dr B')
+  assert.equal((await db.fetchRecordById(id)).performed_by, 'Dr A')
   await db.updateRecord(id, { ...input, performed_by: '' })
-  assert.equal((await db.fetchRecordById(id)).performed_by, null)
+  assert.equal((await db.fetchRecordById(id)).performed_by, 'Dr A')
 })
 
 test('ultrasound visits preserve manual identifiers independently of automatic registries', async () => {
@@ -244,7 +244,7 @@ test('ultrasound visits preserve manual identifiers independently of automatic r
   const updated = await db.fetchRecordById(firstId)
   assert.equal(updated.registry_number, 'E-009')
   assert.equal(updated.prescriber, 'Dr C')
-  assert.equal(updated.performed_by, 'Technicien D')
+  assert.equal(updated.performed_by, 'Technicien B')
   assert.equal(updated.diagnostic, input.diagnostic)
   assert.equal(updated.cost, 20000)
   assert.equal(updated.sexe, 'M')

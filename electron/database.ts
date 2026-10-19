@@ -1685,7 +1685,7 @@ async function updateRecord(id: number, data: RecordUpdateInput): Promise<void> 
     }
 
     d.run(`UPDATE medical_records SET
-      diagnostic=?, traitement=?, observation=?, cost=?, registry_number=?, treatments_json=?, appointment_date=?, tdr_result=?, pf_method=?, cpn_type=?, reference=?, prescriber=?, performed_by=?, prescriber_number=?,
+      diagnostic=?, traitement=?, observation=?, cost=?, registry_number=?, treatments_json=?, appointment_date=?, tdr_result=?, pf_method=?, cpn_type=?, reference=?, prescriber=?, prescriber_number=?,
       patient_id=COALESCE(?, patient_id) WHERE id=?`,
       [
         data.diagnostic,
@@ -1700,7 +1700,6 @@ async function updateRecord(id: number, data: RecordUpdateInput): Promise<void> 
         data.cpn_type || null,
         data.reference || null,
         existing.category === 'echographie' ? (data.prescriber?.trim() || null) : null,
-        existing.category === 'echographie' || existing.category === 'consultation' ? (data.performed_by?.trim() || null) : null,
         existing.category === 'echographie' ? (data.prescriber_number?.trim() || null) : null,
         patientId,
         id

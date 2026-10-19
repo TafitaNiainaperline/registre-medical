@@ -9,6 +9,7 @@ import TreatmentConfirmation from './TreatmentConfirmation'
 import type { Category } from '../../constants'
 import { formatDateTime, formatDay, todayIso } from '../../utils/date'
 import { capitalize } from '../../utils/text'
+import { notify } from '../../utils/notifications'
 import { ageUnit, displayAge, displayRegistryNumber, treatmentsLabel } from '../../utils/record'
 import { appointmentStatus, useRecordsPage } from './useRecordsPage'
 import './RecordsPage.scss'
@@ -33,6 +34,12 @@ const RecordsPage = ({ category }: Props) => {
   const today = todayIso()
   const clinicalLabel = isEchographie ? 'RC (renseignement clinique)' : 'Diagnostic'
   const isConsultation = category.key === 'consultation'
+  const explainLockedPerformer = () => {
+    if (editingId === null) return
+    notify(isConsultation
+      ? 'L’examinateur ne peut plus être modifié après l’enregistrement.'
+      : 'Le champ « Réalisé par » ne peut plus être modifié après l’enregistrement.', 'info')
+  }
   // Dans les registres CPN et PF, l'âge est saisi en années.
   const isAdultRegistry = category.key === 'cpn' || category.key === 'pf'
 
@@ -359,7 +366,7 @@ const RecordsPage = ({ category }: Props) => {
                 </label>
                 <label htmlFor="performed_by">
                   Réalisé par (obligatoire)
-                  <input id="performed_by" name="performed_by" placeholder="Nom de la personne ayant réalisé l’échographie" value={form.performed_by} onChange={change} required />
+                  <input id="performed_by" name="performed_by" placeholder="Nom de la personne ayant réalisé l’échographie" value={form.performed_by} onChange={change} onFocus={explainLockedPerformer} readOnly={editingId !== null} required />
                 </label>
               </>
             )}
@@ -378,7 +385,7 @@ const RecordsPage = ({ category }: Props) => {
             {isConsultation && (
               <label htmlFor="performed_by">
                 Examinateur (obligatoire)
-                <input id="performed_by" name="performed_by" placeholder="Nom de la personne ayant effectué la consultation" value={form.performed_by} onChange={change} required />
+                <input id="performed_by" name="performed_by" placeholder="Nom de la personne ayant effectué la consultation" value={form.performed_by} onChange={change} onFocus={explainLockedPerformer} readOnly={editingId !== null} required />
               </label>
             )}
 
